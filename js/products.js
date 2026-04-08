@@ -88,10 +88,10 @@ async function loadListings() {
    MƏHSUL KART HTML
    ══════════════════════════════ */
 function createProductCard(p) {
-  const isSale    = p.oldPrice != null && p.oldPrice > p.price;
-  const badge     = p.badge || 'Yeni';
-  const isNew     = badge === 'Yeni';
-  const imgSrc    = (p.imgs && p.imgs[0]) || p.img || '';
+  const isSale     = p.oldPrice != null && p.oldPrice > p.price;
+  const badge      = p.badge || 'Yeni';
+  const isNew      = badge === 'Yeni';
+  const imgSrc     = (p.imgs && p.imgs[0]) || p.img || '';
   const currentUid = fbAuth.currentUser?.uid || null;
   const canDelete  = p._fromFirebase && currentUid && p.userId === currentUid;
 
@@ -105,15 +105,6 @@ function createProductCard(p) {
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/>
           </svg>
         </button>
-        ${canDelete ? `
-          <button class="delete-btn" onclick="deleteListing('${p.id}')" title="Elanı sil">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-              <polyline points="3 6 5 6 21 6"/>
-              <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
-              <path d="M10 11v6M14 11v6"/>
-              <path d="M9 6V4h6v2"/>
-            </svg>
-          </button>` : ''}
       </div>
       <div class="card-body">
         <div class="card-brand">${p.brand || ''}</div>
@@ -123,9 +114,21 @@ function createProductCard(p) {
             ${isSale ? `<span class="price-old">${p.oldPrice} ₼</span>` : ''}
             <span class="price-new ${isSale ? 'sale' : ''}">${p.price} ₼</span>
           </div>
-         <button class="cart-btn" onclick="addToCart('${p.id}')" title="Səbətə əlavə et">
-           <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0" fill="none" stroke="white" stroke-width="2"/></svg>
-         </button>
+          <div style="display:flex;align-items:center;gap:6px">
+            ${canDelete ? `
+              <button class="delete-btn" onclick="deleteListing('${p.id}')" title="Elanı sil"
+                style="position:static;width:36px;height:36px;border-radius:var(--radius-sm)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                  <polyline points="3 6 5 6 21 6"/>
+                  <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+                  <path d="M10 11v6M14 11v6"/>
+                  <path d="M9 6V4h6v2"/>
+                </svg>
+              </button>` : ''}
+            <button class="cart-btn" onclick="addToCart('${p.id}')" title="Səbətə əlavə et">
+              <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0" fill="none" stroke="white" stroke-width="2"/></svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -228,7 +231,6 @@ const listing = {
         <button type="button" onclick="listing.removeImg(${i})">✕</button>`;
       wrap.appendChild(div);
     });
-    // "+" əlavə et düyməsi (5-dən az olsa)
     if (this.selectedImages.length < 5) {
       const add = document.createElement('label');
       add.className = 'img-add-btn';
@@ -254,8 +256,8 @@ const listing = {
     const name  = document.getElementById('lName').value.trim();
     const price = parseFloat(document.getElementById('lPrice').value);
 
-    if (!name)        { toast.show('Məhsul adını daxil edin', 'error'); return; }
-    if (!brand)       { toast.show('Marka adını daxil edin', 'error'); return; }
+    if (!name)              { toast.show('Məhsul adını daxil edin', 'error'); return; }
+    if (!brand)             { toast.show('Marka adını daxil edin', 'error'); return; }
     if (!price || price <= 0) { toast.show('Düzgün qiymət daxil edin', 'error'); return; }
 
     const btn = document.getElementById('listingSubmitBtn');
