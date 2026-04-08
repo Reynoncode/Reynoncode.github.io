@@ -1,16 +1,10 @@
-/* ═══════════════════════════════════════════
-   firebase.js — Firebase konfiqurasiyası
-   Firebase Console > Layihə Parametrləri > Web App-dan
-   aldığın məlumatları bura yaz
-   ═══════════════════════════════════════════ */
-
 const firebaseConfig = {
-  apiKey:            "YOUR_API_KEY",
-  authDomain:        "YOUR_PROJECT.firebaseapp.com",
-  projectId:         "YOUR_PROJECT_ID",
-  storageBucket:     "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId:             "YOUR_APP_ID"
+  apiKey: "AIzaSyBOIIMEZIkSucTpuQDNlC2mPLtTs-JOWR0",
+  authDomain: "almoda-62b1e.firebaseapp.com",
+  projectId: "almoda-62b1e",
+  storageBucket: "almoda-62b1e.firebasestorage.app",
+  messagingSenderId: "762594017109",
+  appId: "1:762594017109:web:bf7a2d0e5188895b6d79dc"
 };
 
 firebase.initializeApp(firebaseConfig);
