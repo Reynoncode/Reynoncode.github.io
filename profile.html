@@ -264,9 +264,31 @@
       .addr-grid { grid-template-columns: 1fr; }
       header { padding: 0 1rem; }
     }
+
+    /* ── LOADING OVERLAY ── */
+    #loadingOverlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 1rem;
+    }
+    .spinner {
+      width: 36px; height: 36px; border-radius: 50%;
+      border: 2.5px solid var(--border);
+      border-top-color: var(--accent);
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loadingOverlay p { font-size: 0.85rem; color: var(--muted); }
   </style>
 </head>
 <body>
+
+<!-- Yüklənmə ekranı -->
+<div id="loadingOverlay">
+  <div class="spinner"></div>
+  <p>Yüklənir...</p>
+</div>
 
 <div class="banner">
   🚚 50 AZN üzərindəki sifarişlərə pulsuz çatdırılma &nbsp;|&nbsp; Yeni kolleksiya gəldi ✨
@@ -335,15 +357,15 @@
         <div class="section-title">Xoş gəlmisiniz, <span id="welcomeName">Aysel</span> 👋</div>
         <div class="stats">
           <div class="stat">
-            <div class="stat-num">12</div>
+            <div class="stat-num" id="statOrders">—</div>
             <div class="stat-lbl">Ümumi sifariş</div>
           </div>
           <div class="stat">
-            <div class="stat-num">3</div>
+            <div class="stat-num" id="statWishlist">—</div>
             <div class="stat-lbl">İstək siyahısı</div>
           </div>
           <div class="stat">
-            <div class="stat-num">486 ₼</div>
+            <div class="stat-num" id="statSpent">—</div>
             <div class="stat-lbl">Ümumi xərc</div>
           </div>
         </div>
@@ -565,36 +587,276 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  function switchTab(name, el) {
-    document.querySelectorAll('[id^="tab-"]').forEach(t => t.style.display = 'none');
-    document.getElementById('tab-' + name).style.display = '';
-    document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
-    el.classList.add('active');
-  }
+/* ═══════════════════════════════════════════
+   profile.js — Firebase inteqrasiyası
+   ═══════════════════════════════════════════ */
 
-  function saveProfile() {
-    const first = document.getElementById('firstName').value.trim();
-    const last  = document.getElementById('lastName').value.trim();
-    const email = document.getElementById('emailField').value.trim();
-    const full  = first + ' ' + last;
-    document.getElementById('sidebarName').textContent  = full;
-    document.getElementById('sidebarEmail').textContent = email;
-    document.getElementById('welcomeName').textContent  = first;
-    const initials = (first[0] || '') + (last[0] || '');
-    document.getElementById('avatarInitials').textContent = initials.toUpperCase();
+let currentUser = null;
+
+/* ── Auth yoxlanışı: login yoxdursa index.html-ə yönləndir ── */
+fbAuth.onAuthStateChanged(async (user) => {
+  if (!user) {
+    window.location.href = 'index.html';
+    return;
+  }
+  currentUser = user;
+  await loadUserData(user);
+  await loadOrders(user.uid);
+  await loadWishlist(user.uid);
+  await loadAddresses(user.uid);
+  document.getElementById('loadingOverlay').style.display = 'none';
+});
+
+/* ── Firestore-dan istifadəçi məlumatlarını çək ── */
+async function loadUserData(user) {
+  const doc = await fbDb.collection('users').doc(user.uid).get();
+  const data = doc.exists ? doc.data() : {};
+
+  const first    = data.firstName || '';
+  const last     = data.lastName  || '';
+  const fullName = (first + ' ' + last).trim() || user.displayName || 'İstifadəçi';
+  const email    = user.email || '';
+  const phone    = data.phone    || '';
+  const dob      = data.dob      || '';
+  const gender   = data.gender   || 'Qadın';
+  const note     = data.note     || '';
+  const initials = ((first[0] || '') + (last[0] || '')).toUpperCase() || '?';
+
+  /* Sidebar */
+  document.getElementById('avatarInitials').textContent = initials;
+  document.getElementById('sidebarName').textContent    = fullName;
+  document.getElementById('sidebarEmail').textContent   = email;
+  document.getElementById('welcomeName').textContent    = first || fullName;
+
+  /* Profil formu */
+  document.getElementById('firstName').value  = first;
+  document.getElementById('lastName').value   = last;
+  document.getElementById('emailField').value = email;
+  document.getElementById('phoneField').value = phone;
+  document.getElementById('dobField').value   = dob;
+  const genderSel = document.getElementById('genderField');
+  [...genderSel.options].forEach(o => { o.selected = o.value === gender; });
+  document.getElementById('noteField').value  = note;
+}
+
+/* ── Profil məlumatlarını Firestore-a yaz ── */
+async function saveProfile() {
+  if (!currentUser) return;
+  const first  = document.getElementById('firstName').value.trim();
+  const last   = document.getElementById('lastName').value.trim();
+  const phone  = document.getElementById('phoneField').value.trim();
+  const dob    = document.getElementById('dobField').value;
+  const gender = document.getElementById('genderField').value;
+  const note   = document.getElementById('noteField').value.trim();
+
+  try {
+    await fbDb.collection('users').doc(currentUser.uid).set({
+      firstName: first, lastName: last,
+      phone, dob, gender, note,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+
+    /* Sidebar yenilə */
+    const full = (first + ' ' + last).trim();
+    document.getElementById('sidebarName').textContent = full || 'İstifadəçi';
+    document.getElementById('welcomeName').textContent = first || full;
+    const initials = ((first[0] || '') + (last[0] || '')).toUpperCase();
+    document.getElementById('avatarInitials').textContent = initials || '?';
     showToast('Məlumatlar yadda saxlandı ✓');
+  } catch (err) {
+    showToast('Xəta baş verdi: ' + err.message);
   }
+}
 
-  function showToast(msg) {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2800);
+/* ── Şifrəni yenilə ── */
+async function changePassword() {
+  const current  = document.getElementById('currentPass').value;
+  const newPass  = document.getElementById('newPass').value;
+  const confirm  = document.getElementById('confirmPass').value;
+
+  if (!current || !newPass || !confirm) { showToast('Bütün sahələri doldurun'); return; }
+  if (newPass !== confirm)              { showToast('Yeni şifrələr uyğun gəlmir'); return; }
+  if (newPass.length < 6)              { showToast('Şifrə ən az 6 simvol olmalıdır'); return; }
+
+  try {
+    /* Re-authenticate */
+    const cred = firebase.auth.EmailAuthProvider.credential(currentUser.email, current);
+    await currentUser.reauthenticateWithCredential(cred);
+    await currentUser.updatePassword(newPass);
+    document.getElementById('currentPass').value = '';
+    document.getElementById('newPass').value     = '';
+    document.getElementById('confirmPass').value = '';
+    showToast('Şifrə uğurla yeniləndi ✓');
+  } catch (err) {
+    const msg = err.code === 'auth/wrong-password' ? 'Cari şifrə yanlışdır' : err.message;
+    showToast('Xəta: ' + msg);
   }
+}
 
-  document.querySelectorAll('.menu-item').forEach(el => {
-    el.addEventListener('click', function(e) { e.preventDefault(); });
-  });
+/* ── Sifarişləri Firestore-dan çək ── */
+async function loadOrders(uid) {
+  const statusMap = {
+    delivered: { lbl: 'Çatdırıldı', cls: 'badge-success' },
+    shipped:   { lbl: 'Yolda',      cls: 'badge-shipped' },
+    pending:   { lbl: 'Hazırlanır', cls: 'badge-pending' },
+    cancelled: { lbl: 'Ləğv edildi',cls: 'badge-pending' },
+  };
+  const emojis = ['👗','👟','👜','🧥','👒','🥿','👔','🕶️'];
+
+  try {
+    const snap = await fbDb.collection('orders')
+      .where('userId', '==', uid)
+      .orderBy('createdAt', 'desc')
+      .limit(20)
+      .get();
+
+    const allOrders  = document.getElementById('allOrders');
+    const recentOrds = document.getElementById('recentOrders');
+    allOrders.innerHTML = '';
+    recentOrds.innerHTML = '';
+
+    /* Stat */
+    document.getElementById('statOrders').textContent = snap.size;
+    let totalSpent = 0;
+
+    if (snap.empty) {
+      allOrders.innerHTML  = '<p style="color:var(--muted);font-size:.875rem;">Hələ sifariş yoxdur.</p>';
+      recentOrds.innerHTML = '<p style="color:var(--muted);font-size:.875rem;">Hələ sifariş yoxdur.</p>';
+    }
+
+    snap.forEach((doc, i) => {
+      const o   = doc.data();
+      const st  = statusMap[o.status] || { lbl: o.status, cls: 'badge-pending' };
+      const em  = emojis[i % emojis.length];
+      const date= o.createdAt?.toDate
+        ? o.createdAt.toDate().toLocaleDateString('az-AZ', { day:'numeric', month:'long', year:'numeric' })
+        : '';
+      const price = (o.total || 0).toFixed(2);
+      totalSpent += o.total || 0;
+
+      const html = `
+        <div class="order-item">
+          <div class="order-img">${em}</div>
+          <div class="order-info">
+            <div class="order-name">${o.title || 'Sifariş'}</div>
+            <div class="order-meta">Sifariş #${doc.id.slice(-4).toUpperCase()} · ${date}</div>
+          </div>
+          <div class="order-right">
+            <div class="order-price">${price} ₼</div>
+            <div class="badge ${st.cls}">${st.lbl}</div>
+          </div>
+        </div>`;
+      allOrders.innerHTML += html;
+      if (i < 3) recentOrds.innerHTML += html;
+    });
+
+    document.getElementById('statSpent').textContent = totalSpent.toFixed(0) + ' ₼';
+  } catch (err) {
+    console.warn('Sifarişlər yüklənmədi:', err.message);
+  }
+}
+
+/* ── İstək siyahısını Firestore-dan çək ── */
+async function loadWishlist(uid) {
+  try {
+    const snap = await fbDb.collection('wishlists').doc(uid).get();
+    const items = snap.exists ? (snap.data().items || []) : [];
+    document.getElementById('statWishlist').textContent = items.length;
+
+    const grid = document.getElementById('wishlistGrid');
+    grid.innerHTML = '';
+    if (items.length === 0) {
+      grid.innerHTML = '<p style="color:var(--muted);font-size:.875rem;grid-column:1/-1;">İstək siyahısı boşdur.</p>';
+      return;
+    }
+    items.forEach(item => {
+      grid.innerHTML += `
+        <div class="wish-card">
+          <div class="wish-img">${item.image || '🛍️'}</div>
+          <div class="wish-info">
+            <div class="wish-name">${item.name || ''}</div>
+            <div class="wish-price">${(item.price || 0).toFixed(2)} ₼</div>
+          </div>
+        </div>`;
+    });
+  } catch (err) {
+    console.warn('Wishlist yüklənmədi:', err.message);
+  }
+}
+
+/* ── Ünvanları Firestore-dan çək ── */
+async function loadAddresses(uid) {
+  try {
+    const snap = await fbDb.collection('addresses')
+      .where('userId', '==', uid)
+      .get();
+
+    const grid = document.getElementById('addressGrid');
+    /* "Yeni ünvan" kartı hər zaman sonunda */
+    const addBtn = grid.querySelector('.add-addr-card');
+    grid.innerHTML = '';
+
+    if (snap.empty) {
+      grid.appendChild(addBtn);
+      return;
+    }
+
+    snap.forEach(doc => {
+      const a = doc.data();
+      const card = document.createElement('div');
+      card.className = 'addr-card' + (a.isDefault ? ' default' : '');
+      card.innerHTML = `
+        ${a.isDefault ? '<span class="addr-tag">Əsas</span>' : ''}
+        <div class="addr-name">${a.fullName || ''}</div>
+        ${a.street || ''}<br>
+        ${a.city || ''}, ${a.zip || ''}<br>
+        Azərbaycan<br>
+        ${a.phone || ''}
+        <div class="addr-actions">
+          <button class="addr-btn" onclick="showToast('Redaktə funksiyası tezliklə')">Redaktə et</button>
+          <button class="addr-btn" onclick="deleteAddress('${doc.id}')">Sil</button>
+        </div>`;
+      grid.appendChild(card);
+    });
+
+    grid.appendChild(addBtn);
+  } catch (err) {
+    console.warn('Ünvanlar yüklənmədi:', err.message);
+  }
+}
+
+async function deleteAddress(id) {
+  if (!confirm('Bu ünvanı silmək istəyirsiniz?')) return;
+  await fbDb.collection('addresses').doc(id).delete();
+  await loadAddresses(currentUser.uid);
+  showToast('Ünvan silindi');
+}
+
+/* ── Çıxış ── */
+async function logout() {
+  await fbAuth.signOut();
+  window.location.href = 'index.html';
+}
+
+/* ── Tab keçidi ── */
+function switchTab(name, el) {
+  document.querySelectorAll('[id^="tab-"]').forEach(t => t.style.display = 'none');
+  document.getElementById('tab-' + name).style.display = '';
+  document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+  el.classList.add('active');
+}
+
+/* ── Toast bildiriş ── */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+document.querySelectorAll('.menu-item').forEach(el => {
+  el.addEventListener('click', e => e.preventDefault());
+});
 </script>
 </body>
 </html>
