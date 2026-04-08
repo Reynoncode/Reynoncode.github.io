@@ -64,12 +64,8 @@ function initHeaderEvents() {
   if (signinBtn) signinBtn.addEventListener('click', () => modal.open('authModal'));
   if (cartBtn)   cartBtn.addEventListener('click', () => modal.open('cartModal'));
 
-  if (userBtn) userBtn.addEventListener('click', async () => {
-    if (confirm('Çıxmaq istəyirsiniz?')) {
-      await auth.logout();
-      // renderHeader onAuthStateChanged tərəfindən avtomatik çağrılacaq
-      toast.show('Uğurla çıxış edildi', 'success');
-    }
+  if (userBtn) userBtn.addEventListener('click', () => {
+    window.location.href = 'profile.html';
   });
 }
 
