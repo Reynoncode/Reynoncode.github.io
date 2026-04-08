@@ -341,7 +341,7 @@
         Ünvanlarım
       </a>
       <div class="menu-divider"></div>
-      <a class="menu-item logout" onclick="showToast('Sistemdən çıxış edildi')">
+      <a class="menu-item logout" onclick="logout()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         Çıxış
       </a>
@@ -373,39 +373,7 @@
 
       <div class="section-card">
         <div class="section-title">Son sifarişlər</div>
-        <div class="order-item">
-          <div class="order-img">👗</div>
-          <div class="order-info">
-            <div class="order-name">Yay Midi Donluğu</div>
-            <div class="order-meta">Sifariş #8821 · 2 iyun 2025</div>
-          </div>
-          <div class="order-right">
-            <div class="order-price">89 ₼</div>
-            <div class="badge badge-success">Çatdırıldı</div>
-          </div>
-        </div>
-        <div class="order-item">
-          <div class="order-img">👟</div>
-          <div class="order-info">
-            <div class="order-name">Dəri Krossovka</div>
-            <div class="order-meta">Sifariş #8804 · 28 may 2025</div>
-          </div>
-          <div class="order-right">
-            <div class="order-price">145 ₼</div>
-            <div class="badge badge-shipped">Yolda</div>
-          </div>
-        </div>
-        <div class="order-item">
-          <div class="order-img">👜</div>
-          <div class="order-info">
-            <div class="order-name">Çiyin Çantası</div>
-            <div class="order-meta">Sifariş #8790 · 18 may 2025</div>
-          </div>
-          <div class="order-right">
-            <div class="order-price">210 ₼</div>
-            <div class="badge badge-pending">Hazırlanır</div>
-          </div>
-        </div>
+        <div id="recentOrders"><div class="spinner" style="margin:1rem auto;"></div></div>
       </div>
     </div>
 
@@ -428,23 +396,23 @@
           </div>
           <div class="form-group">
             <label>Telefon</label>
-            <input type="tel" placeholder="+994 XX XXX XX XX" />
+            <input type="tel" id="phoneField" placeholder="+994 XX XXX XX XX" />
           </div>
           <div class="form-group">
             <label>Doğum tarixi</label>
-            <input type="date" value="1995-04-15" />
+            <input type="date" id="dobField" />
           </div>
           <div class="form-group">
             <label>Cins</label>
-            <select>
-              <option>Qadın</option>
-              <option>Kişi</option>
-              <option>Qeyd etmək istəmirəm</option>
+            <select id="genderField">
+              <option value="Qadın">Qadın</option>
+              <option value="Kişi">Kişi</option>
+              <option value="Qeyd etmək istəmirəm">Qeyd etmək istəmirəm</option>
             </select>
           </div>
           <div class="form-group full">
             <label>Qeyd</label>
-            <textarea placeholder="Özünüz haqqında qısa məlumat..."></textarea>
+            <textarea id="noteField" placeholder="Özünüz haqqında qısa məlumat..."></textarea>
           </div>
         </div>
         <div class="btn-row">
@@ -458,19 +426,19 @@
         <div class="form-grid">
           <div class="form-group full">
             <label>Cari şifrə</label>
-            <input type="password" placeholder="••••••••" />
+            <input type="password" id="currentPass" placeholder="••••••••" />
           </div>
           <div class="form-group">
             <label>Yeni şifrə</label>
-            <input type="password" placeholder="••••••••" />
+            <input type="password" id="newPass" placeholder="••••••••" />
           </div>
           <div class="form-group">
             <label>Yeni şifrəni təkrarla</label>
-            <input type="password" placeholder="••••••••" />
+            <input type="password" id="confirmPass" placeholder="••••••••" />
           </div>
         </div>
         <div class="btn-row">
-          <button class="btn btn-dark" onclick="showToast('Şifrə yeniləndi ✓')">Şifrəni yenilə</button>
+          <button class="btn btn-dark" onclick="changePassword()">Şifrəni yenilə</button>
         </div>
       </div>
     </div>
@@ -479,50 +447,7 @@
     <div id="tab-orders" style="display:none">
       <div class="section-card">
         <div class="section-title">Sifarişlərim</div>
-        <div class="order-item">
-          <div class="order-img">👗</div>
-          <div class="order-info">
-            <div class="order-name">Yay Midi Donluğu · L bədən</div>
-            <div class="order-meta">Sifariş #8821 · 2 iyun 2025 · 1 məhsul</div>
-          </div>
-          <div class="order-right">
-            <div class="order-price">89 ₼</div>
-            <div class="badge badge-success">Çatdırıldı</div>
-          </div>
-        </div>
-        <div class="order-item">
-          <div class="order-img">👟</div>
-          <div class="order-info">
-            <div class="order-name">Dəri Krossovka · 39 ölçü</div>
-            <div class="order-meta">Sifariş #8804 · 28 may 2025 · 1 məhsul</div>
-          </div>
-          <div class="order-right">
-            <div class="order-price">145 ₼</div>
-            <div class="badge badge-shipped">Yolda</div>
-          </div>
-        </div>
-        <div class="order-item">
-          <div class="order-img">👜</div>
-          <div class="order-info">
-            <div class="order-name">Çiyin Çantası · Qara</div>
-            <div class="order-meta">Sifariş #8790 · 18 may 2025 · 1 məhsul</div>
-          </div>
-          <div class="order-right">
-            <div class="order-price">210 ₼</div>
-            <div class="badge badge-pending">Hazırlanır</div>
-          </div>
-        </div>
-        <div class="order-item">
-          <div class="order-img">🧥</div>
-          <div class="order-info">
-            <div class="order-name">Oversize Palto · S bədən</div>
-            <div class="order-meta">Sifariş #8750 · 3 may 2025 · 1 məhsul</div>
-          </div>
-          <div class="order-right">
-            <div class="order-price">320 ₼</div>
-            <div class="badge badge-success">Çatdırıldı</div>
-          </div>
-        </div>
+        <div id="allOrders"><div class="spinner" style="margin:1rem auto;"></div></div>
       </div>
     </div>
 
@@ -530,28 +455,8 @@
     <div id="tab-wishlist" style="display:none">
       <div class="section-card">
         <div class="section-title">İstək siyahısı</div>
-        <div class="wishlist-grid">
-          <div class="wish-card">
-            <div class="wish-img">👗</div>
-            <div class="wish-info">
-              <div class="wish-name">Floral Midi Dress</div>
-              <div class="wish-price">125 ₼</div>
-            </div>
-          </div>
-          <div class="wish-card">
-            <div class="wish-img">👒</div>
-            <div class="wish-info">
-              <div class="wish-name">Yay Papaq</div>
-              <div class="wish-price">45 ₼</div>
-            </div>
-          </div>
-          <div class="wish-card">
-            <div class="wish-img">🥿</div>
-            <div class="wish-info">
-              <div class="wish-name">Dəri Balerinka</div>
-              <div class="wish-price">98 ₼</div>
-            </div>
-          </div>
+        <div class="wishlist-grid" id="wishlistGrid">
+          <div class="spinner" style="margin:1rem auto;grid-column:1/-1;"></div>
         </div>
       </div>
     </div>
@@ -560,20 +465,8 @@
     <div id="tab-addresses" style="display:none">
       <div class="section-card">
         <div class="section-title">Ünvanlarım</div>
-        <div class="addr-grid">
-          <div class="addr-card default">
-            <span class="addr-tag">Əsas</span>
-            <div class="addr-name">Aysel Həsənova</div>
-            Nizami küçəsi 45, m. 12<br>
-            Bakı, AZ1000<br>
-            Azərbaycan<br>
-            +994 50 123 45 67
-            <div class="addr-actions">
-              <button class="addr-btn" onclick="showToast('Redaktə rejimi açıldı')">Redaktə et</button>
-              <button class="addr-btn">Sil</button>
-            </div>
-          </div>
-          <div class="addr-card" style="border: 1px dashed var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; min-height:140px; color:var(--muted); flex-direction:column; gap:0.5rem;" onclick="showToast('Yeni ünvan əlavə et')">
+        <div class="addr-grid" id="addressGrid">
+          <div class="addr-card add-addr-card" style="border: 1px dashed var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; min-height:140px; color:var(--muted); flex-direction:column; gap:0.5rem;" onclick="showToast('Yeni ünvan funksiyası tezliklə')">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
             <span style="font-size:0.85rem;">Yeni ünvan əlavə et</span>
           </div>
