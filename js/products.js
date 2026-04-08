@@ -123,10 +123,9 @@ function createProductCard(p) {
             ${isSale ? `<span class="price-old">${p.oldPrice} ₼</span>` : ''}
             <span class="price-new ${isSale ? 'sale' : ''}">${p.price} ₼</span>
           </div>
-          ${!p._fromFirebase ? `
-            <button class="cart-btn" onclick="addToCart('${p.id}')" title="Səbətə əlavə et">
-              <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0" fill="none" stroke="white" stroke-width="2"/></svg>
-            </button>` : ''}
+         <button class="cart-btn" onclick="addToCart('${p.id}')" title="Səbətə əlavə et">
+  <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0" fill="none" stroke="white" stroke-width="2"/></svg>
+</button>
         </div>
       </div>
     </div>
