@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Profil — MODA</title>
-  <link rel="stylesheet" href="css/global.css" />
-  <link rel="stylesheet" href="css/layout.css" />
-  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="../css/global.css" />
+  <link rel="stylesheet" href="../css/layout.css" />
+  <link rel="stylesheet" href="../css/components.css" />
   <style>
     main { padding: var(--page-y) var(--page-x); max-width: 600px; margin: 0 auto; }
 
@@ -41,7 +41,11 @@
       overflow: hidden;
     }
 
-    .profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .profile-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
 
     .profile-top-info h2 {
       font-family: var(--font-display);
@@ -49,7 +53,10 @@
       margin-bottom: 4px;
     }
 
-    .profile-top-info p { font-size: 0.88rem; color: var(--muted); }
+    .profile-top-info p {
+      font-size: 0.88rem;
+      color: var(--muted);
+    }
 
     .section-label {
       font-size: 0.75rem;
@@ -67,18 +74,9 @@
       gap: 14px;
     }
 
-    .readonly-field {
-      padding: 12px 16px;
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius-md);
-      font-size: 0.92rem;
-      color: var(--muted);
-      background: var(--bg);
-    }
-
     .btn-logout {
       width: 100%;
-      margin-top: 24px;
+      margin-top: 32px;
       background: none;
       border: 1.5px solid var(--danger);
       color: var(--danger);
@@ -90,7 +88,19 @@
       transition: all 0.2s;
     }
 
-    .btn-logout:hover { background: var(--danger); color: white; }
+    .btn-logout:hover {
+      background: var(--danger);
+      color: white;
+    }
+
+    .readonly-field {
+      padding: 12px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      font-size: 0.92rem;
+      color: var(--muted);
+      background: var(--bg);
+    }
 
     @media (max-width: 600px) {
       .profile-card { padding: 24px 20px; }
@@ -105,6 +115,7 @@
 <main>
   <div class="profile-card">
 
+    <!-- Yuxarı: avatar + ad + email -->
     <div class="profile-top">
       <div class="profile-avatar" id="profileAvatar">...</div>
       <div class="profile-top-info">
@@ -113,12 +124,18 @@
       </div>
     </div>
 
+    <!-- Xəbər mesajı -->
     <div id="saveMsg" style="
-      display:none;background:#f0faf4;color:#2d7a47;
-      border-radius:var(--radius-md);padding:10px 14px;
-      font-size:0.85rem;margin-bottom:16px;
+      display:none;
+      background:#f0faf4;
+      color:#2d7a47;
+      border-radius:var(--radius-md);
+      padding:10px 14px;
+      font-size:0.85rem;
+      margin-bottom:16px;
     ">✓ Məlumatlar saxlanıldı</div>
 
+    <!-- Əsas məlumatlar -->
     <div class="section-label">Əsas məlumatlar</div>
 
     <div class="field-row">
@@ -132,10 +149,8 @@
       </div>
     </div>
 
-    <div class="section-label">
-      Əlavə məlumatlar
-      <span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">(istəyə bağlı)</span>
-    </div>
+    <!-- Əlavə məlumatlar -->
+    <div class="section-label">Əlavə məlumatlar <span style="font-weight:400;color:var(--muted)">(istəyə bağlı)</span></div>
 
     <div class="field-row">
       <div class="form-group">
@@ -172,18 +187,19 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-<script src="js/firebase.js"></script>
-<script src="js/auth.js"></script>
-<script src="js/cart.js"></script>
-<script src="js/products.js"></script>
-<script src="js/components.js"></script>
+<script src="../js/firebase.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/cart.js"></script>
+<script src="../js/products.js"></script>
+<script src="../js/components.js"></script>
 
 <script>
   document.addEventListener('DOMContentLoaded', () => {
 
     fbAuth.onAuthStateChanged(async user => {
+      // Giriş edilməyibsə ana səhifəyə qayıt
       if (!user) {
-        window.location.href = 'index.html';
+        window.location.href = '/index.html';
         return;
       }
 
@@ -195,7 +211,7 @@
         avatarEl.textContent = (user.displayName || user.email)[0].toUpperCase();
       }
 
-      // Firestore-dan yüklə
+      // Firestore-dan məlumatları yüklə
       const snap = await fbDb.collection('users').doc(user.uid).get();
       const data = snap.exists ? snap.data() : {};
 
@@ -213,7 +229,7 @@
       const user = fbAuth.currentUser;
       if (!user) return;
 
-      const btn = document.getElementById('saveBtn');
+      const btn  = document.getElementById('saveBtn');
       btn.disabled    = true;
       btn.textContent = 'Saxlanılır...';
 
@@ -245,7 +261,7 @@
     document.getElementById('logoutBtn').addEventListener('click', async () => {
       if (confirm('Çıxmaq istəyirsiniz?')) {
         await auth.logout();
-        window.location.href = 'index.html';
+        window.location.href = '/index.html';
       }
     });
 
