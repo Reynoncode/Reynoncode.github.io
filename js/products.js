@@ -87,21 +87,25 @@ async function loadListings() {
 /* ══════════════════════════════
    MƏHSUL KART HTML
    ══════════════════════════════ */
-function createProductCard(p) {
+function createProductCard(p, favIds = []) {
   const isSale     = p.oldPrice != null && p.oldPrice > p.price;
   const badge      = p.badge || 'Yeni';
   const isNew      = badge === 'Yeni';
   const imgSrc     = (p.imgs && p.imgs[0]) || p.img || '';
   const currentUid = fbAuth.currentUser?.uid || null;
   const canDelete  = p._fromFirebase && currentUid && p.userId === currentUid;
+  const isFav      = favIds.includes(String(p.id));
 
   return `
     <div class="card" data-id="${p.id}">
       <div class="card-img-wrap">
         <img src="${imgSrc}" alt="${p.name}" loading="lazy" />
         <span class="badge ${isNew ? 'badge-new' : 'badge-sale'}">${badge}</span>
-        <button class="fav-btn" onclick="toggleFav(this)" aria-label="Sevimlilərə əlavə et">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2">
+        <button class="fav-btn ${isFav ? 'active' : ''}" onclick="toggleFav(this, '${p.id}')" aria-label="Sevimlilərə əlavə et">
+          <svg viewBox="0 0 24 24"
+            fill="${isFav ? '#e63946' : 'none'}"
+            stroke="${isFav ? '#e63946' : '#888'}"
+            stroke-width="2">
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/>
           </svg>
         </button>
@@ -138,10 +142,23 @@ function createProductCard(p) {
 /* ══════════════════════════════
    GRID RENDER
    ══════════════════════════════ */
-function renderProducts(products, containerId = 'productGrid') {
+async function renderProducts(products, containerId = 'productGrid') {
   const grid = document.getElementById(containerId);
   if (!grid) return;
-  grid.innerHTML = products.map(createProductCard).join('');
+
+  // Cari istifadəçinin favoritlərini çək
+  let favIds = [];
+  const user = fbAuth.currentUser;
+  if (user) {
+    try {
+      const snap = await fbDb.collection('wishlists').doc(user.uid).get();
+      if (snap.exists) {
+        favIds = (snap.data().items || []).map(i => String(i.id));
+      }
+    } catch (e) {}
+  }
+
+  grid.innerHTML = products.map(p => createProductCard(p, favIds)).join('');
 }
 
 /* ══════════════════════════════
@@ -166,15 +183,69 @@ function addToCart(productId) {
   if (product) cart.add(product);
 }
 
-function toggleFav(btn) {
-  btn.classList.toggle('active');
+/* ══════════════════════════════
+   FAVORİT — Firebase ilə sinxron
+   ══════════════════════════════ */
+async function toggleFav(btn, productId) {
+  const user = fbAuth.currentUser;
+  if (!user) {
+    if (typeof modal !== 'undefined') modal.open('authModal');
+    if (typeof toast !== 'undefined') toast.show('Sevimlilərə əlavə etmək üçün daxil olun', 'default');
+    return;
+  }
+
+  const product = PRODUCTS.find(p => String(p.id) === String(productId));
+  if (!product) return;
+
+  const isActive = btn.classList.contains('active');
   const svg = btn.querySelector('svg');
-  if (btn.classList.contains('active')) {
+  const ref = fbDb.collection('wishlists').doc(user.uid);
+
+  // Optimistik UI yenilənməsi
+  btn.classList.toggle('active');
+  if (!isActive) {
     svg.setAttribute('fill', '#e63946');
     svg.setAttribute('stroke', '#e63946');
   } else {
     svg.setAttribute('fill', 'none');
     svg.setAttribute('stroke', '#888');
+  }
+
+  try {
+    const snap = await ref.get();
+    const items = snap.exists ? (snap.data().items || []) : [];
+
+    let newItems;
+    if (!isActive) {
+      // Əlavə et
+      const alreadyExists = items.some(i => String(i.id) === String(productId));
+      if (alreadyExists) return;
+      newItems = [...items, {
+        id:    String(product.id),
+        name:  product.name,
+        price: product.price,
+        image: (product.imgs && product.imgs[0]) || product.img || '',
+        brand: product.brand || ''
+      }];
+      if (typeof toast !== 'undefined') toast.show(`${product.name} istək siyahısına əlavə edildi ❤️`, 'success');
+    } else {
+      // Çıxar
+      newItems = items.filter(i => String(i.id) !== String(productId));
+      if (typeof toast !== 'undefined') toast.show(`${product.name} istək siyahısından çıxarıldı`, 'default');
+    }
+
+    await ref.set({ items: newItems }, { merge: false });
+  } catch (err) {
+    // Xəta olsa geri qaytar
+    btn.classList.toggle('active');
+    if (isActive) {
+      svg.setAttribute('fill', '#e63946');
+      svg.setAttribute('stroke', '#e63946');
+    } else {
+      svg.setAttribute('fill', 'none');
+      svg.setAttribute('stroke', '#888');
+    }
+    if (typeof toast !== 'undefined') toast.show('Xəta baş verdi', 'error');
   }
 }
 
@@ -182,7 +253,7 @@ function toggleFav(btn) {
    ELAN ƏLAVƏ ET — MODAL
    ══════════════════════════════ */
 const listing = {
-  selectedImages: [], // base64 siyahısı
+  selectedImages: [],
 
   open() {
     const user = fbAuth.currentUser;
