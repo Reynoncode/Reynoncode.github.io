@@ -409,3 +409,157 @@
 @media (max-width: 360px) {
   .product-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
 }
+/* ═══════════════════════════════════════════
+   components.css-ə ƏLAVƏ ediləcək stillər
+   (faylın sonuna yapışdır)
+   ═══════════════════════════════════════════ */
+
+/* ── Elan əlavə et düyməsi ── */
+.btn-add-listing {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  background: var(--accent, #111);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity .2s;
+}
+.btn-add-listing:hover { opacity: .85; }
+
+/* ── Listing Modal ── */
+.listing-modal {
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 16px;
+  padding: 1.5rem;
+  background: #fff;
+  margin: auto;
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+.modal-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+.form-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #555;
+}
+.form-label .muted { font-weight: 400; color: #aaa; }
+.form-input {
+  width: 100%;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color .2s;
+  -webkit-appearance: none;
+}
+.form-input:focus { border-color: #111; }
+
+/* ── Şəkil seçici ── */
+.img-previews {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.img-preview {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+}
+.img-preview img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+.img-preview button {
+  position: absolute;
+  top: 2px; right: 2px;
+  width: 20px; height: 20px;
+  background: rgba(0,0,0,.55);
+  color: #fff;
+  border: none; border-radius: 50%;
+  font-size: 0.6rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.img-add-btn {
+  width: 72px; height: 72px;
+  border: 1.5px dashed #ccc;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  color: #aaa;
+  font-size: 0.7rem;
+  transition: border-color .2s, color .2s;
+}
+.img-add-btn:hover { border-color: #111; color: #111; }
+
+/* ── Submit düyməsi ── */
+.btn-submit {
+  width: 100%;
+  padding: 0.8rem;
+  background: #111;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  transition: opacity .2s;
+}
+.btn-submit:hover  { opacity: .85; }
+.btn-submit:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ── Sil düyməsi (kartda) ── */
+.delete-btn {
+  position: absolute;
+  bottom: 8px; right: 8px;
+  width: 28px; height: 28px;
+  background: rgba(220,38,38,.9);
+  border: none; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: #fff;
+  transition: opacity .2s;
+  z-index: 2;
+}
+.delete-btn:hover { opacity: .8; }
+
+/* ── Mobil uyğunluq ── */
+@media (max-width: 500px) {
+  .listing-modal {
+    border-radius: 16px 16px 0 0;
+    max-height: 95vh;
+    margin: auto 0 0;
+  }
+  .overlay { align-items: flex-end; }
+}
