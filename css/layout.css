@@ -1,0 +1,218 @@
+/* ═══════════════════════════════════════════
+   layout.css — Header, Footer, Hero Strip
+   Bütün səhifələrdə ortaq olan layout hissələri
+   ═══════════════════════════════════════════ */
+
+/* ── HEADER ── */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 var(--page-x);
+  height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+}
+
+/* ── LOGO ── */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.logo-icon {
+  width: 36px;
+  height: 36px;
+  background: var(--accent);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.logo-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: white;
+}
+
+.logo-name {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.04em;
+}
+
+.logo-name span { color: var(--accent); }
+
+/* ── HEADER SAĞ TƏRƏFİ ── */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Daxil ol düyməsi */
+.btn-signin {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-full);
+  padding: 8px 18px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text);
+  transition: all 0.2s;
+}
+
+.btn-signin:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: #fdf8f0;
+}
+
+.btn-signin svg { width: 18px; height: 18px; }
+
+/* Giriş edildikdən sonra göstərilən istifadəçi adı */
+.btn-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-full);
+  padding: 6px 14px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text);
+  transition: all 0.2s;
+}
+
+.btn-user:hover { border-color: var(--accent); }
+
+.btn-user .avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Səbət ikonu */
+.btn-cart {
+  position: relative;
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-full);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.btn-cart:hover { border-color: var(--accent); }
+.btn-cart svg { width: 18px; height: 18px; }
+
+.cart-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--danger);
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--surface);
+}
+
+/* ── HERO STRIP (elan banneri) ── */
+.hero-strip {
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2418 100%);
+  color: white;
+  text-align: center;
+  padding: 14px 20px;
+}
+
+.hero-strip p {
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  opacity: 0.9;
+}
+
+.hero-strip span {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ── FOOTER ── */
+footer {
+  background: #1a1a1a;
+  color: rgba(255,255,255,0.7);
+  padding: 40px var(--page-x) 24px;
+  margin-top: 60px;
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 32px;
+  margin-bottom: 32px;
+}
+
+.footer-brand .logo-name { color: white; font-size: 1.3rem; }
+.footer-brand p { font-size: 0.85rem; margin-top: 10px; line-height: 1.6; }
+
+.footer-col h4 {
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.footer-col ul { list-style: none; }
+.footer-col li { margin-bottom: 8px; }
+.footer-col a { font-size: 0.85rem; transition: color 0.2s; }
+.footer-col a:hover { color: var(--accent); }
+
+.footer-bottom {
+  border-top: 1px solid rgba(255,255,255,0.1);
+  padding-top: 20px;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .footer-grid { grid-template-columns: 1fr 1fr; }
+  .footer-brand { grid-column: 1 / -1; }
+}
+
+@media (max-width: 600px) {
+  .btn-signin span { display: none; }
+  .btn-signin { padding: 8px 12px; }
+  .footer-grid { grid-template-columns: 1fr; }
+}
