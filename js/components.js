@@ -40,10 +40,10 @@ function renderHeader() {
       </button>
 
       ${user
-        ? `<a class="btn-user" href="/proifle.html">
+        ? `<button class="btn-user" id="userBtn">
              <div class="avatar">${avatarHTML}</div>
              <span>${user.name.split(' ')[0]}</span>
-           </a>`
+           </button>`
         : `<button class="btn-signin" id="signinBtn">
              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                <circle cx="12" cy="8" r="4"/>
@@ -73,7 +73,12 @@ function initHeaderEvents() {
   if (signinBtn) signinBtn.addEventListener('click', () => modal.open('authModal'));
   if (cartBtn)   cartBtn.addEventListener('click', () => modal.open('cartModal'));
 
-
+  if (userBtn) userBtn.addEventListener('click', async () => {
+    if (confirm('Çıxmaq istəyirsiniz?')) {
+      await auth.logout();
+      toast.show('Uğurla çıxış edildi', 'success');
+    }
+  });
 }
 
 /* ══════════════════════════════
@@ -123,15 +128,14 @@ function initSearchPopup() {
 
 function performSearch(query) {
   const q = query.toLowerCase();
-  const productList = (typeof PRODUCTS !== 'undefined' && PRODUCTS.length)
-    ? PRODUCTS
-    : (window.PRODUCTS || []);
 
+  // Məhsulları prioritetə görə axtarış
+  // 1-ci: kateqoriya uyğunluğu, 2-ci: marka, 3-cü: ad
   const catMatches   = [];
   const brandMatches = [];
   const nameMatches  = [];
 
-  productList.forEach(p => {
+  PRODUCTS.forEach(p => {
     const inCat   = p.category && p.category.toLowerCase().includes(q);
     const inBrand = p.brand.toLowerCase().includes(q);
     const inName  = p.name.toLowerCase().includes(q);
@@ -200,14 +204,9 @@ function renderSearchPopup(query, results) {
 
 function searchResultCard(p) {
   const isSale = p.oldPrice !== null;
-  const imgSrc = p.img || p.image || '';
   return `
     <div class="search-result-item">
-      <div class="search-result-img-wrap">
-        <img src="${imgSrc}" alt="${p.name}" loading="eager"
-          style="width:56px;height:72px;object-fit:cover;border-radius:var(--radius-sm);display:block;flex-shrink:0;background:#f0ece6;"
-          onerror="this.onerror=null;this.style.background='#f0ece6';"/>
-      </div>
+      <img class="search-result-img" src="${p.img}" alt="${p.name}" loading="lazy"/>
       <div class="search-result-info">
         <div class="search-result-brand">${p.brand}</div>
         <div class="search-result-name">${p.name}</div>
