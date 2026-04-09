@@ -9,19 +9,27 @@
 function renderHeader() {
   const user = auth.getUser();
 
-  // Avatarı müəyyənləşdir — Google foto varsa göstər, yoxdursa hərfi
   const avatarHTML = user?.photoURL
     ? `<img src="${user.photoURL}" alt="${user.name}"
          style="width:26px;height:26px;border-radius:50%;object-fit:cover"/>`
     : `<span>${user ? user.name.charAt(0).toUpperCase() : ''}</span>`;
 
   const headerHTML = `
-    <a class="logo" href="/index.html">
-      <div class="logo-icon">
-        <svg viewBox="0 0 24 24"><path d="M12 2C9.24 2 7 4.24 7 7v1H5c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2h-2V7c0-2.76-2.24-5-5-5zm0 2c1.66 0 3 1.34 3 3v1H9V7c0-1.66 1.34-3 3-3zm0 10c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z"/></svg>
-      </div>
-      <span class="logo-name">ALMO<span>DA</span></span>
-    </a>
+    <div class="header-logo-wrap">
+      <a class="logo" href="/index.html">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 2C9.24 2 7 4.24 7 7v1H5c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2h-2V7c0-2.76-2.24-5-5-5zm0 2c1.66 0 3 1.34 3 3v1H9V7c0-1.66 1.34-3 3-3zm0 10c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z"/></svg>
+        </div>
+        <span class="logo-name">MO<span>DA</span></span>
+      </a>
+    </div>
+
+    <div class="header-search">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+      </svg>
+      <input type="text" id="searchInput" placeholder="Məhsul, marka və ya kateqoriya axtar..." autocomplete="off" />
+    </div>
 
     <div class="header-right">
       <button class="btn-cart" id="cartBtn" title="Səbət">
@@ -51,6 +59,7 @@ function renderHeader() {
   if (header) {
     header.innerHTML = headerHTML;
     initHeaderEvents();
+    initSearchPopup();
   }
 
   updateCartBadge();
@@ -64,9 +73,162 @@ function initHeaderEvents() {
   if (signinBtn) signinBtn.addEventListener('click', () => modal.open('authModal'));
   if (cartBtn)   cartBtn.addEventListener('click', () => modal.open('cartModal'));
 
-  if (userBtn) userBtn.addEventListener('click', () => {
-    window.location.href = 'profile.html';
+  if (userBtn) userBtn.addEventListener('click', async () => {
+    if (confirm('Çıxmaq istəyirsiniz?')) {
+      await auth.logout();
+      toast.show('Uğurla çıxış edildi', 'success');
+    }
   });
+}
+
+/* ══════════════════════════════
+   SEARCH — Axtarış sistemi
+   ══════════════════════════════ */
+function initSearchPopup() {
+  const input = document.getElementById('searchInput');
+  if (!input) return;
+
+  // Overlay və popup elementlərini yarat (hələ yoxdursa)
+  if (!document.getElementById('searchPopupOverlay')) {
+    const overlay = document.createElement('div');
+    overlay.id = 'searchPopupOverlay';
+    overlay.className = 'search-popup-overlay';
+    document.body.appendChild(overlay);
+
+    const popup = document.createElement('div');
+    popup.id = 'searchPopup';
+    popup.className = 'search-popup';
+    popup.innerHTML = `
+      <div class="search-popup-header">
+        <h3 id="searchPopupTitle">Axtarış nəticələri</h3>
+        <button class="search-popup-close" id="searchPopupClose">✕</button>
+      </div>
+      <div class="search-popup-body" id="searchPopupBody"></div>
+    `;
+    document.body.appendChild(popup);
+
+    document.getElementById('searchPopupClose').addEventListener('click', closeSearchPopup);
+    overlay.addEventListener('click', closeSearchPopup);
+  }
+
+  let debounceTimer;
+  input.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      const q = input.value.trim();
+      if (q.length < 1) { closeSearchPopup(); return; }
+      performSearch(q);
+    }, 200);
+  });
+
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeSearchPopup(); input.blur(); }
+  });
+}
+
+function performSearch(query) {
+  const q = query.toLowerCase();
+
+  // Məhsulları prioritetə görə axtarış
+  // 1-ci: kateqoriya uyğunluğu, 2-ci: marka, 3-cü: ad
+  const catMatches   = [];
+  const brandMatches = [];
+  const nameMatches  = [];
+
+  PRODUCTS.forEach(p => {
+    const inCat   = p.category && p.category.toLowerCase().includes(q);
+    const inBrand = p.brand.toLowerCase().includes(q);
+    const inName  = p.name.toLowerCase().includes(q);
+
+    if (inCat)        catMatches.push(p);
+    else if (inBrand) brandMatches.push(p);
+    else if (inName)  nameMatches.push(p);
+  });
+
+  const results = { catMatches, brandMatches, nameMatches };
+  renderSearchPopup(query, results);
+}
+
+function renderSearchPopup(query, results) {
+  const { catMatches, brandMatches, nameMatches } = results;
+  const total = catMatches.length + brandMatches.length + nameMatches.length;
+
+  const title = document.getElementById('searchPopupTitle');
+  if (title) title.textContent = total > 0
+    ? `${total} nəticə tapıldı`
+    : 'Nəticə tapılmadı';
+
+  const body = document.getElementById('searchPopupBody');
+  if (!body) return;
+
+  if (total === 0) {
+    body.innerHTML = `
+      <div class="search-popup-empty">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--border)">
+          <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+        </svg>
+        <span>"<strong>${query}</strong>" üzrə nəticə yoxdur</span>
+      </div>
+    `;
+  } else {
+    let html = '';
+
+    if (catMatches.length > 0) {
+      html += `<div class="search-result-group-label">Kateqoriya üzrə</div>`;
+      html += catMatches.map(p => searchResultCard(p)).join('');
+    }
+    if (brandMatches.length > 0) {
+      html += `<div class="search-result-group-label">Marka üzrə</div>`;
+      html += brandMatches.map(p => searchResultCard(p)).join('');
+    }
+    if (nameMatches.length > 0) {
+      html += `<div class="search-result-group-label">Məhsul adı üzrə</div>`;
+      html += nameMatches.map(p => searchResultCard(p)).join('');
+    }
+
+    body.innerHTML = html;
+
+    // Səbətə əlavə et düymələri
+    body.querySelectorAll('.search-result-cart').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const id = parseInt(btn.dataset.id);
+        const product = PRODUCTS.find(p => p.id === id);
+        if (product) cart.add(product);
+      });
+    });
+  }
+
+  openSearchPopup();
+}
+
+function searchResultCard(p) {
+  const isSale = p.oldPrice !== null;
+  return `
+    <div class="search-result-item">
+      <img class="search-result-img" src="${p.img}" alt="${p.name}" loading="lazy"/>
+      <div class="search-result-info">
+        <div class="search-result-brand">${p.brand}</div>
+        <div class="search-result-name">${p.name}</div>
+        <div class="search-result-price ${isSale ? 'sale' : ''}">${p.price} ₼</div>
+      </div>
+      <button class="search-result-cart" data-id="${p.id}" title="Səbətə əlavə et">
+        <svg viewBox="0 0 24 24">
+          <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0"/>
+        </svg>
+      </button>
+    </div>
+  `;
+}
+
+function openSearchPopup() {
+  document.getElementById('searchPopupOverlay')?.classList.add('open');
+  document.getElementById('searchPopup')?.classList.add('open');
+}
+
+function closeSearchPopup() {
+  document.getElementById('searchPopupOverlay')?.classList.remove('open');
+  document.getElementById('searchPopup')?.classList.remove('open');
 }
 
 /* ══════════════════════════════
