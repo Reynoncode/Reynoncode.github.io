@@ -128,14 +128,15 @@ function initSearchPopup() {
 
 function performSearch(query) {
   const q = query.toLowerCase();
+  const productList = (typeof PRODUCTS !== 'undefined' && PRODUCTS.length)
+    ? PRODUCTS
+    : (window.PRODUCTS || []);
 
-  // Məhsulları prioritetə görə axtarış
-  // 1-ci: kateqoriya uyğunluğu, 2-ci: marka, 3-cü: ad
   const catMatches   = [];
   const brandMatches = [];
   const nameMatches  = [];
 
-  PRODUCTS.forEach(p => {
+  productList.forEach(p => {
     const inCat   = p.category && p.category.toLowerCase().includes(q);
     const inBrand = p.brand.toLowerCase().includes(q);
     const inName  = p.name.toLowerCase().includes(q);
@@ -207,7 +208,11 @@ function searchResultCard(p) {
   const imgSrc = p.img || p.image || '';
   return `
     <div class="search-result-item">
-      <img class="search-result-img" src="${imgSrc}" alt="${p.name}" loading="eager" onerror="this.style.background='#f0ece6';this.src=''"/>
+      <div class="search-result-img-wrap">
+        <img src="${imgSrc}" alt="${p.name}" loading="eager"
+          style="width:56px;height:72px;object-fit:cover;border-radius:var(--radius-sm);display:block;flex-shrink:0;background:#f0ece6;"
+          onerror="this.onerror=null;this.style.background='#f0ece6';"/>
+      </div>
       <div class="search-result-info">
         <div class="search-result-brand">${p.brand}</div>
         <div class="search-result-name">${p.name}</div>
