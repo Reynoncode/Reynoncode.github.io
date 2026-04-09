@@ -40,10 +40,25 @@ function renderHeader() {
       </button>
 
       ${user
-        ? `<button class="btn-user" id="userBtn">
-             <div class="avatar">${avatarHTML}</div>
-             <span>${user.name.split(' ')[0]}</span>
-           </button>`
+        ? `<div class="user-menu-wrap" id="userMenuWrap">
+             <button class="btn-user" id="userBtn">
+               <div class="avatar">${avatarHTML}</div>
+               <span>${user.name.split(' ')[0]}</span>
+             </button>
+             <div class="user-dropdown" id="userDropdown">
+               <div class="user-dropdown-name">${user.name}</div>
+               <div class="user-dropdown-email">${user.email}</div>
+               <hr class="user-dropdown-divider"/>
+               <a class="user-dropdown-item" href="/proifle.html">
+                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.58-7 8-7s8 3 8 7"/></svg>
+                 Profilim
+               </a>
+               <button class="user-dropdown-item user-dropdown-logout" id="logoutBtn">
+                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+                 Çıxış
+               </button>
+             </div>
+           </div>`
         : `<button class="btn-signin" id="signinBtn">
              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                <circle cx="12" cy="8" r="4"/>
@@ -73,12 +88,29 @@ function initHeaderEvents() {
   if (signinBtn) signinBtn.addEventListener('click', () => modal.open('authModal'));
   if (cartBtn)   cartBtn.addEventListener('click', () => modal.open('cartModal'));
 
-  if (userBtn) userBtn.addEventListener('click', async () => {
-    if (confirm('Çıxmaq istəyirsiniz?')) {
+  if (userBtn) {
+    userBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const dropdown = document.getElementById('userDropdown');
+      if (dropdown) dropdown.classList.toggle('open');
+    });
+  }
+
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const dropdown = document.getElementById('userDropdown');
+      if (dropdown) dropdown.classList.remove('open');
       await auth.logout();
       toast.show('Uğurla çıxış edildi', 'success');
-    }
-  });
+    });
+  }
+
+  document.addEventListener('click', () => {
+    const dropdown = document.getElementById('userDropdown');
+    if (dropdown) dropdown.classList.remove('open');
+  }, { once: false });
 }
 
 /* ══════════════════════════════
