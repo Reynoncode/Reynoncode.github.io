@@ -204,9 +204,10 @@ function renderSearchPopup(query, results) {
 
 function searchResultCard(p) {
   const isSale = p.oldPrice !== null;
+  const imgSrc = p.img || p.image || '';
   return `
     <div class="search-result-item">
-      <img class="search-result-img" src="${p.img}" alt="${p.name}" loading="lazy"/>
+      <img class="search-result-img" src="${imgSrc}" alt="${p.name}" loading="eager" onerror="this.style.background='#f0ece6';this.src=''"/>
       <div class="search-result-info">
         <div class="search-result-brand">${p.brand}</div>
         <div class="search-result-name">${p.name}</div>
