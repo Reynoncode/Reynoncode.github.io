@@ -73,11 +73,8 @@ function initHeaderEvents() {
   if (signinBtn) signinBtn.addEventListener('click', () => modal.open('authModal'));
   if (cartBtn)   cartBtn.addEventListener('click', () => modal.open('cartModal'));
 
-  if (userBtn) userBtn.addEventListener('click', async () => {
-    if (confirm('Çıxmaq istəyirsiniz?')) {
-      await auth.logout();
-      toast.show('Uğurla çıxış edildi', 'success');
-    }
+  if (userBtn) userBtn.addEventListener('click', () => {
+    window.location.href = 'profile.html';
   });
 }
 
@@ -88,11 +85,11 @@ function initSearchPopup() {
   const input = document.getElementById('searchInput');
   if (!input) return;
 
-  // Overlay və popup elementlərini yarat (hələ yoxdursa)
   if (!document.getElementById('searchPopupOverlay')) {
     const overlay = document.createElement('div');
     overlay.id = 'searchPopupOverlay';
     overlay.className = 'search-popup-overlay';
+    overlay.style.cssText = 'pointer-events: none; z-index: 50;';
     document.body.appendChild(overlay);
 
     const popup = document.createElement('div');
@@ -129,8 +126,6 @@ function initSearchPopup() {
 function performSearch(query) {
   const q = query.toLowerCase();
 
-  // Məhsulları prioritetə görə axtarış
-  // 1-ci: kateqoriya uyğunluğu, 2-ci: marka, 3-cü: ad
   const catMatches   = [];
   const brandMatches = [];
   const nameMatches  = [];
@@ -188,7 +183,6 @@ function renderSearchPopup(query, results) {
 
     body.innerHTML = html;
 
-    // Səbətə əlavə et düymələri
     body.querySelectorAll('.search-result-cart').forEach(btn => {
       btn.addEventListener('click', e => {
         e.stopPropagation();
@@ -222,13 +216,17 @@ function searchResultCard(p) {
 }
 
 function openSearchPopup() {
-  document.getElementById('searchPopupOverlay')?.classList.add('open');
-  document.getElementById('searchPopup')?.classList.add('open');
+  const overlay = document.getElementById('searchPopupOverlay');
+  const popup   = document.getElementById('searchPopup');
+  if (overlay) { overlay.classList.add('open'); overlay.style.pointerEvents = 'auto'; }
+  if (popup)   popup.classList.add('open');
 }
 
 function closeSearchPopup() {
-  document.getElementById('searchPopupOverlay')?.classList.remove('open');
-  document.getElementById('searchPopup')?.classList.remove('open');
+  const overlay = document.getElementById('searchPopupOverlay');
+  const popup   = document.getElementById('searchPopup');
+  if (overlay) { overlay.classList.remove('open'); overlay.style.pointerEvents = 'none'; }
+  if (popup)   popup.classList.remove('open');
 }
 
 /* ══════════════════════════════
@@ -295,10 +293,9 @@ const modal = {
   }
 };
 
-// ESC ilə bağla, kənara kliklə bağla
 document.addEventListener('keydown', e => { if (e.key === 'Escape') modal.closeAll(); });
 document.addEventListener('click', e => {
-  if (e.target.classList.contains('overlay'))    modal.closeAll();
+  if (e.target.classList.contains('overlay'))     modal.closeAll();
   if (e.target.classList.contains('modal-close')) modal.closeAll();
 });
 
@@ -334,7 +331,7 @@ function updateCartBadge() {
   const badge = document.getElementById('cartBadge');
   if (!badge) return;
   const count = cart.getCount();
-  badge.textContent  = count;
+  badge.textContent   = count;
   badge.style.display = count > 0 ? 'flex' : 'none';
 }
 
@@ -345,8 +342,6 @@ document.addEventListener('DOMContentLoaded', () => {
   renderHeader();
   renderFooter();
 
-  // Firebase auth vəziyyətini izlə
-  // Giriş / çıxış olduqda header və səbəti avtomatik yenilə
   fbAuth.onAuthStateChanged(user => {
     cart.init(user ? user.uid : null);
     renderHeader();
