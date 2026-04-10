@@ -20,7 +20,7 @@ function renderHeader() {
         <div class="logo-icon">
           <svg viewBox="0 0 24 24"><path d="M12 2C9.24 2 7 4.24 7 7v1H5c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2h-2V7c0-2.76-2.24-5-5-5zm0 2c1.66 0 3 1.34 3 3v1H9V7c0-1.66 1.34-3 3-3zm0 10c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z"/></svg>
         </div>
-        <span class="logo-name">MO<span>DA</span></span>
+        <span class="logo-name">AL<span>MODA</span></span>
       </a>
     </div>
 
