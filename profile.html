@@ -472,6 +472,7 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="js/listings.js"></script>
 <script src="js/vendor.js"></script>
 <script>
 let currentUser = null;
@@ -676,15 +677,7 @@ function switchTab(name, el) {
 }
 
 /* listings tab — növbəti mərhələdə doldurulacaq */
-function loadListingsTab(uid) {
-  const container = document.getElementById('tab-listings');
-  container.innerHTML = `
-    <div class="section-card" style="text-align:center;padding:3rem 2rem;">
-      <div style="font-size:2.5rem;margin-bottom:1rem;">🏷️</div>
-      <h2 style="font-family:'Playfair Display',serif;font-size:1.2rem;margin-bottom:0.5rem;">Elan idarəetmə paneli</h2>
-      <p style="color:var(--muted);font-size:0.875rem;">Bu bölüm hazırlanır. Növbəti mərhələdə əlavə ediləcək.</p>
-    </div>`;
-}
+
 
 function showToast(msg) {
   const t = document.getElementById('toast');
