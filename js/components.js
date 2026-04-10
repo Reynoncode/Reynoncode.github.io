@@ -370,7 +370,7 @@ function renderFooter() {
   const footerHTML = `
     <div class="footer-grid">
       <div class="footer-brand">
-        <span class="logo-name">MO<span style="color:var(--accent)">DA</span></span>
+        <span class="logo-name">AI<span style="color:var(--accent)">MODA</span></span>
         <p>Ən yeni geyim trendlərini kəşf edin.<br>Keyfiyyət, üslub və rahatlıq.</p>
       </div>
       <div class="footer-col">
