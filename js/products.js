@@ -1,10 +1,7 @@
-/* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════
    products.js — Məhsullar (Firebase + Elan əlavə et)
-   ═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════ */
 
-/* ══════════════════════════════
-   TEST MƏHSULLARI (Firestore-a köçürülənə qədər)
-   ══════════════════════════════ */
 const STATIC_PRODUCTS = [
   {
     id: "s1", brand: "Zara", name: "Yüngül Pambıq Köynek",
@@ -56,7 +53,6 @@ const STATIC_PRODUCTS = [
   }
 ];
 
-/* PRODUCTS massivi — digər fayllar hələ də istifadə edə bilsin */
 let PRODUCTS = [...STATIC_PRODUCTS];
 
 /* ══════════════════════════════
@@ -103,7 +99,6 @@ function createProductCard(p, favIds = []) {
   const canDelete  = p._fromFirebase && currentUid && p.userId === currentUid;
   const isFav      = favIds.includes(String(p.id));
 
-  /* Brand: Firebase elanlarında storeName fallback, mağaza linkli */
   const brandLabel     = p.brand || p.storeName || '';
   const storeClickable = p._fromFirebase && !!p.userId;
 
@@ -174,8 +169,8 @@ async function renderProducts(products, containerId = 'productGrid') {
     } catch (e) {}
   }
 
+  // ✅ initCardClicks() BURADAN SİLİNDİ — product-detail.js idarə edir
   grid.innerHTML = products.map(p => createProductCard(p, favIds)).join('');
-initCardClicks(); // ← BU SƏTİRİ ƏLAVƏ ET
 }
 
 /* ══════════════════════════════
@@ -215,8 +210,8 @@ async function toggleFav(btn, productId) {
   if (!product) return;
 
   const isActive = btn.classList.contains('active');
-  const svg = btn.querySelector('svg');
-  const ref = fbDb.collection('wishlists').doc(user.uid);
+  const svg      = btn.querySelector('svg');
+  const ref      = fbDb.collection('wishlists').doc(user.uid);
 
   btn.classList.toggle('active');
   if (!isActive) {
@@ -228,7 +223,7 @@ async function toggleFav(btn, productId) {
   }
 
   try {
-    const snap = await ref.get();
+    const snap  = await ref.get();
     const items = snap.exists ? (snap.data().items || []) : [];
 
     let newItems;
@@ -263,7 +258,7 @@ async function toggleFav(btn, productId) {
 }
 
 /* ══════════════════════════════
-   ELAN ƏLAVƏ ET — MODAL (köhnə, index.html üçün)
+   ELAN ƏLAVƏ ET — MODAL
    ══════════════════════════════ */
 const listing = {
   selectedImages: [],
@@ -319,7 +314,7 @@ const listing = {
     if (this.selectedImages.length < 5) {
       const add = document.createElement('label');
       add.className = 'img-add-btn';
-      add.htmlFor = 'imgInput';
+      add.htmlFor   = 'imgInput';
       add.innerHTML = `
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
           <rect x="3" y="3" width="18" height="18" rx="3"/>
@@ -341,12 +336,12 @@ const listing = {
     const name  = document.getElementById('lName').value.trim();
     const price = parseFloat(document.getElementById('lPrice').value);
 
-    if (!name)              { toast.show('Məhsul adını daxil edin', 'error'); return; }
-    if (!brand)             { toast.show('Marka adını daxil edin', 'error'); return; }
-    if (!price || price <= 0) { toast.show('Düzgün qiymət daxil edin', 'error'); return; }
+    if (!name)               { toast.show('Məhsul adını daxil edin', 'error'); return; }
+    if (!brand)              { toast.show('Marka adını daxil edin', 'error'); return; }
+    if (!price || price <= 0){ toast.show('Düzgün qiymət daxil edin', 'error'); return; }
 
     const btn = document.getElementById('listingSubmitBtn');
-    btn.disabled = true;
+    btn.disabled    = true;
     btn.textContent = 'Əlavə edilir...';
 
     try {
@@ -355,9 +350,9 @@ const listing = {
         brand,
         name,
         price,
-        badge: 'Yeni',
-        imgs: this.selectedImages,
-        userId: user.uid,
+        badge:     'Yeni',
+        imgs:      this.selectedImages,
+        userId:    user.uid,
         userEmail: user.email,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
@@ -368,7 +363,7 @@ const listing = {
     } catch (err) {
       toast.show('Xəta: ' + err.message, 'error');
     } finally {
-      btn.disabled = false;
+      btn.disabled    = false;
       btn.textContent = 'Elanı Yayımla';
     }
   }
