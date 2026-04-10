@@ -60,7 +60,7 @@ const vendor = {
       const snap = await fbDb.collection('orders')
         .where('vendorId', '==', uid)
         .orderBy('createdAt', 'desc')
-        .limit(30)
+        .limit(50)
         .get();
       return snap.docs.map(d => ({ id: d.id, ...d.data() }));
     } catch (err) {
@@ -219,11 +219,23 @@ function renderVendorRejected(container, data) {
 /* ═══════════════════════════════════════════
    4. DASHBOARD
    ═══════════════════════════════════════════ */
+
+/* Status konfiqurasiyası — bir yerdə saxla */
+const VD_STATUS = {
+  pending:   { lbl: 'Gözlənilir', color: '#b7950b', bg: '#fef9e7' },
+  shipped:   { lbl: 'Yolda',      color: '#1a6fa8', bg: '#eaf4fb' },
+  delivered: { lbl: 'Çatdırıldı', color: '#1e8449', bg: '#eafaf1' },
+  cancelled: { lbl: 'Ləğv edildi',color: '#922b21', bg: '#fdf2f0' },
+};
+
+/* Global vendor order cache (filter üçün) */
+let _vdOrders   = [];
+let _vdListings = [];
+
 async function renderVendorDashboard(container, data, uid) {
   collapseSidebarForVendor();
 
   container.innerHTML = `
-    <!-- Mağaza başlığı -->
     <div class="section-card vd-header-card">
       <div class="vd-store-header">
         <div class="vd-store-avatar">${(data.storeName||'M')[0].toUpperCase()}</div>
@@ -244,7 +256,7 @@ async function renderVendorDashboard(container, data, uid) {
       </div>
     </div>
 
-    <!-- 4 Stat kart -->
+    <!-- Stat kartlar -->
     <div class="vd-stats-grid">
       <div class="vd-stat-card">
         <div class="vd-stat-icon" style="background:#eafaf1;color:#1e8449;">💰</div>
@@ -264,14 +276,32 @@ async function renderVendorDashboard(container, data, uid) {
       </div>
     </div>
 
-    <!-- Son sifarişlər -->
+    <!-- Sifarişlər cədvəli -->
     <div class="section-card">
-      <div class="section-title">Son sifarişlər</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border);">
+        <span style="font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:600;">Son sifarişlər</span>
+        <select id="vdOrderFilter" onchange="vdFilterOrders()" style="font-size:0.78rem;padding:5px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--accent);font-family:inherit;">
+          <option value="">Hamısı</option>
+          <option value="pending">Gözlənilir</option>
+          <option value="shipped">Yolda</option>
+          <option value="delivered">Çatdırıldı</option>
+          <option value="cancelled">Ləğv edildi</option>
+        </select>
+      </div>
       <div class="vd-table-wrap">
         <table class="vd-table">
-          <thead><tr><th>Məhsul</th><th>Sifariş №</th><th>Tarix</th><th>Məbləğ</th><th>Status</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Məhsul</th>
+              <th>Sifariş №</th>
+              <th>Tarix</th>
+              <th>Məbləğ</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
           <tbody id="vd-orders-tbody">
-            <tr><td colspan="5" style="text-align:center;padding:1.5rem;"><div class="spinner" style="margin:0 auto;"></div></td></tr>
+            <tr><td colspan="6" style="text-align:center;padding:1.5rem;"><div class="spinner" style="margin:0 auto;"></div></td></tr>
           </tbody>
         </table>
       </div>
@@ -296,14 +326,17 @@ async function renderVendorDashboard(container, data, uid) {
       </div>
     </div>`;
 
-  /* Məlumatları yüklə */
+  /* Məlumatları paralel yüklə */
   const [listings, orders] = await Promise.all([
     vendor.getListings(uid),
     vendor.getVendorOrders(uid)
   ]);
 
-  /* Stats */
-  const totalRevenue   = orders.reduce((s, o) => s + (o.total || 0), 0);
+  _vdOrders   = orders;
+  _vdListings = listings;
+
+  /* Statistika */
+  const totalRevenue   = orders.filter(o => o.status === 'delivered').reduce((s, o) => s + (o.total || 0), 0);
   const activeListings = listings.filter(l => l.status !== 'inactive').length;
   const pendingOrders  = orders.filter(o => o.status === 'pending').length;
 
@@ -312,46 +345,196 @@ async function renderVendorDashboard(container, data, uid) {
   document.getElementById('vd-listings').textContent = activeListings;
   document.getElementById('vd-pending').textContent  = pendingOrders;
 
-  /* Sifarişlər cədvəli */
-  const statusMap = {
-    delivered: { lbl:'Çatdırıldı', color:'#1e8449', bg:'#eafaf1' },
-    shipped:   { lbl:'Yolda',      color:'#1a6fa8', bg:'#eaf4fb' },
-    pending:   { lbl:'Gözləyir',   color:'#b7950b', bg:'#fef9e7' },
-    cancelled: { lbl:'Ləğv edildi',color:'#922b21', bg:'#fdf2f0' },
-  };
+  /* Cədvəlləri render et */
+  vdRenderOrderRows(orders);
+  vdRenderListingRows(listings);
+}
 
+/* ── Sifariş sətirləri ── */
+function vdRenderOrderRows(orders) {
   const tbody = document.getElementById('vd-orders-tbody');
+  if (!tbody) return;
+
   if (orders.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--muted);">Hələ sifariş yoxdur</td></tr>`;
-  } else {
-    tbody.innerHTML = orders.map(o => {
-      const st   = statusMap[o.status] || { lbl: o.status||'—', color:'#888', bg:'#f5f5f5' };
-      const date = o.createdAt?.toDate
-        ? o.createdAt.toDate().toLocaleDateString('az-AZ', { day:'2-digit', month:'2-digit', year:'numeric' })
-        : '—';
-      return `<tr>
-        <td style="font-weight:500;">${o.title||'Sifariş'}</td>
-        <td style="color:var(--muted);font-size:0.82rem;">#${o.id.slice(-5).toUpperCase()}</td>
-        <td>${date}</td>
-        <td style="font-weight:600;">${(o.total||0).toFixed(2)} ₼</td>
-        <td><span style="background:${st.bg};color:${st.color};padding:0.2rem 0.7rem;border-radius:20px;font-size:0.75rem;font-weight:600;">${st.lbl}</span></td>
-      </tr>`;
-    }).join('');
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted);">Hələ sifariş yoxdur</td></tr>`;
+    return;
   }
 
-  /* Elanlar cədvəli */
-  const lbody = document.getElementById('vd-listings-tbody');
+  tbody.innerHTML = orders.map(o => {
+    const st   = VD_STATUS[o.status] || { lbl: o.status || '—', color: '#888', bg: '#f5f5f5' };
+    const date = o.createdAt?.toDate
+      ? o.createdAt.toDate().toLocaleDateString('az-AZ', { day: '2-digit', month: '2-digit', year: 'numeric' })
+      : '—';
+
+    // Məhsul adları qısa
+    const itemNames = (o.items || []).map(i => i.name).join(', ');
+    const shortName = itemNames.length > 35 ? itemNames.substring(0, 35) + '…' : (itemNames || 'Sifariş');
+
+    // orderNumber — cart.js tərəfindən yazılmış sahə
+    const orderNum = o.orderNumber ? `#${o.orderNumber}` : `#${o.id.slice(-5).toUpperCase()}`;
+
+    return `<tr>
+      <td>
+        <div style="font-weight:500;">${shortName}</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">${(o.items||[]).length} məhsul</div>
+      </td>
+      <td><span style="font-family:monospace;font-weight:600;">${orderNum}</span></td>
+      <td style="color:var(--muted);">${date}</td>
+      <td style="font-weight:600;">${(o.total || 0).toFixed(2)} ₼</td>
+      <td>
+        <span style="background:${st.bg};color:${st.color};padding:0.2rem 0.7rem;border-radius:20px;font-size:0.75rem;font-weight:600;white-space:nowrap;">
+          ${st.lbl}
+        </span>
+      </td>
+      <td>
+        <button onclick="vdOpenStatusModal('${o.id}', '${o.status || 'pending'}')"
+          style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:0.75rem;cursor:pointer;color:var(--accent);white-space:nowrap;font-family:inherit;">
+          Status dəyiş
+        </button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+/* ── Elan sətirləri ── */
+function vdRenderListingRows(listings) {
+  const tbody = document.getElementById('vd-listings-tbody');
+  if (!tbody) return;
+
   if (listings.length === 0) {
-    lbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--muted);">Hələ elan yoxdur</td></tr>`;
-  } else {
-    lbody.innerHTML = listings.slice(0, 6).map(l => `<tr>
-      <td style="font-weight:500;">${l.title||l.name||'—'}</td>
-      <td style="color:var(--muted);">${l.category||'—'}</td>
-      <td style="font-weight:600;">${(l.price||0).toFixed(2)} ₼</td>
-      <td><span style="background:${(l.stock||0)>0?'#eafaf1':'#fdf2f0'};color:${(l.stock||0)>0?'#1e8449':'#922b21'};padding:0.2rem 0.7rem;border-radius:20px;font-size:0.75rem;font-weight:600;">
-        ${(l.stock||0)>0 ? l.stock+' ədəd' : 'Stok yoxdur'}
-      </span></td>
-    </tr>`).join('');
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--muted);">Hələ elan yoxdur</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = listings.slice(0, 6).map(l => {
+    const stock = l.stock || l.quantity || 0;
+    return `<tr>
+      <td style="font-weight:500;">${l.title || l.name || '—'}</td>
+      <td style="color:var(--muted);">${l.category || '—'}</td>
+      <td style="font-weight:600;">${(l.price || 0).toFixed(2)} ₼</td>
+      <td>
+        <span style="background:${stock > 0 ? '#eafaf1' : '#fdf2f0'};color:${stock > 0 ? '#1e8449' : '#922b21'};padding:0.2rem 0.7rem;border-radius:20px;font-size:0.75rem;font-weight:600;">
+          ${stock > 0 ? stock + ' ədəd' : 'Stok yoxdur'}
+        </span>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+/* ── Filter ── */
+function vdFilterOrders() {
+  const filter = document.getElementById('vdOrderFilter')?.value || '';
+  const filtered = filter ? _vdOrders.filter(o => o.status === filter) : _vdOrders;
+  vdRenderOrderRows(filtered);
+}
+
+/* ── Status dəyişdirmə modalı ── */
+const STATUS_FLOW = [
+  { key: 'pending',   icon: '⏳', label: 'Gözlənilir',  desc: 'Sifariş qəbul edilib, hazırlanır' },
+  { key: 'shipped',   icon: '🚚', label: 'Yolda',        desc: 'Sifariş göndərildi, çatdırılır' },
+  { key: 'delivered', icon: '✅', label: 'Çatdırıldı',   desc: 'Sifariş alıcıya çatdırıldı' },
+];
+
+function vdOpenStatusModal(orderId, currentStatus) {
+  const old = document.getElementById('vdStatusModal');
+  if (old) old.remove();
+
+  const currentIdx = STATUS_FLOW.findIndex(s => s.key === currentStatus);
+
+  const overlay = document.createElement('div');
+  overlay.id = 'vdStatusModal';
+  overlay.style.cssText = `
+    position:fixed;inset:0;z-index:2000;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,0.45);
+  `;
+
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:16px;padding:28px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.15);position:relative;">
+      <button onclick="document.getElementById('vdStatusModal').remove()"
+        style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--muted)">✕</button>
+
+      <h3 style="font-family:'Playfair Display',serif;margin-bottom:6px;">Sifariş statusu</h3>
+      <p style="color:var(--muted);font-size:0.82rem;margin-bottom:24px;">Sifarişin cari mərhələsini seçin</p>
+
+      <!-- Progress bar -->
+      <div style="display:flex;align-items:center;margin-bottom:28px;">
+        ${STATUS_FLOW.map((s, i) => `
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;">
+            <div style="
+              width:36px;height:36px;border-radius:50%;
+              background:${i <= currentIdx ? '#1a1a1a' : '#e8e5e0'};
+              color:${i <= currentIdx ? '#fff' : '#aaa'};
+              display:flex;align-items:center;justify-content:center;font-size:${i < currentIdx ? '1rem' : '1rem'};
+              transition:all 0.3s;">
+              ${i < currentIdx ? '✓' : s.icon}
+            </div>
+            <div style="font-size:0.7rem;font-weight:${i === currentIdx ? '600' : '400'};color:${i <= currentIdx ? '#1a1a1a' : '#aaa'};text-align:center;">${s.label}</div>
+          </div>
+          ${i < STATUS_FLOW.length - 1 ? `
+            <div style="flex:0 0 32px;height:2px;background:${i < currentIdx ? '#1a1a1a' : '#e8e5e0'};margin-bottom:22px;"></div>
+          ` : ''}
+        `).join('')}
+      </div>
+
+      <!-- Seçim düymələri -->
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        ${STATUS_FLOW.map(s => `
+          <button onclick="vdUpdateOrderStatus('${orderId}', '${s.key}')"
+            style="
+              display:flex;align-items:center;gap:12px;padding:12px 16px;
+              border:2px solid ${s.key === currentStatus ? '#1a1a1a' : '#e8e5e0'};
+              border-radius:12px;
+              background:${s.key === currentStatus ? 'rgba(26,26,26,0.04)' : 'transparent'};
+              cursor:${s.key === currentStatus ? 'default' : 'pointer'};
+              text-align:left;width:100%;font-family:inherit;transition:all 0.2s;">
+            <span style="font-size:1.2rem;">${s.icon}</span>
+            <div style="flex:1;">
+              <div style="font-weight:600;font-size:0.88rem;">${s.label}</div>
+              <div style="font-size:0.75rem;color:var(--muted);">${s.desc}</div>
+            </div>
+            ${s.key === currentStatus ? `<span style="font-size:0.72rem;color:#aaa;font-weight:600;">Cari status</span>` : ''}
+          </button>
+        `).join('')}
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
+/* ── Firestore-da statusu yenilə ── */
+async function vdUpdateOrderStatus(orderId, newStatus) {
+  try {
+    await fbDb.collection('orders').doc(orderId).update({
+      status:    newStatus,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    // Cache-i yenilə
+    const idx = _vdOrders.findIndex(o => o.id === orderId);
+    if (idx !== -1) _vdOrders[idx].status = newStatus;
+
+    document.getElementById('vdStatusModal')?.remove();
+
+    // Pending sayını yenilə
+    const pendingEl = document.getElementById('vd-pending');
+    if (pendingEl) pendingEl.textContent = _vdOrders.filter(o => o.status === 'pending').length;
+
+    // Cəmi gəliri yenilə
+    const revenueEl = document.getElementById('vd-revenue');
+    if (revenueEl) {
+      const rev = _vdOrders.filter(o => o.status === 'delivered').reduce((s, o) => s + (o.total || 0), 0);
+      revenueEl.textContent = rev.toFixed(2) + ' ₼';
+    }
+
+    // Cədvəli yenilə
+    vdFilterOrders();
+
+    showToast('Status yeniləndi ✓');
+  } catch (err) {
+    showToast('Xəta: ' + err.message);
   }
 }
 
@@ -375,7 +558,7 @@ function vendorInfoRow(label, value) {
   return `
     <div style="background:var(--bg);border-radius:8px;padding:0.65rem 0.85rem;">
       <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.2rem;">${label}</div>
-      <div style="font-size:0.875rem;font-weight:500;">${value||'—'}</div>
+      <div style="font-size:0.875rem;font-weight:500;">${value || '—'}</div>
     </div>`;
 }
 
@@ -421,7 +604,7 @@ function showVendorError(msg) {
   const el = document.getElementById('vendorFormError');
   if (!el) return;
   el.textContent = msg; el.style.display = 'block';
-  el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 async function reapplyVendor() {
