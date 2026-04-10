@@ -92,6 +92,7 @@ function createProductCard(p, favIds = []) {
   const badge      = p.badge || 'Yeni';
   const isNew      = badge === 'Yeni';
   const imgSrc     = (p.imgs && p.imgs[0]) || p.img || '';
+   const brandLabel = p.brand || p.storeName || '';
   const currentUid = fbAuth.currentUser?.uid || null;
   const canDelete  = p._fromFirebase && currentUid && p.userId === currentUid;
   const isFav      = favIds.includes(String(p.id));
@@ -111,7 +112,7 @@ function createProductCard(p, favIds = []) {
         </button>
       </div>
       <div class="card-body">
-        <div class="card-brand">${p.brand || ''}</div>
+        <div class="card-brand">${brandLabel}</div>
         <div class="card-name">${p.name}</div>
         <div class="card-footer">
           <div class="price-wrap">
