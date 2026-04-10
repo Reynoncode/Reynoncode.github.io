@@ -108,6 +108,82 @@ function initSearchPopup() {
     overlay.addEventListener('click', closeSearchPopup);
   }
 
+  /* Mağaza axtarış kartı stilləri — bir dəfə inject et */
+  if (!document.getElementById('storeSearchStyles')) {
+    const style = document.createElement('style');
+    style.id = 'storeSearchStyles';
+    style.textContent = `
+      /* ── Mağaza kartları cərgəsi ── */
+      .search-store-row {
+        display: flex;
+        gap: 0.75rem;
+        overflow-x: auto;
+        padding: 0.25rem 0 0.85rem;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+      }
+      .search-store-row::-webkit-scrollbar { display: none; }
+
+      .search-store-card {
+        flex-shrink: 0;
+        width: 148px;
+        background: var(--bg, #f7f4f0);
+        border: 1.5px solid var(--border, #e5e0d8);
+        border-radius: 14px;
+        padding: 1.1rem 0.85rem 0.9rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .search-store-card:hover {
+        border-color: var(--accent, #c9a86c);
+        transform: translateY(-3px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.09);
+      }
+
+      .search-store-logo {
+        width: 54px; height: 54px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #2c2c2c, #1a1a1a);
+        color: #fff;
+        display: flex; align-items: center; justify-content: center;
+        font-family: 'Playfair Display', serif;
+        font-size: 1.1rem; font-weight: 600;
+        margin: 0 auto 0.65rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+        overflow: hidden;
+      }
+      .search-store-logo img {
+        width: 100%; height: 100%; object-fit: cover;
+      }
+
+      .search-store-name {
+        font-size: 0.84rem; font-weight: 600;
+        margin-bottom: 0.18rem;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        color: var(--text, #1a1a1a);
+      }
+      .search-store-count {
+        font-size: 0.72rem;
+        color: var(--muted, #7a7a7a);
+        margin-bottom: 0.7rem;
+      }
+      .search-store-goto {
+        width: 100%;
+        padding: 0.38rem 0.5rem;
+        background: var(--accent, #c9a86c);
+        color: #fff;
+        border: none; border-radius: 8px;
+        font-size: 0.72rem; font-weight: 600;
+        cursor: pointer; transition: opacity 0.18s;
+        font-family: inherit;
+        letter-spacing: 0.02em;
+      }
+      .search-store-goto:hover { opacity: 0.85; }
+    `;
+    document.head.appendChild(style);
+  }
+
   let debounceTimer;
   input.addEventListener('input', () => {
     clearTimeout(debounceTimer);
@@ -123,40 +199,64 @@ function initSearchPopup() {
   });
 }
 
+/* ── Axtarış məntiqi ── */
 function performSearch(query) {
   const q = query.toLowerCase();
 
   const catMatches   = [];
   const brandMatches = [];
   const nameMatches  = [];
+  const storeMap     = {};  /* uid → {uid, name, photoURL, count} */
 
   PRODUCTS.forEach(p => {
     const inCat   = p.category && p.category.toLowerCase().includes(q);
-    const inBrand = p.brand.toLowerCase().includes(q);
-    const inName  = p.name.toLowerCase().includes(q);
+    const inBrand = p.brand    && p.brand.toLowerCase().includes(q);
+    const inName  = p.name     && p.name.toLowerCase().includes(q);
 
     if (inCat)        catMatches.push(p);
     else if (inBrand) brandMatches.push(p);
     else if (inName)  nameMatches.push(p);
+
+    /* Mağaza cəmi — yalnız Firebase elanlarından */
+    if (p._fromFirebase && p.userId) {
+      const sName = (p.storeName || '').toLowerCase();
+      const bName = (p.brand     || '').toLowerCase();
+      if (sName.includes(q) || bName.includes(q)) {
+        if (!storeMap[p.userId]) {
+          storeMap[p.userId] = {
+            uid:      p.userId,
+            name:     p.storeName || p.brand || 'Mağaza',
+            photoURL: p.storePhotoURL || '',
+            count:    0,
+          };
+        }
+        storeMap[p.userId].count++;
+      }
+    }
   });
 
-  const results = { catMatches, brandMatches, nameMatches };
+  const stores  = Object.values(storeMap);
+  const results = { catMatches, brandMatches, nameMatches, stores };
   renderSearchPopup(query, results);
 }
 
+/* ── Nəticə popup render ── */
 function renderSearchPopup(query, results) {
-  const { catMatches, brandMatches, nameMatches } = results;
+  const { catMatches, brandMatches, nameMatches, stores = [] } = results;
   const total = catMatches.length + brandMatches.length + nameMatches.length;
 
   const title = document.getElementById('searchPopupTitle');
-  if (title) title.textContent = total > 0
-    ? `${total} nəticə tapıldı`
-    : 'Nəticə tapılmadı';
+  if (title) {
+    const allCount = total + stores.length;
+    title.textContent = allCount > 0
+      ? `${allCount} nəticə tapıldı`
+      : 'Nəticə tapılmadı';
+  }
 
   const body = document.getElementById('searchPopupBody');
   if (!body) return;
 
-  if (total === 0) {
+  if (total === 0 && stores.length === 0) {
     body.innerHTML = `
       <div class="search-popup-empty">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--border)">
@@ -168,6 +268,13 @@ function renderSearchPopup(query, results) {
   } else {
     let html = '';
 
+    /* 1. Mağazalar bölümü */
+    if (stores.length > 0) {
+      html += `<div class="search-result-group-label">Mağazalar</div>`;
+      html += `<div class="search-store-row">${stores.map(s => searchStoreCard(s)).join('')}</div>`;
+    }
+
+    /* 2. Məhsullar */
     if (catMatches.length > 0) {
       html += `<div class="search-result-group-label">Kateqoriya üzrə</div>`;
       html += catMatches.map(p => searchResultCard(p)).join('');
@@ -196,13 +303,14 @@ function renderSearchPopup(query, results) {
   openSearchPopup();
 }
 
+/* ── Məhsul axtarış kart ── */
 function searchResultCard(p) {
   const isSale = p.oldPrice !== null;
   return `
     <div class="search-result-item">
-      <img class="search-result-img" src="${p.img}" alt="${p.name}" loading="lazy"/>
+      <img class="search-result-img" src="${(p.imgs && p.imgs[0]) || p.img || ''}" alt="${p.name}" loading="lazy"/>
       <div class="search-result-info">
-        <div class="search-result-brand">${p.brand}</div>
+        <div class="search-result-brand">${p.brand || p.storeName || ''}</div>
         <div class="search-result-name">${p.name}</div>
         <div class="search-result-price ${isSale ? 'sale' : ''}">${p.price} ₼</div>
       </div>
@@ -210,6 +318,32 @@ function searchResultCard(p) {
         <svg viewBox="0 0 24 24">
           <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0"/>
         </svg>
+      </button>
+    </div>
+  `;
+}
+
+/* ── Mağaza axtarış kart ── */
+function searchStoreCard(store) {
+  const initials = store.name
+    .split(' ')
+    .map(w => w[0] || '')
+    .join('')
+    .substring(0, 2)
+    .toUpperCase();
+
+  const logoHTML = store.photoURL
+    ? `<img src="${store.photoURL}" alt="${store.name}"/>`
+    : initials;
+
+  return `
+    <div class="search-store-card" onclick="window.location.href='store.html?uid=${store.uid}'">
+      <div class="search-store-logo">${logoHTML}</div>
+      <div class="search-store-name">${store.name}</div>
+      <div class="search-store-count">${store.count} məhsul</div>
+      <button class="search-store-goto"
+        onclick="event.stopPropagation(); window.location.href='store.html?uid=${store.uid}'">
+        Mağazaya keç →
       </button>
     </div>
   `;
