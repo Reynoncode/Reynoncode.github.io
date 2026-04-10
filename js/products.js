@@ -175,6 +175,7 @@ async function renderProducts(products, containerId = 'productGrid') {
   }
 
   grid.innerHTML = products.map(p => createProductCard(p, favIds)).join('');
+initCardClicks(); // ← BU SƏTİRİ ƏLAVƏ ET
 }
 
 /* ══════════════════════════════
