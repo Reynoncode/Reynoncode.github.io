@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Profilim — MODA</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
-  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -23,29 +22,21 @@
       --danger: #c0392b;
       --success: #27ae60;
       --header-h: 56px;
+      --sidebar-w: 260px;
+      --sidebar-collapsed-w: 64px;
     }
 
-    body {
-      font-family: 'DM Sans', sans-serif;
-      background: var(--bg);
-      color: var(--accent);
-      min-height: 100vh;
-    }
+    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--accent); min-height: 100vh; }
 
-    /* ── HEADER ── */
+    /* HEADER */
     header {
       position: sticky; top: 0; z-index: 100;
-      height: var(--header-h);
-      background: #fff;
+      height: var(--header-h); background: #fff;
       border-bottom: 1px solid var(--border);
       display: flex; align-items: center; justify-content: space-between;
       padding: 0 2rem;
     }
-    .logo {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.4rem; font-weight: 600; letter-spacing: 0.08em;
-      text-decoration: none; color: var(--accent);
-    }
+    .logo { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 600; letter-spacing: 0.08em; text-decoration: none; color: var(--accent); }
     .header-nav { display: flex; gap: 1.5rem; align-items: center; }
     .header-nav a { text-decoration: none; color: var(--muted); font-size: 0.85rem; transition: color .2s; }
     .header-nav a:hover { color: var(--accent); }
@@ -58,129 +49,123 @@
       display: flex; align-items: center; justify-content: center;
     }
 
-    /* ── BANNER ── */
-    .banner {
-      background: var(--accent); color: #fff;
-      text-align: center; padding: 0.5rem;
-      font-size: 0.78rem; letter-spacing: 0.04em;
-    }
+    .banner { background: var(--accent); color: #fff; text-align: center; padding: 0.5rem; font-size: 0.78rem; letter-spacing: 0.04em; }
 
-    /* ── LAYOUT ── */
+    /* LAYOUT */
     .page {
-      max-width: 1100px;
-      margin: 2.5rem auto;
-      padding: 0 1.5rem;
+      max-width: 1200px; margin: 2.5rem auto; padding: 0 1.5rem;
       display: grid;
-      grid-template-columns: 260px 1fr;
-      gap: 2rem;
-      align-items: start;
+      grid-template-columns: var(--sidebar-w) 1fr;
+      gap: 2rem; align-items: start;
+      transition: grid-template-columns 0.3s ease;
+    }
+    .page.vendor-mode {
+      grid-template-columns: var(--sidebar-collapsed-w) 1fr;
+      max-width: 1400px;
     }
 
-    /* ── SIDEBAR ── */
+    /* SIDEBAR */
     .sidebar {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow: hidden;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden;
+      transition: width 0.3s ease;
+      position: sticky; top: calc(var(--header-h) + 1.5rem);
     }
+
     .avatar-section {
       background: linear-gradient(135deg, #1a1a1a 0%, #3d3d3d 100%);
-      padding: 2rem 1.5rem;
-      text-align: center;
+      padding: 2rem 1.5rem; text-align: center;
+      transition: padding 0.3s;
     }
     .avatar {
       width: 80px; height: 80px; border-radius: 50%;
       background: #fff; color: var(--accent);
       display: flex; align-items: center; justify-content: center;
-      font-family: 'Playfair Display', serif;
-      font-size: 1.8rem; font-weight: 600;
-      margin: 0 auto 1rem;
-      border: 3px solid rgba(255,255,255,0.3);
+      font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: 600;
+      margin: 0 auto 1rem; border: 3px solid rgba(255,255,255,0.3);
+      transition: all 0.3s;
     }
-    .avatar-name {
-      color: #fff; font-size: 1rem; font-weight: 500;
+    .avatar-name { color: #fff; font-size: 1rem; font-weight: 500; transition: all 0.3s; }
+    .avatar-email { color: rgba(255,255,255,0.55); font-size: 0.78rem; margin-top: 0.25rem; transition: all 0.3s; }
+
+    /* Collapsed sidebar */
+    .sidebar.collapsed .avatar-section { padding: 1rem 0; }
+    .sidebar.collapsed .avatar { width: 38px; height: 38px; font-size: 1rem; margin-bottom: 0; }
+    .sidebar.collapsed .avatar-name,
+    .sidebar.collapsed .avatar-email { display: none; }
+    .sidebar.collapsed .menu-label { display: none; }
+    .sidebar.collapsed .vendor-menu-badge { display: none; }
+    .sidebar.collapsed .menu-divider { margin: 0.25rem 0; }
+    .sidebar.collapsed .menu-item {
+      padding: 0.85rem 0;
+      justify-content: center;
+      border-left: 3px solid transparent;
     }
-    .avatar-email {
-      color: rgba(255,255,255,0.55); font-size: 0.78rem; margin-top: 0.25rem;
+    .sidebar.collapsed .menu-item.active { border-left-color: var(--accent); }
+    .sidebar.collapsed .menu-item svg { width: 18px; height: 18px; }
+
+    /* Tooltip collapsed modda */
+    .sidebar.collapsed .menu-item { position: relative; }
+    .sidebar.collapsed .menu-item::after {
+      content: attr(data-tooltip);
+      position: absolute; left: calc(100% + 10px); top: 50%; transform: translateY(-50%);
+      background: var(--accent); color: #fff;
+      padding: 0.3rem 0.7rem; border-radius: 6px;
+      font-size: 0.75rem; white-space: nowrap;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.15s;
+      z-index: 200;
     }
+    .sidebar.collapsed .menu-item:hover::after { opacity: 1; }
+
     .sidebar-menu { padding: 0.5rem 0; }
     .menu-item {
       display: flex; align-items: center; gap: 0.75rem;
-      padding: 0.75rem 1.5rem;
-      font-size: 0.875rem; color: var(--muted);
+      padding: 0.75rem 1.5rem; font-size: 0.875rem; color: var(--muted);
       cursor: pointer; transition: all .2s;
-      border-left: 3px solid transparent;
-      text-decoration: none;
+      border-left: 3px solid transparent; text-decoration: none;
     }
     .menu-item:hover { background: var(--bg); color: var(--accent); }
-    .menu-item.active {
-      background: var(--bg); color: var(--accent); font-weight: 500;
-      border-left-color: var(--accent);
-    }
+    .menu-item.active { background: var(--bg); color: var(--accent); font-weight: 500; border-left-color: var(--accent); }
     .menu-item svg { width: 16px; height: 16px; flex-shrink: 0; }
     .menu-divider { height: 1px; background: var(--border); margin: 0.5rem 0; }
+    .menu-label { transition: opacity 0.2s; }
 
-    /* Vendor menu badge */
     .vendor-menu-badge {
-      margin-left: auto;
-      font-size: 0.65rem;
-      padding: 0.15rem 0.5rem;
-      border-radius: 20px;
-      font-weight: 500;
-      white-space: nowrap;
+      margin-left: auto; font-size: 0.65rem;
+      padding: 0.15rem 0.5rem; border-radius: 20px; font-weight: 500; white-space: nowrap;
     }
     .vendor-menu-badge.pending  { background: #fef9e7; color: #d4ac0d; }
     .vendor-menu-badge.approved { background: #eafaf1; color: var(--success); }
     .vendor-menu-badge.new      { background: #f0ece6; color: var(--accent); }
 
-    /* ── MAIN ── */
+    /* MAIN */
     .main { display: flex; flex-direction: column; gap: 1.5rem; }
 
-    .section-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.75rem;
-    }
-    .section-title {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.1rem; font-weight: 600;
-      margin-bottom: 1.25rem;
-      padding-bottom: 0.75rem;
-      border-bottom: 1px solid var(--border);
-    }
+    .section-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.75rem; }
+    .section-title { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 600; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border); }
 
-    /* stats row */
     .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-    .stat {
-      background: var(--tag-bg); border-radius: 8px;
-      padding: 1rem; text-align: center;
-    }
+    .stat { background: var(--tag-bg); border-radius: 8px; padding: 1rem; text-align: center; }
     .stat-num { font-size: 1.6rem; font-weight: 600; font-family: 'Playfair Display', serif; }
     .stat-lbl { font-size: 0.75rem; color: var(--muted); margin-top: 0.2rem; }
 
-    /* profile form */
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
     .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
     .form-group.full { grid-column: 1 / -1; }
     label { font-size: 0.78rem; color: var(--muted); font-weight: 500; letter-spacing: 0.03em; }
     input, select, textarea {
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.875rem; color: var(--accent);
-      background: var(--bg); border: 1px solid var(--border);
-      border-radius: 8px; padding: 0.6rem 0.85rem;
-      outline: none; transition: border-color .2s;
-      width: 100%;
+      font-family: 'DM Sans', sans-serif; font-size: 0.875rem; color: var(--accent);
+      background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+      padding: 0.6rem 0.85rem; outline: none; transition: border-color .2s; width: 100%;
     }
     input:focus, select:focus, textarea:focus { border-color: var(--accent); }
     textarea { resize: vertical; min-height: 80px; }
     .btn {
       display: inline-flex; align-items: center; gap: 0.5rem;
-      padding: 0.65rem 1.4rem;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.85rem; font-weight: 500;
-      border-radius: 8px; cursor: pointer;
-      border: 1px solid transparent; transition: all .2s;
+      padding: 0.65rem 1.4rem; font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem; font-weight: 500; border-radius: 8px;
+      cursor: pointer; border: 1px solid transparent; transition: all .2s;
     }
     .btn-dark { background: var(--accent); color: #fff; }
     .btn-dark:hover { background: #333; }
@@ -188,174 +173,131 @@
     .btn-outline:hover { border-color: var(--accent); }
     .btn-row { display: flex; gap: 0.75rem; margin-top: 1.25rem; justify-content: flex-end; }
 
-    /* orders */
-    .order-item {
-      display: flex; align-items: center; gap: 1rem;
-      padding: 1rem 0; border-bottom: 1px solid var(--border);
-    }
+    .order-item { display: flex; align-items: center; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--border); }
     .order-item:last-child { border-bottom: none; padding-bottom: 0; }
-    .order-img {
-      width: 64px; height: 64px; border-radius: 8px;
-      background: var(--tag-bg); flex-shrink: 0;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.4rem; color: var(--muted);
-      overflow: hidden;
-    }
+    .order-img { width: 64px; height: 64px; border-radius: 8px; background: var(--tag-bg); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; overflow: hidden; }
     .order-img img { width: 100%; height: 100%; object-fit: cover; }
     .order-info { flex: 1; }
     .order-name { font-size: 0.9rem; font-weight: 500; }
     .order-meta { font-size: 0.78rem; color: var(--muted); margin-top: 0.25rem; }
     .order-right { text-align: right; }
     .order-price { font-size: 0.95rem; font-weight: 600; }
-    .badge {
-      display: inline-block; padding: 0.25rem 0.65rem;
-      border-radius: 20px; font-size: 0.7rem; font-weight: 500;
-      margin-top: 0.4rem;
-    }
+    .badge { display: inline-block; padding: 0.25rem 0.65rem; border-radius: 20px; font-size: 0.7rem; font-weight: 500; margin-top: 0.4rem; }
     .badge-success { background: #eafaf1; color: var(--success); }
     .badge-pending { background: #fef9e7; color: #d4ac0d; }
     .badge-shipped { background: #eaf4fb; color: #1a6fa8; }
 
-    /* wishlist */
     .wishlist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 1rem; }
-    .wish-card {
-      border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
-      cursor: pointer; transition: transform .2s, box-shadow .2s;
-    }
+    .wish-card { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; cursor: pointer; transition: transform .2s, box-shadow .2s; }
     .wish-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.07); }
-    .wish-img {
-      width: 100%; aspect-ratio: 3/4;
-      background: var(--tag-bg);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 2rem; color: var(--muted);
-    }
+    .wish-img { width: 100%; aspect-ratio: 3/4; background: var(--tag-bg); display: flex; align-items: center; justify-content: center; font-size: 2rem; color: var(--muted); }
     .wish-img img { width: 100%; height: 100%; object-fit: cover; }
     .wish-info { padding: 0.6rem 0.75rem; }
     .wish-name { font-size: 0.8rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .wish-price { font-size: 0.8rem; color: var(--muted); margin-top: 0.15rem; }
 
-    /* addresses */
     .addr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-    .addr-card {
-      border: 1px solid var(--border); border-radius: 10px;
-      padding: 1rem; font-size: 0.85rem; line-height: 1.6;
-      position: relative;
-    }
+    .addr-card { border: 1px solid var(--border); border-radius: 10px; padding: 1rem; font-size: 0.85rem; line-height: 1.6; position: relative; }
     .addr-card.default { border-color: var(--accent); }
-    .addr-tag {
-      position: absolute; top: 0.65rem; right: 0.75rem;
-      font-size: 0.65rem; background: var(--accent); color: #fff;
-      padding: 0.15rem 0.5rem; border-radius: 20px;
-    }
+    .addr-tag { position: absolute; top: 0.65rem; right: 0.75rem; font-size: 0.65rem; background: var(--accent); color: #fff; padding: 0.15rem 0.5rem; border-radius: 20px; }
     .addr-name { font-weight: 600; margin-bottom: 0.25rem; }
     .addr-actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
-    .addr-btn {
-      font-size: 0.75rem; color: var(--muted); cursor: pointer;
-      background: none; border: none; font-family: inherit;
-      text-decoration: underline; padding: 0;
-    }
+    .addr-btn { font-size: 0.75rem; color: var(--muted); cursor: pointer; background: none; border: none; font-family: inherit; text-decoration: underline; padding: 0; }
     .addr-btn:hover { color: var(--accent); }
 
     /* ── VENDOR STİLLƏR ── */
     .vendor-hero {
       background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #1a1a1a 100%);
-      border: none;
-      overflow: hidden;
-      position: relative;
+      border: none; overflow: hidden; position: relative;
     }
     .vendor-hero::before {
-      content: '';
-      position: absolute; inset: 0;
+      content: ''; position: absolute; inset: 0;
       background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
     }
-    .vendor-hero-inner {
-      position: relative; z-index: 1;
-      text-align: center; padding: 1rem 0;
-    }
+    .vendor-hero-inner { position: relative; z-index: 1; text-align: center; padding: 1rem 0; }
     .vendor-hero-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
-    .vendor-hero-title {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.6rem; color: #fff; margin-bottom: 0.5rem;
-    }
-    .vendor-hero-sub {
-      color: rgba(255,255,255,0.6);
-      font-size: 0.875rem; margin-bottom: 1.25rem;
-    }
-    .vendor-features {
-      display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap;
-    }
-    .vendor-feature {
-      color: rgba(255,255,255,0.75);
-      font-size: 0.82rem;
-      display: flex; align-items: center; gap: 0.4rem;
-    }
+    .vendor-hero-title { font-family: 'Playfair Display', serif; font-size: 1.6rem; color: #fff; margin-bottom: 0.5rem; }
+    .vendor-hero-sub { color: rgba(255,255,255,0.6); font-size: 0.875rem; margin-bottom: 1.25rem; }
+    .vendor-features { display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap; }
+    .vendor-feature { color: rgba(255,255,255,0.75); font-size: 0.82rem; display: flex; align-items: center; gap: 0.4rem; }
     .vendor-feature span { color: #4ade80; font-weight: 700; }
 
-    .vendor-status-badge {
-      display: inline-flex; align-items: center; gap: 0.4rem;
-      padding: 0.4rem 1rem; border-radius: 20px;
-      font-size: 0.8rem; font-weight: 600;
-    }
+    .vendor-status-badge { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
     .vendor-status-badge.pending  { background: #fef9e7; color: #b7950b; }
     .vendor-status-badge.approved { background: #eafaf1; color: #1e8449; }
     .vendor-status-badge.rejected { background: #fdf2f0; color: var(--danger); }
 
-    .vendor-approved-header {
-      background: linear-gradient(135deg, #eafaf1 0%, #d5f5e3 100%);
-      border-color: #a9dfbf;
+    /* ── VENDOR DASHBOARD ── */
+    .vd-header-card { background: linear-gradient(135deg, #f8f9fa 0%, #fff 100%); }
+    .vd-store-header { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+    .vd-store-avatar {
+      width: 52px; height: 52px; border-radius: 12px;
+      background: var(--accent); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 600;
+      flex-shrink: 0;
     }
+    .vd-store-info { flex: 1; }
+    .vd-store-name { font-family: 'Playfair Display', serif; font-size: 1.2rem; }
+    .vd-store-meta { font-size: 0.82rem; color: var(--muted); margin-top: 0.2rem; }
+    .vd-settings-btn { margin-left: auto; font-size: 0.8rem; padding: 0.5rem 1rem; }
 
-    /* toast */
+    .vd-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+    .vd-stat-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1.25rem;
+      display: flex; align-items: center; gap: 1rem;
+      transition: box-shadow 0.2s;
+    }
+    .vd-stat-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.07); }
+    .vd-stat-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; }
+    .vd-stat-num { font-size: 1.4rem; font-weight: 700; font-family: 'Playfair Display', serif; line-height: 1.2; }
+    .vd-stat-lbl { font-size: 0.72rem; color: var(--muted); margin-top: 0.15rem; }
+
+    .vd-table-wrap { overflow-x: auto; }
+    .vd-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    .vd-table thead tr { border-bottom: 2px solid var(--border); }
+    .vd-table th { text-align: left; padding: 0.65rem 0.85rem; font-size: 0.75rem; font-weight: 600; color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; }
+    .vd-table td { padding: 0.85rem 0.85rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .vd-table tbody tr:last-child td { border-bottom: none; }
+    .vd-table tbody tr:hover td { background: var(--bg); }
+
+    /* TOAST */
     .toast {
       position: fixed; bottom: 2rem; right: 2rem; z-index: 999;
-      background: var(--accent); color: #fff;
-      padding: 0.8rem 1.4rem; border-radius: 10px;
-      font-size: 0.875rem; transform: translateY(80px);
-      opacity: 0; transition: all .3s;
-      pointer-events: none;
+      background: var(--accent); color: #fff; padding: 0.8rem 1.4rem;
+      border-radius: 10px; font-size: 0.875rem;
+      transform: translateY(80px); opacity: 0; transition: all .3s; pointer-events: none;
     }
     .toast.show { transform: translateY(0); opacity: 1; }
-
-    /* logout */
     .logout { color: #c0392b !important; }
 
+    /* LOADING */
+    #loadingOverlay { position: fixed; inset: 0; z-index: 9999; background: var(--bg); display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 1rem; }
+    .spinner { width: 36px; height: 36px; border-radius: 50%; border: 2.5px solid var(--border); border-top-color: var(--accent); animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loadingOverlay p { font-size: 0.85rem; color: var(--muted); }
+
+    @media (max-width: 900px) {
+      .vd-stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
     @media (max-width: 768px) {
       .page { grid-template-columns: 1fr; }
+      .page.vendor-mode { grid-template-columns: 1fr; }
+      .sidebar.collapsed { display: none; }
       .form-grid { grid-template-columns: 1fr; }
       .stats { grid-template-columns: 1fr 1fr; }
       .addr-grid { grid-template-columns: 1fr; }
+      .vd-stats-grid { grid-template-columns: 1fr 1fr; }
       header { padding: 0 1rem; }
-      .vendor-features { flex-direction: column; gap: 0.5rem; align-items: center; }
     }
-
-    /* ── LOADING OVERLAY ── */
-    #loadingOverlay {
-      position: fixed; inset: 0; z-index: 9999;
-      background: var(--bg);
-      display: flex; align-items: center; justify-content: center;
-      flex-direction: column; gap: 1rem;
-    }
-    .spinner {
-      width: 36px; height: 36px; border-radius: 50%;
-      border: 2.5px solid var(--border);
-      border-top-color: var(--accent);
-      animation: spin .7s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    #loadingOverlay p { font-size: 0.85rem; color: var(--muted); }
   </style>
 </head>
 <body>
 
-<!-- Yüklənmə ekranı -->
-<div id="loadingOverlay">
-  <div class="spinner"></div>
-  <p>Yüklənir...</p>
-</div>
+<div id="loadingOverlay"><div class="spinner"></div><p>Yüklənir...</p></div>
 
-<div class="banner">
-  🚚 50 AZN üzərindəki sifarişlərə pulsuz çatdırılma &nbsp;|&nbsp; Yeni kolleksiya gəldi ✨
-</div>
+<div class="banner">🚚 50 AZN üzərindəki sifarişlərə pulsuz çatdırılma &nbsp;|&nbsp; Yeni kolleksiya gəldi ✨</div>
 
 <header>
   <a href="index.html" class="logo">MODA</a>
@@ -383,101 +325,83 @@
       <div class="avatar-email" id="sidebarEmail">aysel@example.com</div>
     </div>
     <nav class="sidebar-menu">
-      <a class="menu-item active" data-tab="overview" onclick="switchTab('overview', this)">
+      <a class="menu-item active" data-tab="overview" data-tooltip="İcmal" onclick="switchTab('overview', this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-        İcmal
+        <span class="menu-label">İcmal</span>
       </a>
-      <a class="menu-item" data-tab="profile" onclick="switchTab('profile', this)">
+      <a class="menu-item" data-tab="profile" data-tooltip="Məlumatlarım" onclick="switchTab('profile', this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        Məlumatlarım
+        <span class="menu-label">Məlumatlarım</span>
       </a>
-      <a class="menu-item" data-tab="orders" onclick="switchTab('orders', this)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-        Sifarişlərim
+      <a class="menu-item" data-tab="orders" data-tooltip="Sifarişlərim" onclick="switchTab('orders', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span class="menu-label">Sifarişlərim</span>
       </a>
-      <a class="menu-item" data-tab="wishlist" onclick="switchTab('wishlist', this)">
+      <a class="menu-item" data-tab="wishlist" data-tooltip="İstək siyahısı" onclick="switchTab('wishlist', this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
-        İstək siyahısı
+        <span class="menu-label">İstək siyahısı</span>
       </a>
-      <a class="menu-item" data-tab="addresses" onclick="switchTab('addresses', this)">
+      <a class="menu-item" data-tab="addresses" data-tooltip="Ünvanlarım" onclick="switchTab('addresses', this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-        Ünvanlarım
+        <span class="menu-label">Ünvanlarım</span>
       </a>
 
       <div class="menu-divider"></div>
 
-      <!-- SATICI TAB — badge dinamik yenilənir -->
-      <a class="menu-item" data-tab="vendor" onclick="switchTab('vendor', this)" id="vendorMenuItem">
+      <a class="menu-item" data-tab="vendor" data-tooltip="Satıcı paneli" onclick="switchTab('vendor', this)" id="vendorMenuItem">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
           <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
           <polyline points="9 22 9 12 15 12 15 22"/>
         </svg>
-        Satıcı paneli
+        <span class="menu-label">Satıcı paneli</span>
         <span class="vendor-menu-badge new" id="vendorMenuBadge">Yeni</span>
       </a>
 
+      <!-- Elanlar — yalnız approved satıcılara görünür -->
+      <a class="menu-item" data-tab="listings" data-tooltip="Elanlarım" onclick="switchTab('listings', this)" id="listingsMenuItem" style="display:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>
+        </svg>
+        <span class="menu-label">Elanlarım</span>
+      </a>
+
       <div class="menu-divider"></div>
-      <a class="menu-item logout" onclick="logout()">
+      <a class="menu-item logout" data-tooltip="Çıxış" onclick="logout()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        Çıxış
+        <span class="menu-label">Çıxış</span>
       </a>
     </nav>
   </aside>
 
-  <!-- MAIN CONTENT -->
+  <!-- MAIN -->
   <main class="main">
 
-    <!-- OVERVIEW TAB -->
+    <!-- OVERVIEW -->
     <div id="tab-overview">
       <div class="section-card">
         <div class="section-title">Xoş gəlmisiniz, <span id="welcomeName">Aysel</span> 👋</div>
         <div class="stats">
-          <div class="stat">
-            <div class="stat-num" id="statOrders">—</div>
-            <div class="stat-lbl">Ümumi sifariş</div>
-          </div>
-          <div class="stat">
-            <div class="stat-num" id="statWishlist">—</div>
-            <div class="stat-lbl">İstək siyahısı</div>
-          </div>
-          <div class="stat">
-            <div class="stat-num" id="statSpent">—</div>
-            <div class="stat-lbl">Ümumi xərc</div>
-          </div>
+          <div class="stat"><div class="stat-num" id="statOrders">—</div><div class="stat-lbl">Ümumi sifariş</div></div>
+          <div class="stat"><div class="stat-num" id="statWishlist">—</div><div class="stat-lbl">İstək siyahısı</div></div>
+          <div class="stat"><div class="stat-num" id="statSpent">—</div><div class="stat-lbl">Ümumi xərc</div></div>
         </div>
       </div>
-
       <div class="section-card">
         <div class="section-title">Son sifarişlər</div>
         <div id="recentOrders"><div class="spinner" style="margin:1rem auto;"></div></div>
       </div>
     </div>
 
-    <!-- PROFILE TAB -->
+    <!-- PROFILE -->
     <div id="tab-profile" style="display:none">
       <div class="section-card">
         <div class="section-title">Şəxsi məlumatlar</div>
         <div class="form-grid">
-          <div class="form-group">
-            <label>Ad</label>
-            <input type="text" id="firstName" value="Aysel" />
-          </div>
-          <div class="form-group">
-            <label>Soyad</label>
-            <input type="text" id="lastName" value="Həsənova" />
-          </div>
-          <div class="form-group">
-            <label>E-poçt</label>
-            <input type="email" id="emailField" value="aysel@example.com" />
-          </div>
-          <div class="form-group">
-            <label>Telefon</label>
-            <input type="tel" id="phoneField" placeholder="+994 XX XXX XX XX" />
-          </div>
-          <div class="form-group">
-            <label>Doğum tarixi</label>
-            <input type="date" id="dobField" />
-          </div>
+          <div class="form-group"><label>Ad</label><input type="text" id="firstName" /></div>
+          <div class="form-group"><label>Soyad</label><input type="text" id="lastName" /></div>
+          <div class="form-group"><label>E-poçt</label><input type="email" id="emailField" /></div>
+          <div class="form-group"><label>Telefon</label><input type="tel" id="phoneField" placeholder="+994 XX XXX XX XX" /></div>
+          <div class="form-group"><label>Doğum tarixi</label><input type="date" id="dobField" /></div>
           <div class="form-group">
             <label>Cins</label>
             <select id="genderField">
@@ -486,40 +410,25 @@
               <option value="Qeyd etmək istəmirəm">Qeyd etmək istəmirəm</option>
             </select>
           </div>
-          <div class="form-group full">
-            <label>Qeyd</label>
-            <textarea id="noteField" placeholder="Özünüz haqqında qısa məlumat..."></textarea>
-          </div>
+          <div class="form-group full"><label>Qeyd</label><textarea id="noteField" placeholder="Özünüz haqqında qısa məlumat..."></textarea></div>
         </div>
         <div class="btn-row">
           <button class="btn btn-outline">Ləğv et</button>
           <button class="btn btn-dark" onclick="saveProfile()">Yadda saxla</button>
         </div>
       </div>
-
       <div class="section-card">
         <div class="section-title">Şifrəni dəyiş</div>
         <div class="form-grid">
-          <div class="form-group full">
-            <label>Cari şifrə</label>
-            <input type="password" id="currentPass" placeholder="••••••••" />
-          </div>
-          <div class="form-group">
-            <label>Yeni şifrə</label>
-            <input type="password" id="newPass" placeholder="••••••••" />
-          </div>
-          <div class="form-group">
-            <label>Yeni şifrəni təkrarla</label>
-            <input type="password" id="confirmPass" placeholder="••••••••" />
-          </div>
+          <div class="form-group full"><label>Cari şifrə</label><input type="password" id="currentPass" placeholder="••••••••" /></div>
+          <div class="form-group"><label>Yeni şifrə</label><input type="password" id="newPass" placeholder="••••••••" /></div>
+          <div class="form-group"><label>Yeni şifrəni təkrarla</label><input type="password" id="confirmPass" placeholder="••••••••" /></div>
         </div>
-        <div class="btn-row">
-          <button class="btn btn-dark" onclick="changePassword()">Şifrəni yenilə</button>
-        </div>
+        <div class="btn-row"><button class="btn btn-dark" onclick="changePassword()">Şifrəni yenilə</button></div>
       </div>
     </div>
 
-    <!-- ORDERS TAB -->
+    <!-- ORDERS -->
     <div id="tab-orders" style="display:none">
       <div class="section-card">
         <div class="section-title">Sifarişlərim</div>
@@ -527,22 +436,20 @@
       </div>
     </div>
 
-    <!-- WISHLIST TAB -->
+    <!-- WISHLIST -->
     <div id="tab-wishlist" style="display:none">
       <div class="section-card">
         <div class="section-title">İstək siyahısı</div>
-        <div class="wishlist-grid" id="wishlistGrid">
-          <div class="spinner" style="margin:1rem auto;grid-column:1/-1;"></div>
-        </div>
+        <div class="wishlist-grid" id="wishlistGrid"><div class="spinner" style="margin:1rem auto;grid-column:1/-1;"></div></div>
       </div>
     </div>
 
-    <!-- ADDRESSES TAB -->
+    <!-- ADDRESSES -->
     <div id="tab-addresses" style="display:none">
       <div class="section-card">
         <div class="section-title">Ünvanlarım</div>
         <div class="addr-grid" id="addressGrid">
-          <div class="addr-card add-addr-card" style="border: 1px dashed var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; min-height:140px; color:var(--muted); flex-direction:column; gap:0.5rem;" onclick="showToast('Yeni ünvan funksiyası tezliklə')">
+          <div class="addr-card add-addr-card" style="border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;min-height:140px;color:var(--muted);flex-direction:column;gap:0.5rem;" onclick="showToast('Yeni ünvan funksiyası tezliklə')">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
             <span style="font-size:0.85rem;">Yeni ünvan əlavə et</span>
           </div>
@@ -550,11 +457,14 @@
       </div>
     </div>
 
-    <!-- VENDOR TAB — vendor.js tərəfindən doldurulur -->
+    <!-- VENDOR TAB -->
     <div id="tab-vendor" style="display:none">
-      <div class="section-card">
-        <div class="spinner" style="margin:2rem auto;"></div>
-      </div>
+      <div class="section-card"><div class="spinner" style="margin:2rem auto;"></div></div>
+    </div>
+
+    <!-- LISTINGS TAB — vendor.js tərəfindən doldurulacaq -->
+    <div id="tab-listings" style="display:none">
+      <div class="section-card"><div class="spinner" style="margin:2rem auto;"></div></div>
     </div>
 
   </main>
@@ -562,22 +472,12 @@
 
 <div class="toast" id="toast"></div>
 
-<!-- vendor.js əvvəlcə yüklənməlidir -->
 <script src="js/vendor.js"></script>
-
 <script>
-/* ═══════════════════════════════════════════
-   profile.js — Firebase inteqrasiyası
-   ═══════════════════════════════════════════ */
-
 let currentUser = null;
 
-/* ── Auth yoxlanışı ── */
 fbAuth.onAuthStateChanged(async (user) => {
-  if (!user) {
-    window.location.href = 'index.html';
-    return;
-  }
+  if (!user) { window.location.href = 'index.html'; return; }
   currentUser = user;
   await loadUserData(user);
   await loadOrders(user.uid);
@@ -587,241 +487,165 @@ fbAuth.onAuthStateChanged(async (user) => {
   document.getElementById('loadingOverlay').style.display = 'none';
 });
 
-/* ── Vendor menu badge-ni yenilə ── */
 async function updateVendorMenuBadge(uid) {
   const data  = await vendor.getStatus(uid);
   const badge = document.getElementById('vendorMenuBadge');
   if (!badge) return;
 
   if (!data) {
-    badge.textContent = 'Yeni';
-    badge.className   = 'vendor-menu-badge new';
+    badge.textContent = 'Yeni'; badge.className = 'vendor-menu-badge new';
   } else if (data.status === 'pending') {
-    badge.textContent = 'Baxılır';
-    badge.className   = 'vendor-menu-badge pending';
+    badge.textContent = 'Baxılır'; badge.className = 'vendor-menu-badge pending';
   } else if (data.status === 'approved') {
-    badge.textContent = 'Aktiv';
-    badge.className   = 'vendor-menu-badge approved';
+    badge.textContent = 'Aktiv'; badge.className = 'vendor-menu-badge approved';
+    /* Approved olduqda Elanlar menusunu göstər */
+    const listingsItem = document.getElementById('listingsMenuItem');
+    if (listingsItem) listingsItem.style.display = '';
   } else if (data.status === 'rejected') {
-    badge.textContent = 'Rədd';
-    badge.className   = 'vendor-menu-badge pending';
+    badge.textContent = 'Rədd'; badge.className = 'vendor-menu-badge pending';
   }
 }
 
-/* ── Firestore-dan istifadəçi məlumatları ── */
 async function loadUserData(user) {
-  const doc = await fbDb.collection('users').doc(user.uid).get();
+  const doc  = await fbDb.collection('users').doc(user.uid).get();
   const data = doc.exists ? doc.data() : {};
 
   const first    = data.firstName || '';
   const last     = data.lastName  || '';
   const fullName = (first + ' ' + last).trim() || user.displayName || 'İstifadəçi';
-  const email    = user.email || '';
-  const phone    = data.phone    || '';
-  const dob      = data.dob      || '';
-  const gender   = data.gender   || 'Qadın';
-  const note     = data.note     || '';
-  const initials = ((first[0] || '') + (last[0] || '')).toUpperCase() || '?';
+  const initials = ((first[0]||'') + (last[0]||'')).toUpperCase() || '?';
 
   document.getElementById('avatarInitials').textContent = initials;
   document.getElementById('sidebarName').textContent    = fullName;
-  document.getElementById('sidebarEmail').textContent   = email;
+  document.getElementById('sidebarEmail').textContent   = user.email || '';
   document.getElementById('welcomeName').textContent    = first || fullName;
-
   document.getElementById('firstName').value  = first;
   document.getElementById('lastName').value   = last;
-  document.getElementById('emailField').value = email;
-  document.getElementById('phoneField').value = phone;
-  document.getElementById('dobField').value   = dob;
-  const genderSel = document.getElementById('genderField');
-  [...genderSel.options].forEach(o => { o.selected = o.value === gender; });
-  document.getElementById('noteField').value  = note;
+  document.getElementById('emailField').value = user.email || '';
+  document.getElementById('phoneField').value = data.phone  || '';
+  document.getElementById('dobField').value   = data.dob    || '';
+  const gSel = document.getElementById('genderField');
+  [...gSel.options].forEach(o => { o.selected = o.value === (data.gender||'Qadın'); });
+  document.getElementById('noteField').value  = data.note   || '';
 }
 
-/* ── Profil saxla ── */
 async function saveProfile() {
   if (!currentUser) return;
   const first  = document.getElementById('firstName').value.trim();
   const last   = document.getElementById('lastName').value.trim();
-  const phone  = document.getElementById('phoneField').value.trim();
-  const dob    = document.getElementById('dobField').value;
-  const gender = document.getElementById('genderField').value;
-  const note   = document.getElementById('noteField').value.trim();
-
   try {
     await fbDb.collection('users').doc(currentUser.uid).set({
       firstName: first, lastName: last,
-      phone, dob, gender, note,
+      phone:  document.getElementById('phoneField').value.trim(),
+      dob:    document.getElementById('dobField').value,
+      gender: document.getElementById('genderField').value,
+      note:   document.getElementById('noteField').value.trim(),
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
-
-    const full = (first + ' ' + last).trim();
+    const full = (first+' '+last).trim();
     document.getElementById('sidebarName').textContent = full || 'İstifadəçi';
     document.getElementById('welcomeName').textContent = first || full;
-    const initials = ((first[0] || '') + (last[0] || '')).toUpperCase();
-    document.getElementById('avatarInitials').textContent = initials || '?';
+    document.getElementById('avatarInitials').textContent = ((first[0]||'')+(last[0]||'')).toUpperCase() || '?';
     showToast('Məlumatlar yadda saxlandı ✓');
-  } catch (err) {
-    showToast('Xəta baş verdi: ' + err.message);
-  }
+  } catch (err) { showToast('Xəta: ' + err.message); }
 }
 
-/* ── Şifrəni yenilə ── */
 async function changePassword() {
-  const current  = document.getElementById('currentPass').value;
-  const newPass  = document.getElementById('newPass').value;
-  const confirm  = document.getElementById('confirmPass').value;
-
-  if (!current || !newPass || !confirm) { showToast('Bütün sahələri doldurun'); return; }
-  if (newPass !== confirm)              { showToast('Yeni şifrələr uyğun gəlmir'); return; }
-  if (newPass.length < 6)              { showToast('Şifrə ən az 6 simvol olmalıdır'); return; }
-
+  const current = document.getElementById('currentPass').value;
+  const newPass = document.getElementById('newPass').value;
+  const confirm = document.getElementById('confirmPass').value;
+  if (!current||!newPass||!confirm) { showToast('Bütün sahələri doldurun'); return; }
+  if (newPass !== confirm) { showToast('Yeni şifrələr uyğun gəlmir'); return; }
+  if (newPass.length < 6) { showToast('Şifrə ən az 6 simvol olmalıdır'); return; }
   try {
     const cred = firebase.auth.EmailAuthProvider.credential(currentUser.email, current);
     await currentUser.reauthenticateWithCredential(cred);
     await currentUser.updatePassword(newPass);
-    document.getElementById('currentPass').value = '';
-    document.getElementById('newPass').value     = '';
-    document.getElementById('confirmPass').value = '';
+    ['currentPass','newPass','confirmPass'].forEach(id => document.getElementById(id).value = '');
     showToast('Şifrə uğurla yeniləndi ✓');
   } catch (err) {
-    const msg = err.code === 'auth/wrong-password' ? 'Cari şifrə yanlışdır' : err.message;
-    showToast('Xəta: ' + msg);
+    showToast('Xəta: ' + (err.code==='auth/wrong-password' ? 'Cari şifrə yanlışdır' : err.message));
   }
 }
 
-/* ── Sifarişlər ── */
 async function loadOrders(uid) {
   const statusMap = {
-    delivered: { lbl: 'Çatdırıldı', cls: 'badge-success' },
-    shipped:   { lbl: 'Yolda',      cls: 'badge-shipped' },
-    pending:   { lbl: 'Hazırlanır', cls: 'badge-pending' },
-    cancelled: { lbl: 'Ləğv edildi',cls: 'badge-pending' },
+    delivered: { lbl:'Çatdırıldı', cls:'badge-success' },
+    shipped:   { lbl:'Yolda',      cls:'badge-shipped' },
+    pending:   { lbl:'Hazırlanır', cls:'badge-pending' },
+    cancelled: { lbl:'Ləğv edildi',cls:'badge-pending' },
   };
   const emojis = ['👗','👟','👜','🧥','👒','🥿','👔','🕶️'];
-
   try {
-    const snap = await fbDb.collection('orders')
-      .where('userId', '==', uid)
-      .orderBy('createdAt', 'desc')
-      .limit(20)
-      .get();
-
-    const allOrders  = document.getElementById('allOrders');
+    const snap = await fbDb.collection('orders').where('userId','==',uid).orderBy('createdAt','desc').limit(20).get();
+    const allOrders = document.getElementById('allOrders');
     const recentOrds = document.getElementById('recentOrders');
-    allOrders.innerHTML = '';
-    recentOrds.innerHTML = '';
-
+    allOrders.innerHTML = recentOrds.innerHTML = '';
     document.getElementById('statOrders').textContent = snap.size;
     let totalSpent = 0;
-
     if (snap.empty) {
-      allOrders.innerHTML  = '<p style="color:var(--muted);font-size:.875rem;">Hələ sifariş yoxdur.</p>';
-      recentOrds.innerHTML = '<p style="color:var(--muted);font-size:.875rem;">Hələ sifariş yoxdur.</p>';
+      allOrders.innerHTML = recentOrds.innerHTML = '<p style="color:var(--muted);font-size:.875rem;">Hələ sifariş yoxdur.</p>';
     }
-
     snap.forEach((doc, i) => {
-      const o   = doc.data();
-      const st  = statusMap[o.status] || { lbl: o.status, cls: 'badge-pending' };
-      const em  = emojis[i % emojis.length];
-      const date= o.createdAt?.toDate
-        ? o.createdAt.toDate().toLocaleDateString('az-AZ', { day:'numeric', month:'long', year:'numeric' })
-        : '';
-      const price = (o.total || 0).toFixed(2);
-      totalSpent += o.total || 0;
-
-      const html = `
-        <div class="order-item">
-          <div class="order-img">${em}</div>
-          <div class="order-info">
-            <div class="order-name">${o.title || 'Sifariş'}</div>
-            <div class="order-meta">Sifariş #${doc.id.slice(-4).toUpperCase()} · ${date}</div>
-          </div>
-          <div class="order-right">
-            <div class="order-price">${price} ₼</div>
-            <div class="badge ${st.cls}">${st.lbl}</div>
-          </div>
-        </div>`;
+      const o = doc.data();
+      const st = statusMap[o.status] || { lbl:o.status, cls:'badge-pending' };
+      const date = o.createdAt?.toDate ? o.createdAt.toDate().toLocaleDateString('az-AZ',{day:'numeric',month:'long',year:'numeric'}) : '';
+      const price = (o.total||0).toFixed(2);
+      totalSpent += o.total||0;
+      const html = `<div class="order-item">
+        <div class="order-img">${emojis[i%emojis.length]}</div>
+        <div class="order-info"><div class="order-name">${o.title||'Sifariş'}</div><div class="order-meta">#${doc.id.slice(-4).toUpperCase()} · ${date}</div></div>
+        <div class="order-right"><div class="order-price">${price} ₼</div><div class="badge ${st.cls}">${st.lbl}</div></div>
+      </div>`;
       allOrders.innerHTML += html;
       if (i < 3) recentOrds.innerHTML += html;
     });
-
     document.getElementById('statSpent').textContent = totalSpent.toFixed(0) + ' ₼';
-  } catch (err) {
-    console.warn('Sifarişlər yüklənmədi:', err.message);
-  }
+  } catch(err) { console.warn('Sifarişlər:', err.message); }
 }
 
-/* ── Wishlist ── */
 async function loadWishlist(uid) {
   try {
     const snap = await fbDb.collection('wishlists').doc(uid).get();
-    const items = snap.exists ? (snap.data().items || []) : [];
+    const items = snap.exists ? (snap.data().items||[]) : [];
     document.getElementById('statWishlist').textContent = items.length;
-
     const grid = document.getElementById('wishlistGrid');
     grid.innerHTML = '';
-    if (items.length === 0) {
-      grid.innerHTML = '<p style="color:var(--muted);font-size:.875rem;grid-column:1/-1;">İstək siyahısı boşdur.</p>';
-      return;
-    }
+    if (!items.length) { grid.innerHTML = '<p style="color:var(--muted);font-size:.875rem;grid-column:1/-1;">İstək siyahısı boşdur.</p>'; return; }
     items.forEach(item => {
-      const imgHTML = item.image
-        ? `<img src="${item.image}" alt="${item.name}" style="width:100%;height:100%;object-fit:cover;" />`
-        : '🛍️';
-      grid.innerHTML += `
-        <div class="wish-card">
-          <div class="wish-img">${imgHTML}</div>
-          <div class="wish-info">
-            ${item.brand ? `<div style="font-size:0.68rem;color:#b07a4a;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:2px">${item.brand}</div>` : ''}
-            <div class="wish-name">${item.name || ''}</div>
-            <div class="wish-price">${(item.price || 0).toFixed(2)} ₼</div>
-          </div>
-        </div>`;
+      grid.innerHTML += `<div class="wish-card">
+        <div class="wish-img">${item.image?`<img src="${item.image}" alt="${item.name}" style="width:100%;height:100%;object-fit:cover;">`:'🛍️'}</div>
+        <div class="wish-info">
+          ${item.brand?`<div style="font-size:0.68rem;color:#b07a4a;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:2px">${item.brand}</div>`:''}
+          <div class="wish-name">${item.name||''}</div>
+          <div class="wish-price">${(item.price||0).toFixed(2)} ₼</div>
+        </div></div>`;
     });
-  } catch (err) {
-    console.warn('Wishlist yüklənmədi:', err.message);
-  }
+  } catch(err) { console.warn('Wishlist:', err.message); }
 }
 
-/* ── Ünvanlar ── */
 async function loadAddresses(uid) {
   try {
-    const snap = await fbDb.collection('addresses')
-      .where('userId', '==', uid)
-      .get();
-
+    const snap = await fbDb.collection('addresses').where('userId','==',uid).get();
     const grid = document.getElementById('addressGrid');
     const addBtn = grid.querySelector('.add-addr-card');
     grid.innerHTML = '';
-
-    if (snap.empty) {
-      grid.appendChild(addBtn);
-      return;
+    if (!snap.empty) {
+      snap.forEach(doc => {
+        const a = doc.data();
+        const card = document.createElement('div');
+        card.className = 'addr-card' + (a.isDefault?' default':'');
+        card.innerHTML = `${a.isDefault?'<span class="addr-tag">Əsas</span>':''}
+          <div class="addr-name">${a.fullName||''}</div>${a.street||''}<br>${a.city||''}, ${a.zip||''}<br>Azərbaycan<br>${a.phone||''}
+          <div class="addr-actions">
+            <button class="addr-btn" onclick="showToast('Redaktə tezliklə')">Redaktə et</button>
+            <button class="addr-btn" onclick="deleteAddress('${doc.id}')">Sil</button>
+          </div>`;
+        grid.appendChild(card);
+      });
     }
-
-    snap.forEach(doc => {
-      const a = doc.data();
-      const card = document.createElement('div');
-      card.className = 'addr-card' + (a.isDefault ? ' default' : '');
-      card.innerHTML = `
-        ${a.isDefault ? '<span class="addr-tag">Əsas</span>' : ''}
-        <div class="addr-name">${a.fullName || ''}</div>
-        ${a.street || ''}<br>
-        ${a.city || ''}, ${a.zip || ''}<br>
-        Azərbaycan<br>
-        ${a.phone || ''}
-        <div class="addr-actions">
-          <button class="addr-btn" onclick="showToast('Redaktə funksiyası tezliklə')">Redaktə et</button>
-          <button class="addr-btn" onclick="deleteAddress('${doc.id}')">Sil</button>
-        </div>`;
-      grid.appendChild(card);
-    });
-
     grid.appendChild(addBtn);
-  } catch (err) {
-    console.warn('Ünvanlar yüklənmədi:', err.message);
-  }
+  } catch(err) { console.warn('Ünvanlar:', err.message); }
 }
 
 async function deleteAddress(id) {
@@ -831,30 +655,40 @@ async function deleteAddress(id) {
   showToast('Ünvan silindi');
 }
 
-/* ── Çıxış ── */
 async function logout() {
   await fbAuth.signOut();
   window.location.href = 'index.html';
 }
 
-/* ── Tab keçidi ── */
 function switchTab(name, el) {
+  /* Vendor/listings deyilsə sidebar-ı geri aç */
+  if (name !== 'vendor' && name !== 'listings') {
+    expandSidebar();
+  }
+
   document.querySelectorAll('[id^="tab-"]').forEach(t => t.style.display = 'none');
   document.getElementById('tab-' + name).style.display = '';
   document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
   if (el) el.classList.add('active');
 
-  // Vendor tab açılanda yüklə
-  if (name === 'vendor' && currentUser) {
-    loadVendorTab(currentUser.uid);
-  }
+  if (name === 'vendor' && currentUser)   loadVendorTab(currentUser.uid);
+  if (name === 'listings' && currentUser) loadListingsTab(currentUser.uid);
 }
 
-/* ── Toast ── */
+/* listings tab — növbəti mərhələdə doldurulacaq */
+function loadListingsTab(uid) {
+  const container = document.getElementById('tab-listings');
+  container.innerHTML = `
+    <div class="section-card" style="text-align:center;padding:3rem 2rem;">
+      <div style="font-size:2.5rem;margin-bottom:1rem;">🏷️</div>
+      <h2 style="font-family:'Playfair Display',serif;font-size:1.2rem;margin-bottom:0.5rem;">Elan idarəetmə paneli</h2>
+      <p style="color:var(--muted);font-size:0.875rem;">Bu bölüm hazırlanır. Növbəti mərhələdə əlavə ediləcək.</p>
+    </div>`;
+}
+
 function showToast(msg) {
   const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
+  t.textContent = msg; t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2800);
 }
 
