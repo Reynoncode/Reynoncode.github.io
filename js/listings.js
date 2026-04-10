@@ -113,6 +113,7 @@ async function fetchUserListings(uid) {
 
     const listings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     grid.innerHTML = `<div class="lst-grid">${listings.map(renderListingCard).join('')}</div>`;
+await loadListingReviewsCard(uid); // ← BU SƏTİRİ ƏLAVƏ ET
   } catch (err) {
     grid.innerHTML = `<div class="section-card"><p style="color:var(--danger);font-size:.875rem;">Xəta: ${err.message}</p></div>`;
   }
