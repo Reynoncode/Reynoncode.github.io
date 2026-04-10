@@ -1055,4 +1055,4 @@ function injectListingStyles() {
   `;
   document.head.appendChild(style);
 }
-`;
+
