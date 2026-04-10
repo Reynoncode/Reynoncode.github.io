@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mağaza — MODA</title>
+  <link rel="stylesheet" href="css/global.css"/>
+  <link rel="stylesheet" href="css/layout.css"/>
+  <link rel="stylesheet" href="css/components.css"/>
+  <style>
+    main { padding: var(--page-y) var(--page-x); }
+
+    /* ══════════════════════════
+       STORE HERO
+    ══════════════════════════ */
+    .store-hero {
+      background: linear-gradient(135deg, #1a1a1a 0%, #2c2c2c 55%, #1a1a1a 100%);
+      border-radius: var(--radius-xl);
+      padding: 2.75rem 2.5rem;
+      margin-bottom: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .store-hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      pointer-events: none;
+    }
+    .store-hero-inner {
+      position: relative; z-index: 1;
+      display: flex; align-items: center; gap: 2.25rem;
+      flex-wrap: wrap;
+    }
+
+    /* Logo */
+    .store-logo {
+      width: 100px; height: 100px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      border: 3px solid rgba(255,255,255,0.18);
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden; flex-shrink: 0;
+      font-family: var(--font-display);
+      font-size: 2rem; font-weight: 600; color: #fff;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+    .store-logo img { width:100%; height:100%; object-fit:cover; }
+
+    /* Info */
+    .store-hero-info { flex: 1; min-width: 180px; }
+    .store-hero-name {
+      font-family: var(--font-display);
+      font-size: 1.9rem; font-weight: 700; color: #fff;
+      margin-bottom: 0.4rem; line-height: 1.2;
+    }
+    .store-hero-desc {
+      color: rgba(255,255,255,0.55);
+      font-size: 0.875rem; line-height: 1.65;
+      margin-bottom: 1.1rem; max-width: 380px;
+    }
+    .store-hero-stats { display: flex; gap: 2.25rem; }
+    .store-stat { text-align: left; }
+    .store-stat span {
+      display: block;
+      font-family: var(--font-display);
+      font-size: 1.45rem; font-weight: 700; color: #fff; line-height: 1.1;
+    }
+    .store-stat small {
+      font-size: 0.7rem; color: rgba(255,255,255,0.45);
+      letter-spacing: 0.04em; text-transform: uppercase;
+    }
+
+    /* Follow button */
+    .store-follow-btn {
+      padding: 0.75rem 1.75rem;
+      border-radius: var(--radius-full);
+      font-size: 0.88rem; font-weight: 600;
+      border: 2px solid rgba(255,255,255,0.4);
+      background: transparent; color: #fff;
+      cursor: pointer; transition: all 0.22s;
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      white-space: nowrap; align-self: center;
+    }
+    .store-follow-btn:hover {
+      background: rgba(255,255,255,0.1);
+      border-color: #fff;
+    }
+    .store-follow-btn.following {
+      background: rgba(201,168,108,0.18);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .store-follow-btn svg { flex-shrink: 0; }
+
+    /* ══════════════════════════
+       CONTENT GRID
+    ══════════════════════════ */
+    .store-content-grid {
+      display: grid;
+      grid-template-columns: 1fr 284px;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    .store-products-header {
+      display: flex; align-items: baseline; gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .store-products-title {
+      font-family: var(--font-display);
+      font-size: 1.4rem; font-weight: 700;
+    }
+
+    .store-empty {
+      text-align: center; padding: 5rem 1rem;
+      color: var(--muted);
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      border: 1px dashed var(--border);
+    }
+    .store-empty p { font-size: 0.9rem; }
+
+    /* ══════════════════════════
+       SIDEBAR CARDS
+    ══════════════════════════ */
+    .store-side-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .store-side-title {
+      font-size: 0.82rem; font-weight: 600;
+      letter-spacing: 0.04em; text-transform: uppercase;
+      color: var(--text);
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .store-side-text {
+      font-size: 0.845rem; color: var(--muted);
+      line-height: 1.65;
+    }
+
+    .store-side-card.campaign-card {
+      background: linear-gradient(135deg, #fffbf2 0%, #fff 100%);
+      border-color: #eeddb8;
+    }
+    .campaign-badge {
+      display: inline-block;
+      background: var(--accent); color: #fff;
+      font-size: 0.65rem; font-weight: 700;
+      padding: 2px 10px; border-radius: 20px;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      margin-bottom: 0.65rem;
+    }
+    .campaign-title {
+      font-weight: 600; font-size: 0.92rem;
+      margin-bottom: 0.4rem;
+    }
+
+    .store-contact-row {
+      display: flex; align-items: center; gap: 0.65rem;
+      font-size: 0.835rem; color: var(--muted);
+      margin-bottom: 0.5rem; line-height: 1.4;
+    }
+    .store-contact-row:last-child { margin-bottom: 0; }
+    .store-contact-row svg { flex-shrink: 0; color: var(--accent); }
+
+    .store-delivery-icon { font-size: 1.4rem; margin-bottom: 0.5rem; }
+    .store-delivery-tag {
+      display: inline-block;
+      background: #f0fdf4; color: #15803d;
+      font-size: 0.7rem; font-weight: 600;
+      padding: 2px 10px; border-radius: 20px;
+      margin-bottom: 0.6rem;
+    }
+
+    /* ══════════════════════════
+       LOADING
+    ══════════════════════════ */
+    .store-loader {
+      display: flex; justify-content: center; align-items: center;
+      padding: 6rem 0;
+    }
+    .spinner {
+      width: 36px; height: 36px; border-radius: 50%;
+      border: 2.5px solid var(--border);
+      border-top-color: var(--accent);
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ══════════════════════════
+       RESPONSIVE
+    ══════════════════════════ */
+    @media (max-width: 960px) {
+      .store-content-grid { grid-template-columns: 1fr; }
+      .store-side-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+      .store-side-col .store-side-card { margin-bottom: 0; }
+    }
+    @media (max-width: 700px) {
+      .store-hero-inner { flex-direction: column; text-align: center; align-items: center; }
+      .store-hero-stats { justify-content: center; }
+      .store-hero-desc { margin-left: auto; margin-right: auto; }
+      .store-hero-name { font-size: 1.5rem; }
+    }
+    @media (max-width: 500px) {
+      .store-hero { padding: 1.75rem 1.25rem; }
+      .store-logo { width: 76px; height: 76px; font-size: 1.6rem; }
+      .store-side-col { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<header></header>
+<div class="hero-strip">
+  <p>🚚 <span>50 AZN</span> üzərindəki sifarişlərə pulsuz çatdırılma &nbsp;|&nbsp; Yeni kolleksiya gəldi ✨</p>
+</div>
+
+<main>
+  <div id="storePageContent">
+    <div class="store-loader"><div class="spinner"></div></div>
+  </div>
+</main>
+
+<footer></footer>
+
+<!-- Modals (components.js tərəfindən doldurulur) -->
+<div class="overlay" id="authModal"></div>
+<div class="overlay" id="cartModal"></div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/products.js"></script>
+<script src="js/components.js"></script>
+<script src="js/store.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    loadStorePage();
+  });
+</script>
+</body>
+</html>
