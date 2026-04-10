@@ -120,6 +120,19 @@
     .menu-item svg { width: 16px; height: 16px; flex-shrink: 0; }
     .menu-divider { height: 1px; background: var(--border); margin: 0.5rem 0; }
 
+    /* Vendor menu badge */
+    .vendor-menu-badge {
+      margin-left: auto;
+      font-size: 0.65rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 20px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .vendor-menu-badge.pending  { background: #fef9e7; color: #d4ac0d; }
+    .vendor-menu-badge.approved { background: #eafaf1; color: var(--success); }
+    .vendor-menu-badge.new      { background: #f0ece6; color: var(--accent); }
+
     /* ── MAIN ── */
     .main { display: flex; flex-direction: column; gap: 1.5rem; }
 
@@ -243,6 +256,55 @@
     }
     .addr-btn:hover { color: var(--accent); }
 
+    /* ── VENDOR STİLLƏR ── */
+    .vendor-hero {
+      background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #1a1a1a 100%);
+      border: none;
+      overflow: hidden;
+      position: relative;
+    }
+    .vendor-hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    .vendor-hero-inner {
+      position: relative; z-index: 1;
+      text-align: center; padding: 1rem 0;
+    }
+    .vendor-hero-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+    .vendor-hero-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.6rem; color: #fff; margin-bottom: 0.5rem;
+    }
+    .vendor-hero-sub {
+      color: rgba(255,255,255,0.6);
+      font-size: 0.875rem; margin-bottom: 1.25rem;
+    }
+    .vendor-features {
+      display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap;
+    }
+    .vendor-feature {
+      color: rgba(255,255,255,0.75);
+      font-size: 0.82rem;
+      display: flex; align-items: center; gap: 0.4rem;
+    }
+    .vendor-feature span { color: #4ade80; font-weight: 700; }
+
+    .vendor-status-badge {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      padding: 0.4rem 1rem; border-radius: 20px;
+      font-size: 0.8rem; font-weight: 600;
+    }
+    .vendor-status-badge.pending  { background: #fef9e7; color: #b7950b; }
+    .vendor-status-badge.approved { background: #eafaf1; color: #1e8449; }
+    .vendor-status-badge.rejected { background: #fdf2f0; color: var(--danger); }
+
+    .vendor-approved-header {
+      background: linear-gradient(135deg, #eafaf1 0%, #d5f5e3 100%);
+      border-color: #a9dfbf;
+    }
+
     /* toast */
     .toast {
       position: fixed; bottom: 2rem; right: 2rem; z-index: 999;
@@ -263,6 +325,7 @@
       .stats { grid-template-columns: 1fr 1fr; }
       .addr-grid { grid-template-columns: 1fr; }
       header { padding: 0 1rem; }
+      .vendor-features { flex-direction: column; gap: 0.5rem; align-items: center; }
     }
 
     /* ── LOADING OVERLAY ── */
@@ -340,6 +403,19 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
         Ünvanlarım
       </a>
+
+      <div class="menu-divider"></div>
+
+      <!-- SATICI TAB — badge dinamik yenilənir -->
+      <a class="menu-item" data-tab="vendor" onclick="switchTab('vendor', this)" id="vendorMenuItem">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        Satıcı paneli
+        <span class="vendor-menu-badge new" id="vendorMenuBadge">Yeni</span>
+      </a>
+
       <div class="menu-divider"></div>
       <a class="menu-item logout" onclick="logout()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -474,10 +550,20 @@
       </div>
     </div>
 
+    <!-- VENDOR TAB — vendor.js tərəfindən doldurulur -->
+    <div id="tab-vendor" style="display:none">
+      <div class="section-card">
+        <div class="spinner" style="margin:2rem auto;"></div>
+      </div>
+    </div>
+
   </main>
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- vendor.js əvvəlcə yüklənməlidir -->
+<script src="js/vendor.js"></script>
 
 <script>
 /* ═══════════════════════════════════════════
@@ -486,7 +572,7 @@
 
 let currentUser = null;
 
-/* ── Auth yoxlanışı: login yoxdursa index.html-ə yönləndir ── */
+/* ── Auth yoxlanışı ── */
 fbAuth.onAuthStateChanged(async (user) => {
   if (!user) {
     window.location.href = 'index.html';
@@ -497,10 +583,32 @@ fbAuth.onAuthStateChanged(async (user) => {
   await loadOrders(user.uid);
   await loadWishlist(user.uid);
   await loadAddresses(user.uid);
+  await updateVendorMenuBadge(user.uid);
   document.getElementById('loadingOverlay').style.display = 'none';
 });
 
-/* ── Firestore-dan istifadəçi məlumatlarını çək ── */
+/* ── Vendor menu badge-ni yenilə ── */
+async function updateVendorMenuBadge(uid) {
+  const data  = await vendor.getStatus(uid);
+  const badge = document.getElementById('vendorMenuBadge');
+  if (!badge) return;
+
+  if (!data) {
+    badge.textContent = 'Yeni';
+    badge.className   = 'vendor-menu-badge new';
+  } else if (data.status === 'pending') {
+    badge.textContent = 'Baxılır';
+    badge.className   = 'vendor-menu-badge pending';
+  } else if (data.status === 'approved') {
+    badge.textContent = 'Aktiv';
+    badge.className   = 'vendor-menu-badge approved';
+  } else if (data.status === 'rejected') {
+    badge.textContent = 'Rədd';
+    badge.className   = 'vendor-menu-badge pending';
+  }
+}
+
+/* ── Firestore-dan istifadəçi məlumatları ── */
 async function loadUserData(user) {
   const doc = await fbDb.collection('users').doc(user.uid).get();
   const data = doc.exists ? doc.data() : {};
@@ -515,13 +623,11 @@ async function loadUserData(user) {
   const note     = data.note     || '';
   const initials = ((first[0] || '') + (last[0] || '')).toUpperCase() || '?';
 
-  /* Sidebar */
   document.getElementById('avatarInitials').textContent = initials;
   document.getElementById('sidebarName').textContent    = fullName;
   document.getElementById('sidebarEmail').textContent   = email;
   document.getElementById('welcomeName').textContent    = first || fullName;
 
-  /* Profil formu */
   document.getElementById('firstName').value  = first;
   document.getElementById('lastName').value   = last;
   document.getElementById('emailField').value = email;
@@ -532,7 +638,7 @@ async function loadUserData(user) {
   document.getElementById('noteField').value  = note;
 }
 
-/* ── Profil məlumatlarını Firestore-a yaz ── */
+/* ── Profil saxla ── */
 async function saveProfile() {
   if (!currentUser) return;
   const first  = document.getElementById('firstName').value.trim();
@@ -549,7 +655,6 @@ async function saveProfile() {
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
 
-    /* Sidebar yenilə */
     const full = (first + ' ' + last).trim();
     document.getElementById('sidebarName').textContent = full || 'İstifadəçi';
     document.getElementById('welcomeName').textContent = first || full;
@@ -572,7 +677,6 @@ async function changePassword() {
   if (newPass.length < 6)              { showToast('Şifrə ən az 6 simvol olmalıdır'); return; }
 
   try {
-    /* Re-authenticate */
     const cred = firebase.auth.EmailAuthProvider.credential(currentUser.email, current);
     await currentUser.reauthenticateWithCredential(cred);
     await currentUser.updatePassword(newPass);
@@ -586,7 +690,7 @@ async function changePassword() {
   }
 }
 
-/* ── Sifarişləri Firestore-dan çək ── */
+/* ── Sifarişlər ── */
 async function loadOrders(uid) {
   const statusMap = {
     delivered: { lbl: 'Çatdırıldı', cls: 'badge-success' },
@@ -608,7 +712,6 @@ async function loadOrders(uid) {
     allOrders.innerHTML = '';
     recentOrds.innerHTML = '';
 
-    /* Stat */
     document.getElementById('statOrders').textContent = snap.size;
     let totalSpent = 0;
 
@@ -649,7 +752,7 @@ async function loadOrders(uid) {
   }
 }
 
-/* ── İstək siyahısını Firestore-dan çək ── */
+/* ── Wishlist ── */
 async function loadWishlist(uid) {
   try {
     const snap = await fbDb.collection('wishlists').doc(uid).get();
@@ -670,9 +773,7 @@ async function loadWishlist(uid) {
         <div class="wish-card">
           <div class="wish-img">${imgHTML}</div>
           <div class="wish-info">
-            ${item.brand
-              ? `<div style="font-size:0.68rem;color:#b07a4a;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:2px">${item.brand}</div>`
-              : ''}
+            ${item.brand ? `<div style="font-size:0.68rem;color:#b07a4a;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:2px">${item.brand}</div>` : ''}
             <div class="wish-name">${item.name || ''}</div>
             <div class="wish-price">${(item.price || 0).toFixed(2)} ₼</div>
           </div>
@@ -682,8 +783,8 @@ async function loadWishlist(uid) {
     console.warn('Wishlist yüklənmədi:', err.message);
   }
 }
-  
-/* ── Ünvanları Firestore-dan çək ── */
+
+/* ── Ünvanlar ── */
 async function loadAddresses(uid) {
   try {
     const snap = await fbDb.collection('addresses')
@@ -691,7 +792,6 @@ async function loadAddresses(uid) {
       .get();
 
     const grid = document.getElementById('addressGrid');
-    /* "Yeni ünvan" kartı hər zaman sonunda */
     const addBtn = grid.querySelector('.add-addr-card');
     grid.innerHTML = '';
 
@@ -742,10 +842,15 @@ function switchTab(name, el) {
   document.querySelectorAll('[id^="tab-"]').forEach(t => t.style.display = 'none');
   document.getElementById('tab-' + name).style.display = '';
   document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
-  el.classList.add('active');
+  if (el) el.classList.add('active');
+
+  // Vendor tab açılanda yüklə
+  if (name === 'vendor' && currentUser) {
+    loadVendorTab(currentUser.uid);
+  }
 }
 
-/* ── Toast bildiriş ── */
+/* ── Toast ── */
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
