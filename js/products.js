@@ -85,6 +85,13 @@ async function loadListings() {
 }
 
 /* ══════════════════════════════
+   MAĞAZAYA KEÇİD
+   ══════════════════════════════ */
+function goToStore(uid) {
+  if (uid) window.location.href = 'store.html?uid=' + uid;
+}
+
+/* ══════════════════════════════
    MƏHSUL KART HTML
    ══════════════════════════════ */
 function createProductCard(p, favIds = []) {
@@ -92,10 +99,13 @@ function createProductCard(p, favIds = []) {
   const badge      = p.badge || 'Yeni';
   const isNew      = badge === 'Yeni';
   const imgSrc     = (p.imgs && p.imgs[0]) || p.img || '';
-   const brandLabel = p.brand || p.storeName || '';
   const currentUid = fbAuth.currentUser?.uid || null;
   const canDelete  = p._fromFirebase && currentUid && p.userId === currentUid;
   const isFav      = favIds.includes(String(p.id));
+
+  /* Brand: Firebase elanlarında storeName fallback, mağaza linkli */
+  const brandLabel     = p.brand || p.storeName || '';
+  const storeClickable = p._fromFirebase && !!p.userId;
 
   return `
     <div class="card" data-id="${p.id}">
@@ -112,7 +122,13 @@ function createProductCard(p, favIds = []) {
         </button>
       </div>
       <div class="card-body">
-        <div class="card-brand">${brandLabel}</div>
+        <div class="card-brand"
+          ${storeClickable
+            ? `onclick="event.stopPropagation();goToStore('${p.userId}')"
+               style="cursor:pointer;"
+               title="${brandLabel} mağazasına bax"`
+            : ''}
+        >${brandLabel}</div>
         <div class="card-name">${p.name}</div>
         <div class="card-footer">
           <div class="price-wrap">
@@ -147,7 +163,6 @@ async function renderProducts(products, containerId = 'productGrid') {
   const grid = document.getElementById(containerId);
   if (!grid) return;
 
-  // Cari istifadəçinin favoritlərini çək
   let favIds = [];
   const user = fbAuth.currentUser;
   if (user) {
@@ -202,7 +217,6 @@ async function toggleFav(btn, productId) {
   const svg = btn.querySelector('svg');
   const ref = fbDb.collection('wishlists').doc(user.uid);
 
-  // Optimistik UI yenilənməsi
   btn.classList.toggle('active');
   if (!isActive) {
     svg.setAttribute('fill', '#e63946');
@@ -218,7 +232,6 @@ async function toggleFav(btn, productId) {
 
     let newItems;
     if (!isActive) {
-      // Əlavə et
       const alreadyExists = items.some(i => String(i.id) === String(productId));
       if (alreadyExists) return;
       newItems = [...items, {
@@ -230,14 +243,12 @@ async function toggleFav(btn, productId) {
       }];
       if (typeof toast !== 'undefined') toast.show(`${product.name} istək siyahısına əlavə edildi ❤️`, 'success');
     } else {
-      // Çıxar
       newItems = items.filter(i => String(i.id) !== String(productId));
       if (typeof toast !== 'undefined') toast.show(`${product.name} istək siyahısından çıxarıldı`, 'default');
     }
 
     await ref.set({ items: newItems }, { merge: false });
   } catch (err) {
-    // Xəta olsa geri qaytar
     btn.classList.toggle('active');
     if (isActive) {
       svg.setAttribute('fill', '#e63946');
@@ -251,7 +262,7 @@ async function toggleFav(btn, productId) {
 }
 
 /* ══════════════════════════════
-   ELAN ƏLAVƏ ET — MODAL
+   ELAN ƏLAVƏ ET — MODAL (köhnə, index.html üçün)
    ══════════════════════════════ */
 const listing = {
   selectedImages: [],
@@ -294,6 +305,7 @@ const listing = {
 
   renderPreviews() {
     const wrap = document.getElementById('imgPreviews');
+    if (!wrap) return;
     wrap.innerHTML = '';
     this.selectedImages.forEach((src, i) => {
       const div = document.createElement('div');
