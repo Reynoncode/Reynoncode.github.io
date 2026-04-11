@@ -21,12 +21,19 @@ async function loadStorePage() {
     return;
   }
 
-  // Cari istifadəçi bu mağazanın sahibidirsə — satıcı panelini göstər
   const cu = fbAuth.currentUser;
   if (cu && cu.uid === storeUid) {
     await loadVendorDashboard(storeUid);
     return;
   }
+
+  // Auth state dəyişirsə yenidən yoxla
+  fbAuth.onAuthStateChanged(async (user) => {
+    if (user && user.uid === storeUid) {
+      await loadVendorDashboard(storeUid);
+      return;
+    }
+  });
 
   try {
     const [vSnap, uSnap] = await Promise.all([
@@ -72,6 +79,76 @@ async function loadStorePage() {
 }
 
 /* ══════════════════════════════════════════
+   SİFARİŞLƏRİ FETCH ET (3 üsul ilə)
+══════════════════════════════════════════ */
+async function fetchVendorOrders(uid) {
+  // Metod 1: vendorId sahəsi ilə
+  // Metod 2: items[] içində userId olan sifarişlər
+  // Hər ikisini birləşdir, dublikatları sil
+
+  let allOrders = [];
+  const seen = new Set();
+
+  try {
+    // 1) vendorId == uid
+    const snap1 = await fbDb.collection('orders')
+      .where('vendorId', '==', uid)
+      .orderBy('createdAt', 'desc')
+      .get();
+    snap1.docs.forEach(d => {
+      if (!seen.has(d.id)) { seen.add(d.id); allOrders.push({ id: d.id, ...d.data() }); }
+    });
+  } catch(e) { /* index yoxdursa skip */ }
+
+  try {
+    // 2) items arrayContains üçün — əvvəlcə bütün sifarişlər içindən filtrə edirik
+    // (Firestore array-contains object dəstəkləmir, buna görə sellerUid sahəsini yoxlayırıq)
+    const snap2 = await fbDb.collection('orders')
+      .where('sellerUid', '==', uid)
+      .orderBy('createdAt', 'desc')
+      .get();
+    snap2.docs.forEach(d => {
+      if (!seen.has(d.id)) { seen.add(d.id); allOrders.push({ id: d.id, ...d.data() }); }
+    });
+  } catch(e) { /* skip */ }
+
+  try {
+    // 3) items[].vendorId varsa — arrayContains işləmir, amma items[0].userId yoxlaya bilərik
+    // Bütün sifarişləri çək, items içindən filtrə et
+    if (allOrders.length === 0) {
+      const snap3 = await fbDb.collection('orders')
+        .orderBy('createdAt', 'desc')
+        .limit(200)
+        .get();
+      snap3.docs.forEach(d => {
+        if (seen.has(d.id)) return;
+        const data = d.data();
+        const items = data.items || [];
+        // items içindəki hər hansı məhsulun userId-si bu satıcıya aiddirsə
+        const belongs = items.some(item =>
+          item.userId === uid ||
+          item.vendorId === uid ||
+          item.sellerId === uid
+        );
+        if (belongs) {
+          seen.add(d.id);
+          allOrders.push({ id: d.id, ...data });
+        }
+      });
+    }
+  } catch(e) { /* skip */ }
+
+  // Tarixə görə sırala
+  allOrders.sort((a, b) => {
+    const ta = a.createdAt?.toDate?.() || new Date(0);
+    const tb = b.createdAt?.toDate?.() || new Date(0);
+    return tb - ta;
+  });
+
+  return allOrders;
+}
+
+/* ══════════════════════════════════════════
    SATICI PANELİ
 ══════════════════════════════════════════ */
 async function loadVendorDashboard(uid) {
@@ -80,11 +157,10 @@ async function loadVendorDashboard(uid) {
   content.innerHTML = `<p style="text-align:center;padding:4rem;color:var(--muted)">Yüklənir...</p>`;
 
   try {
-    const [vSnap, uSnap, listSnap, ordersSnap] = await Promise.all([
+    const [vSnap, uSnap, listSnap] = await Promise.all([
       fbDb.collection('vendors').doc(uid).get(),
       fbDb.collection('users').doc(uid).get(),
-      fbDb.collection('listings').where('userId', '==', uid).get(),
-      fbDb.collection('orders').where('vendorId', '==', uid).orderBy('createdAt', 'desc').get()
+      fbDb.collection('listings').where('userId', '==', uid).get()
     ]);
 
     const v = vSnap.exists ? vSnap.data() : {};
@@ -94,19 +170,20 @@ async function loadVendorDashboard(uid) {
     const city      = v.city || u.city || 'Bakı';
 
     const listings = listSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    const orders   = ordersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-    const totalRevenue  = orders.filter(o => o.status === 'delivered').reduce((s, o) => s + (o.total || 0), 0);
-    const totalOrders   = orders.length;
-    const activeListings = listings.filter(l => l.stock > 0 || l.quantity > 0).length || listings.length;
+    // Sifarişləri 3 üsulla fetch et
+    const orders = await fetchVendorOrders(uid);
+
+    const totalRevenue   = orders.filter(o => o.status === 'delivered').reduce((s, o) => s + (o.total || 0), 0);
+    const totalOrders    = orders.length;
+    const activeListings = listings.filter(l => (l.sizes || []).reduce((s,x)=>s+(parseInt(x.stock)||0),0) > 0 || l.stock > 0 || l.quantity > 0).length || listings.length;
     const pendingOrders  = orders.filter(o => o.status === 'pending').length;
 
-    // Logo initials
     const initials = storeName.split(' ').map(w => w[0] || '').join('').substring(0, 2).toUpperCase();
 
-    const statusLabel = { pending: 'Gözlənilir', shipped: 'Yolda', delivered: 'Çatdırıldı' };
-    const statusColor = { pending: '#b07820', shipped: '#1a4fb8', delivered: '#2d7a47' };
-    const statusBg    = { pending: '#fdf8f0', shipped: '#eef3fd', delivered: '#f0faf4' };
+    const statusLabel = { pending: 'Gözlənilir', processing: 'Hazırlanır', shipped: 'Yolda', delivered: 'Çatdırıldı', cancelled: 'Ləğv edildi' };
+    const statusColor = { pending: '#b07820', processing: '#6b21a8', shipped: '#1a4fb8', delivered: '#2d7a47', cancelled: '#991b1b' };
+    const statusBg    = { pending: '#fdf8f0', processing: '#faf5ff', shipped: '#eef3fd', delivered: '#f0faf4', cancelled: '#fef2f2' };
 
     content.innerHTML = `
       <div style="display:flex;gap:24px;padding:24px 0;max-width:1100px;margin:0 auto">
@@ -119,7 +196,7 @@ async function loadVendorDashboard(uid) {
         </div>
 
         <!-- Ana panel -->
-        <div style="flex:1">
+        <div style="flex:1;min-width:0">
 
           <!-- Başlıq -->
           <div style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:16px;padding:20px 24px;margin-bottom:16px">
@@ -141,9 +218,9 @@ async function loadVendorDashboard(uid) {
           <!-- Statistika kartları -->
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
             ${[
-              { icon:'💰', label:'Ümumi gəlir', value: totalRevenue.toFixed(2) + ' ₼' },
-              { icon:'📦', label:'Ümumi sifariş', value: totalOrders },
-              { icon:'🏷️', label:'Aktiv elan', value: activeListings },
+              { icon:'💰', label:'Ümumi gəlir',     value: totalRevenue.toFixed(2) + ' ₼' },
+              { icon:'📦', label:'Ümumi sifariş',   value: totalOrders },
+              { icon:'🏷️', label:'Aktiv elan',      value: activeListings },
               { icon:'⏳', label:'Gözləyən sifariş', value: pendingOrders }
             ].map(s => `
               <div style="background:#fff;border:1px solid var(--border);border-radius:14px;padding:18px">
@@ -162,20 +239,26 @@ async function loadVendorDashboard(uid) {
                 <select id="orderStatusFilter" onchange="filterVendorOrders()" style="font-size:0.78rem;padding:4px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
                   <option value="">Hamısı</option>
                   <option value="pending">Gözlənilir</option>
+                  <option value="processing">Hazırlanır</option>
                   <option value="shipped">Yolda</option>
                   <option value="delivered">Çatdırıldı</option>
+                  <option value="cancelled">Ləğv edildi</option>
                 </select>
               </div>
             </div>
 
             ${orders.length === 0 ? `
-              <div style="text-align:center;padding:32px;color:var(--muted);font-size:0.88rem">Hələ sifariş yoxdur</div>
+              <div style="text-align:center;padding:32px;color:var(--muted);font-size:0.88rem">
+                <div style="font-size:2rem;margin-bottom:8px">📭</div>
+                Hələ sifariş yoxdur
+                <div style="font-size:0.75rem;margin-top:8px;color:#aaa">Sifarişlər buraya avtomatik düşəcək</div>
+              </div>
             ` : `
               <div style="overflow-x:auto">
                 <table id="ordersTable" style="width:100%;border-collapse:collapse;font-size:0.82rem">
                   <thead>
-                    <tr style="border-bottom:1px solid var(--border)">
-                      ${['MƏHSUL','SİFARİŞ №','TARİX','MƏBLƏĞ','STATUS',''].map(h =>
+                    <tr style="border-bottom:2px solid var(--border)">
+                      ${['MƏHSUL & DETALLAR','SİFARİŞ №','TARİX','MƏBLƏĞ','STATUS',''].map(h =>
                         `<th style="text-align:left;padding:8px 12px;color:var(--muted);font-weight:500;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.04em">${h}</th>`
                       ).join('')}
                     </tr>
@@ -208,19 +291,21 @@ async function loadVendorDashboard(uid) {
                   </tr>
                 </thead>
                 <tbody>
-                  ${listings.slice(0, 5).map(l => `
+                  ${listings.slice(0, 5).map(l => {
+                    const totalStock = (l.sizes||[]).reduce((s,x)=>s+(parseInt(x.stock)||0),0) || l.stock || l.quantity || 0;
+                    return `
                     <tr style="border-bottom:1px solid var(--border)">
                       <td style="padding:10px 12px;font-weight:500">${l.name || '—'}</td>
                       <td style="padding:10px 12px;color:var(--muted)">${l.category || '—'}</td>
                       <td style="padding:10px 12px;font-weight:600">${(l.price || 0).toFixed(2)} ₼</td>
                       <td style="padding:10px 12px">
-                        ${(l.stock > 0 || l.quantity > 0)
-                          ? `<span style="background:#eefaf4;color:#2d7a47;font-size:0.72rem;padding:2px 8px;border-radius:20px">${l.stock || l.quantity} ədəd</span>`
+                        ${totalStock > 0
+                          ? `<span style="background:#eefaf4;color:#2d7a47;font-size:0.72rem;padding:2px 8px;border-radius:20px">${totalStock} ədəd</span>`
                           : `<span style="background:#fdf0f0;color:#a33333;font-size:0.72rem;padding:2px 8px;border-radius:20px">Stok yoxdur</span>`
                         }
                       </td>
-                    </tr>
-                  `).join('')}
+                    </tr>`;
+                  }).join('')}
                 </tbody>
               </table>
             `}
@@ -230,44 +315,67 @@ async function loadVendorDashboard(uid) {
       </div>
     `;
 
-    // Sifariş sətirləri üçün data saxla (filter üçün)
-    window._vendorOrders = orders;
+    window._vendorOrders      = orders;
     window._vendorStatusLabel = statusLabel;
     window._vendorStatusColor = statusColor;
     window._vendorStatusBg    = statusBg;
 
   } catch (err) {
     content.innerHTML = `<p style="color:var(--danger);text-align:center;padding:4rem;font-size:.875rem;">Xəta: ${err.message}</p>`;
+    console.error('Dashboard xətası:', err);
   }
 }
 
-/* ── Sifariş sətri render ── */
+/* ── Sifariş sətri render (tam detallarla) ── */
 function renderOrderRow(order, statusLabel, statusColor, statusBg) {
   const status = order.status || 'pending';
   const date   = order.createdAt?.toDate
     ? order.createdAt.toDate().toLocaleDateString('az-AZ')
     : '—';
-  const itemNames = (order.items || []).map(i => i.name).join(', ').substring(0, 40);
+
+  const items = order.items || [];
+  const itemNames = items.map(i => i.name || i.title || '').filter(Boolean).join(', ');
+  const displayName = itemNames.substring(0, 50) || '—';
+
+  // Seçilmiş rəng, ölçü, ünvan
+  const firstItem  = items[0] || {};
+  const color      = firstItem.selectedColor?.name || firstItem.color || order.color || '';
+  const size       = firstItem.selectedSize?.label || firstItem.size  || order.size  || '';
+  const address    = order.address || order.deliveryAddress || order.shippingAddress || '';
+  const addressStr = typeof address === 'object'
+    ? [address.city, address.district, address.street, address.apartment].filter(Boolean).join(', ')
+    : (address || '');
+
+  const buyerName = order.buyerName || order.userName || order.customerName || '';
+
+  // Detail chip-ləri
+  const chips = [];
+  if (color) chips.push(`<span style="background:#f5f0ff;color:#6b21a8;font-size:0.68rem;padding:2px 7px;border-radius:10px">🎨 ${color}</span>`);
+  if (size)  chips.push(`<span style="background:#f0f9ff;color:#1a4fb8;font-size:0.68rem;padding:2px 7px;border-radius:10px">📐 ${size}</span>`);
 
   return `
     <tr data-status="${status}" style="border-bottom:1px solid var(--border)">
       <td style="padding:10px 12px">
-        <div style="font-weight:500;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${itemNames || '—'}</div>
-        <div style="font-size:0.72rem;color:var(--muted)">${(order.items || []).length} məhsul</div>
+        <div style="font-weight:500;max-width:200px">${displayName}</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:2px">${items.length} məhsul${buyerName ? ' · ' + buyerName : ''}</div>
+        ${chips.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:5px">${chips.join('')}</div>` : ''}
+        ${addressStr ? `<div style="font-size:0.68rem;color:var(--muted);margin-top:4px;display:flex;align-items:center;gap:3px"><span>📍</span><span style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${addressStr}</span></div>` : ''}
       </td>
       <td style="padding:10px 12px">
-        <span style="font-family:monospace;font-weight:600">#${order.orderNumber || '—'}</span>
+        <span style="font-family:monospace;font-weight:600">#${order.orderNumber || order.id?.substring(0,6) || '—'}</span>
       </td>
-      <td style="padding:10px 12px;color:var(--muted)">${date}</td>
-      <td style="padding:10px 12px;font-weight:700">${(order.total || 0).toFixed(2)} ₼</td>
+      <td style="padding:10px 12px;color:var(--muted);white-space:nowrap">${date}</td>
+      <td style="padding:10px 12px;font-weight:700;white-space:nowrap">${(order.total || 0).toFixed(2)} ₼</td>
       <td style="padding:10px 12px">
-        <span style="background:${statusBg[status]||'#f5f5f5'};color:${statusColor[status]||'#555'};font-size:0.72rem;font-weight:600;padding:3px 10px;border-radius:20px">
+        <span style="background:${statusBg[status]||'#f5f5f5'};color:${statusColor[status]||'#555'};font-size:0.72rem;font-weight:600;padding:3px 10px;border-radius:20px;white-space:nowrap">
           ${statusLabel[status] || status}
         </span>
       </td>
       <td style="padding:10px 12px">
         <button onclick="openOrderStatusModal('${order.id}', '${status}')"
-          style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:0.75rem;cursor:pointer;color:var(--text);white-space:nowrap">
+          style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:0.75rem;cursor:pointer;color:var(--text);white-space:nowrap;transition:all 0.15s"
+          onmouseover="this.style.borderColor='var(--accent)'"
+          onmouseout="this.style.borderColor='var(--border)'">
           Status dəyiş
         </button>
       </td>
@@ -279,9 +387,9 @@ function renderOrderRow(order, statusLabel, statusColor, statusBg) {
 function filterVendorOrders() {
   const filter = document.getElementById('orderStatusFilter')?.value || '';
   const orders = window._vendorOrders || [];
-  const sl     = window._vendorStatusLabel;
-  const sc     = window._vendorStatusColor;
-  const sb     = window._vendorStatusBg;
+  const sl = window._vendorStatusLabel;
+  const sc = window._vendorStatusColor;
+  const sb = window._vendorStatusBg;
 
   const filtered = filter ? orders.filter(o => o.status === filter) : orders;
   const tbody = document.getElementById('ordersTableBody');
@@ -303,9 +411,10 @@ function openOrderStatusModal(orderId, currentStatus) {
   overlay.style.cssText = 'display:flex;align-items:center;justify-content:center;z-index:2000';
 
   const statusFlow = [
-    { key: 'pending',   icon: '⏳', label: 'Gözlənilir',  desc: 'Sifariş qəbul edilib, hazırlanır' },
-    { key: 'shipped',   icon: '🚚', label: 'Yolda',        desc: 'Sifariş göndərildi, çatdırılır' },
-    { key: 'delivered', icon: '✅', label: 'Çatdırıldı',   desc: 'Sifariş alıcıya çatdırıldı' }
+    { key: 'pending',    icon: '⏳', label: 'Gözlənilir',   desc: 'Sifariş qəbul edilib, hazırlanır' },
+    { key: 'processing', icon: '📦', label: 'Hazırlanır',    desc: 'Sifariş yığılır və hazırlanır' },
+    { key: 'shipped',    icon: '🚚', label: 'Yolda',         desc: 'Sifariş göndərildi, çatdırılır' },
+    { key: 'delivered',  icon: '✅', label: 'Çatdırıldı',    desc: 'Sifariş alıcıya çatdırıldı' },
   ];
 
   const currentIdx = statusFlow.findIndex(s => s.key === currentStatus);
@@ -327,10 +436,10 @@ function openOrderStatusModal(orderId, currentStatus) {
               transition:all 0.3s">
               ${i < currentIdx ? '✓' : s.icon}
             </div>
-            <div style="font-size:0.72rem;font-weight:${i===currentIdx?'600':'400'};color:${i<=currentIdx?'var(--text)':'var(--muted)'};text-align:center">${s.label}</div>
+            <div style="font-size:0.68rem;font-weight:${i===currentIdx?'600':'400'};color:${i<=currentIdx?'var(--text)':'var(--muted)'};text-align:center;line-height:1.3">${s.label}</div>
           </div>
           ${i < statusFlow.length - 1 ? `
-            <div style="flex:0 0 40px;height:2px;background:${i < currentIdx ? '#1a1a1a' : 'var(--border)'};margin-top:-18px"></div>
+            <div style="flex:0 0 30px;height:2px;background:${i < currentIdx ? '#1a1a1a' : 'var(--border)'};margin-top:-18px"></div>
           ` : ''}
         `).join('')}
       </div>
@@ -353,6 +462,12 @@ function openOrderStatusModal(orderId, currentStatus) {
           </button>
         `).join('')}
       </div>
+
+      <!-- Ləğv et düyməsi -->
+      <button onclick="updateOrderStatus('${orderId}', 'cancelled')"
+        style="width:100%;padding:10px;border:1.5px solid #fecaca;border-radius:10px;background:#fef2f2;color:#dc2626;font-size:0.82rem;font-weight:500;cursor:pointer;font-family:inherit;transition:all 0.2s">
+        ❌ Sifarişi ləğv et
+      </button>
     </div>
   `;
 
@@ -369,26 +484,34 @@ async function updateOrderStatus(orderId, newStatus) {
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
-    // Lokal _vendorOrders-u yenilə
     if (window._vendorOrders) {
       const idx = window._vendorOrders.findIndex(o => o.id === orderId);
       if (idx !== -1) window._vendorOrders[idx].status = newStatus;
     }
 
     document.getElementById('statusChangeModal')?.remove();
-    toast.show('Status yeniləndi ✓', 'success');
 
-    // Cədvəli yenilə
+    if (typeof toast !== 'undefined') toast.show('Status yeniləndi ✓', 'success');
+    else alert('Status yeniləndi ✓');
+
     filterVendorOrders();
 
+    // Statistikaları yenilə
+    const sl = window._vendorStatusLabel;
+    const sc = window._vendorStatusColor;
+    const sb = window._vendorStatusBg;
+    const orders = window._vendorOrders || [];
+    const pendingCount   = orders.filter(o => o.status === 'pending').length;
+    const deliveredTotal = orders.filter(o => o.status === 'delivered').reduce((s,o) => s + (o.total||0), 0);
+
   } catch (err) {
-    toast.show('Xəta: ' + err.message, 'error');
+    if (typeof toast !== 'undefined') toast.show('Xəta: ' + err.message, 'error');
+    else alert('Xəta: ' + err.message);
   }
 }
 
 function vendorSidebarClick(idx) {
   if (idx === 7) { fbAuth.signOut(); return; }
-  // Digər menüler gələcəkdə genişləndirilə bilər
 }
 
 /* ══════════════════════════════════════════
