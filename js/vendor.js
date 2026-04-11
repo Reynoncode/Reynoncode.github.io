@@ -394,22 +394,16 @@ function vdRenderOrderCards(orders) {
   container.innerHTML = orders.map(o => vdOrderCardHTML(o)).join('');
 }
 
+/* ── vendor.js → vdOrderCardHTML() funksiyasını TAM BU KOD ilə əvəzlə ── */
+
 function vdOrderCardHTML(o) {
   const st   = VD_STATUS[o.status] || { lbl: o.status || '—', color: '#888', bg: '#f5f5f5' };
   const date = o.createdAt?.toDate
     ? o.createdAt.toDate().toLocaleDateString('az-AZ', { day: '2-digit', month: '2-digit', year: 'numeric' })
     : '—';
 
-  const items     = o.items || [];
-  const itemNames = items.map(i => i.name || i.title || '').filter(Boolean).join(', ');
-  const shortName = itemNames.length > 45 ? itemNames.substring(0, 45) + '…' : (itemNames || 'Sifariş');
-  const orderNum  = o.orderNumber ? `#${o.orderNumber}` : `#${o.id.slice(-6).toUpperCase()}`;
-
-  // Məhsul detalları
-  const firstItem  = items[0] || {};
-  const color      = firstItem.selectedColor?.name || firstItem.color || o.color || '';
-  const colorHex   = firstItem.selectedColor?.hex  || firstItem.colorHex || '';
-  const size       = firstItem.selectedSize?.label || firstItem.size  || o.size  || '';
+  const items    = o.items || [];
+  const orderNum = o.orderNumber ? `#${o.orderNumber}` : `#${o.id.slice(-6).toUpperCase()}`;
 
   // Müştəri məlumatları
   const buyerName  = o.buyerName  || o.userName  || o.customerName || '';
@@ -422,60 +416,82 @@ function vdOrderCardHTML(o) {
     ? (addrObj.label || [addrObj.city, addrObj.district, addrObj.street, addrObj.apartment].filter(Boolean).join(', '))
     : (addrObj || '');
 
-  // Rəng chip
-  const colorChip = color
-    ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#f5f0ff;color:#6b21a8;font-size:0.7rem;padding:2px 8px;border-radius:10px;">
-        ${colorHex ? `<span style="width:9px;height:9px;border-radius:50%;background:${colorHex};border:1px solid rgba(0,0,0,.15);flex-shrink:0;display:inline-block;"></span>` : '🎨'} ${color}
-       </span>`
-    : '';
+  // Hər məhsul üçün ölçü + rəng chiplərini render et
+  function itemChips(item) {
+    const color    = item.selectedColor?.name || item.color    || '';
+    const colorHex = item.selectedColor?.hex  || item.colorHex || '';
+    const size     = item.selectedSize?.label || item.size     || '';
+    const qty      = item.quantity || 1;
 
-  // Ölçü chip
-  const sizeChip = size
-    ? `<span style="background:#f0f9ff;color:#1a4fb8;font-size:0.7rem;padding:2px 8px;border-radius:10px;">📐 ${size}</span>`
-    : '';
+    const colorChip = color
+      ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#f5f0ff;color:#6b21a8;font-size:0.7rem;padding:2px 8px;border-radius:10px;">
+          ${colorHex ? `<span style="width:9px;height:9px;border-radius:50%;background:${colorHex};border:1px solid rgba(0,0,0,.15);flex-shrink:0;display:inline-block;"></span>` : '🎨'} ${color}
+         </span>`
+      : '';
+    const sizeChip = size
+      ? `<span style="background:#f0f9ff;color:#1a4fb8;font-size:0.7rem;padding:2px 8px;border-radius:10px;">📐 ${size}</span>`
+      : '';
+    const qtyChip = qty > 1
+      ? `<span style="background:#f0faf4;color:#1e8449;font-size:0.7rem;padding:2px 8px;border-radius:10px;">×${qty}</span>`
+      : '';
+
+    return (colorChip || sizeChip || qtyChip)
+      ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">${colorChip}${sizeChip}${qtyChip}</div>`
+      : '';
+  }
+
+  // Məhsullar siyahısı
+  const itemsHTML = items.map(item => {
+    const name  = item.name || item.title || '—';
+    const price = ((item.price || 0) * (item.quantity || 1)).toFixed(2);
+    return `
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px dashed var(--border);">
+        <div style="flex:1;">
+          <div style="font-size:0.82rem;font-weight:500;">${name}</div>
+          ${itemChips(item)}
+        </div>
+        <div style="font-size:0.8rem;font-weight:600;white-space:nowrap;flex-shrink:0;">${price} ₼</div>
+      </div>`;
+  }).join('');
 
   return `
     <div style="border:1px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:0.75rem;transition:box-shadow .2s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,.07)'" onmouseout="this.style.boxShadow='none'">
 
-      <!-- Üst sıra: məhsul adı + sifariş № + tarix + məbləğ + status + düymə -->
-      <div style="display:flex;align-items:flex-start;gap:0.75rem;flex-wrap:wrap;">
-        <div style="flex:1;min-width:160px;">
-          <div style="font-weight:600;font-size:0.88rem;margin-bottom:3px;">${shortName}</div>
-          <div style="font-size:0.72rem;color:var(--muted);">${items.length} məhsul</div>
-          ${(colorChip || sizeChip) ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;">${colorChip}${sizeChip}</div>` : ''}
-        </div>
-        <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;flex-shrink:0;">
-          <span style="font-family:monospace;font-weight:700;font-size:0.85rem;">${orderNum}</span>
-          <span style="color:var(--muted);font-size:0.78rem;">${date}</span>
-          <span style="font-weight:700;font-size:0.9rem;">${(o.total||0).toFixed(2)} ₼</span>
-          <span style="background:${st.bg};color:${st.color};padding:3px 10px;border-radius:20px;font-size:0.72rem;font-weight:600;white-space:nowrap;">${st.lbl}</span>
-          <button onclick="vdOpenStatusModal('${o.id}','${o.status||'pending'}')"
-            style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:0.75rem;cursor:pointer;color:var(--accent);white-space:nowrap;font-family:inherit;transition:border-color .15s;"
-            onmouseover="this.style.borderColor='#1a1a1a'"
-            onmouseout="this.style.borderColor='var(--border)'">
-            Status dəyiş
-          </button>
-        </div>
+      <!-- Üst sıra: sifariş № + tarix + məbləğ + status + düymə -->
+      <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;margin-bottom:0.75rem;">
+        <span style="font-family:monospace;font-weight:700;font-size:0.85rem;">${orderNum}</span>
+        <span style="color:var(--muted);font-size:0.78rem;">${date}</span>
+        <span style="flex:1;"></span>
+        <span style="font-weight:700;font-size:0.9rem;">${(o.total||0).toFixed(2)} ₼</span>
+        <span style="background:${st.bg};color:${st.color};padding:3px 10px;border-radius:20px;font-size:0.72rem;font-weight:600;white-space:nowrap;">${st.lbl}</span>
+        <button onclick="vdOpenStatusModal('${o.id}','${o.status||'pending'}')"
+          style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:0.75rem;cursor:pointer;color:var(--accent);white-space:nowrap;font-family:inherit;transition:border-color .15s;"
+          onmouseover="this.style.borderColor='#1a1a1a'"
+          onmouseout="this.style.borderColor='var(--border)'">
+          Status dəyiş
+        </button>
       </div>
 
-      <!-- Alt sıra: müştəri + ünvan ayrı bölümlərdə -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:0.85rem;padding-top:0.85rem;border-top:1px solid var(--border);">
+      <!-- Məhsullar siyahısı (hər biri öz ölçü/rəng/miqdarı ilə) -->
+      <div style="margin-bottom:0.85rem;">
+        <div style="font-size:0.68rem;font-weight:600;color:var(--muted);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:0.4rem;">
+          📦 Məhsullar (${items.length})
+        </div>
+        ${itemsHTML || '<div style="font-size:0.78rem;color:var(--muted);">Məhsul məlumatı yoxdur</div>'}
+      </div>
 
-        <!-- Müştəri məlumatları -->
+      <!-- Alt sıra: müştəri + ünvan -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border);">
+
         <div style="background:#f8f8f8;border-radius:8px;padding:0.65rem 0.85rem;">
           <div style="font-size:0.68rem;font-weight:600;color:var(--muted);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:0.45rem;">👤 Müştəri</div>
           ${buyerName
             ? `<div style="font-size:0.8rem;font-weight:500;margin-bottom:2px;">${buyerName}</div>`
             : `<div style="font-size:0.78rem;color:var(--muted);">Ad məlumatı yoxdur</div>`}
-          ${buyerPhone
-            ? `<div style="font-size:0.76rem;color:#555;display:flex;align-items:center;gap:4px;margin-top:2px;">📞 ${buyerPhone}</div>`
-            : ''}
-          ${buyerEmail
-            ? `<div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">✉️ ${buyerEmail}</div>`
-            : ''}
+          ${buyerPhone ? `<div style="font-size:0.76rem;color:#555;display:flex;align-items:center;gap:4px;margin-top:2px;">📞 ${buyerPhone}</div>` : ''}
+          ${buyerEmail ? `<div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">✉️ ${buyerEmail}</div>` : ''}
         </div>
 
-        <!-- Çatdırılma ünvanı -->
         <div style="background:#f8f8f8;border-radius:8px;padding:0.65rem 0.85rem;">
           <div style="font-size:0.68rem;font-weight:600;color:var(--muted);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:0.45rem;">📍 Çatdırılma ünvanı</div>
           ${addressStr
