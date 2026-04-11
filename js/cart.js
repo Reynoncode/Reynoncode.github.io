@@ -45,13 +45,14 @@ const cart = {
       await itemRef.update({ quantity: existing.quantity + 1, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
     } else {
       await itemRef.set({
-        id: product.id, name: product.name, price: product.price,
-        img: product.img || product.image || '', brand: product.brand || '',
-        size: size || null, quantity: 1,
-        addedAt:   firebase.firestore.FieldValue.serverTimestamp(),
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-
-          vendorId: product.vendorId || product.userId || product.sellerId || null,
+        id:       product.id,
+        name:     product.name,
+        price:    product.price,
+        img:      product.img || product.image || '',
+        brand:    product.brand || '',
+        size:     size || null,
+        quantity: 1,
+        vendorId: product.vendorId || product.userId || product.sellerId || null,
         addedAt:  firebase.firestore.FieldValue.serverTimestamp(),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
@@ -190,7 +191,6 @@ function handleCheckout() {
 }
 
 function openAddressStep() {
-  // Köhnə varsa sil
   const old = document.getElementById('checkoutOverlay');
   if (old) old.remove();
 
@@ -224,7 +224,6 @@ function openAddressStep() {
 
   overlay.addEventListener('click', e => { if (e.target === overlay) closeCheckout(); });
 
-  // Leaflet xəritəsi yüklə
   _loadLeaflet(() => _initMap());
 }
 
@@ -246,7 +245,6 @@ function _initMap() {
   const mapEl = document.getElementById('checkoutMap');
   if (!mapEl || !window.L) return;
 
-  // Bakı mərkəzi
   _checkoutMap = L.map('checkoutMap').setView([40.4093, 49.8671], 13);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -312,16 +310,13 @@ function openPaymentStep() {
     <h2 style="font-family:var(--font-display);margin-bottom:6px">Ödəniş</h2>
     <p style="color:var(--muted);font-size:0.85rem;margin-bottom:20px">Ödəniş üsulunu seçin</p>
 
-    <!-- Ünvan qısa xülasə -->
     <div style="background:var(--bg-2,#f7f4f0);border-radius:10px;padding:10px 14px;font-size:0.82rem;color:var(--muted);margin-bottom:20px;display:flex;gap:8px;align-items:flex-start">
       <span>📍</span>
       <span>${_checkoutAddress ? _checkoutAddress.label : '—'}</span>
     </div>
 
-    <!-- Ödəniş seçimləri -->
     <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px">
 
-      <!-- Pul qabı -->
       <label id="walletOption" style="display:flex;align-items:center;gap:14px;padding:16px;border:2px solid var(--border);border-radius:12px;cursor:pointer;transition:border-color 0.2s">
         <input type="radio" name="payMethod" value="wallet" style="display:none" onchange="selectPayMethod('wallet')"/>
         <div style="width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,#f0c040,#e0a020);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0">💰</div>
@@ -332,7 +327,6 @@ function openPaymentStep() {
         <div id="walletCheck" style="width:20px;height:20px;border-radius:50%;border:2px solid var(--border);flex-shrink:0"></div>
       </label>
 
-      <!-- Bank kartı -->
       <label id="cardOption" style="display:flex;align-items:center;gap:14px;padding:16px;border:2px solid var(--border);border-radius:12px;cursor:not-allowed;opacity:0.6;position:relative">
         <input type="radio" name="payMethod" value="card" disabled style="display:none"/>
         <div style="width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,#3a6fd8,#1a4fb8);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0">💳</div>
@@ -344,7 +338,6 @@ function openPaymentStep() {
       </label>
     </div>
 
-    <!-- Şərtlər mətni -->
     <div style="background:var(--bg-2,#f7f4f0);border-radius:10px;padding:14px 16px;font-size:0.78rem;color:var(--muted);line-height:1.6;margin-bottom:16px">
       <strong style="color:var(--text);display:block;margin-bottom:6px">Satış şərtləri</strong>
       Sifarişiniz təsdiqləndikdən sonra satıcı 24 saat ərzində göndərişi hazırlamalıdır.
@@ -354,13 +347,11 @@ function openPaymentStep() {
       Rəqəmsal məhsullar, istifadə edilmiş geyimlər və xüsusi sifarişlər iade edilmir.
     </div>
 
-    <!-- Şərtlər tick -->
     <label style="display:flex;align-items:flex-start;gap:10px;font-size:0.83rem;color:var(--muted);cursor:pointer;margin-bottom:20px">
       <input type="checkbox" id="termsCheck" onchange="updatePlaceBtn()" style="margin-top:2px;accent-color:var(--accent)"/>
       Şərtləri oxudum və qəbul edirəm
     </label>
 
-    <!-- Cəmi + Sifariş ver -->
     <div style="border-top:1px solid var(--border);padding-top:16px">
       <div style="display:flex;justify-content:space-between;font-size:1rem;margin-bottom:16px">
         <span>Cəmi:</span>
@@ -373,7 +364,6 @@ function openPaymentStep() {
     </div>
   `;
 
-  // İlk seçim — wallet vuraq
   setTimeout(() => { selectPayMethod('wallet'); }, 50);
 }
 
@@ -384,13 +374,12 @@ function selectPayMethod(method) {
 
   const walletOpt = document.getElementById('walletOption');
   const walletChk = document.getElementById('walletCheck');
-  const cardOpt   = document.getElementById('cardOption');
 
   if (walletOpt) walletOpt.style.borderColor = method === 'wallet' ? 'var(--accent)' : 'var(--border)';
   if (walletChk) {
-    walletChk.style.background    = method === 'wallet' ? 'var(--accent)' : 'transparent';
-    walletChk.style.borderColor   = method === 'wallet' ? 'var(--accent)' : 'var(--border)';
-    walletChk.innerHTML           = method === 'wallet' ? '<svg viewBox="0 0 10 10" width="10" height="10"><polyline points="1.5,5 4,7.5 8.5,2.5" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>' : '';
+    walletChk.style.background  = method === 'wallet' ? 'var(--accent)' : 'transparent';
+    walletChk.style.borderColor = method === 'wallet' ? 'var(--accent)' : 'var(--border)';
+    walletChk.innerHTML         = method === 'wallet' ? '<svg viewBox="0 0 10 10" width="10" height="10"><polyline points="1.5,5 4,7.5 8.5,2.5" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>' : '';
   }
   updatePlaceBtn();
 }
@@ -400,9 +389,9 @@ function updatePlaceBtn() {
   const btn   = document.getElementById('placeOrderBtn');
   if (!btn) return;
   const ok = _selectedPayMethod && terms && terms.checked;
-  btn.disabled       = !ok;
-  btn.style.opacity  = ok ? '1' : '0.4';
-  btn.style.cursor   = ok ? 'pointer' : 'not-allowed';
+  btn.disabled      = !ok;
+  btn.style.opacity = ok ? '1' : '0.4';
+  btn.style.cursor  = ok ? 'pointer' : 'not-allowed';
 }
 
 /* ══════════════════════════════
@@ -419,7 +408,6 @@ async function placeOrder() {
     const items = cart.getItems();
     const total = cart.getTotal();
 
-    // Hər satıcı üçün sifariş nömrəsi hesabla
     const vendorGroups = {};
     items.forEach(item => {
       const vid = item.vendorId || item.userId || 'unknown';
@@ -428,7 +416,6 @@ async function placeOrder() {
     });
 
     const orderPromises = Object.entries(vendorGroups).map(async ([vendorId, vendorItems]) => {
-      // Sifariş sayacını al və artır
       const counterRef = fbDb.collection('orderCounters').doc(vendorId);
       const orderNumber = await fbDb.runTransaction(async (tx) => {
         const snap = await tx.get(counterRef);
@@ -437,8 +424,7 @@ async function placeOrder() {
         return next;
       });
 
-      const orderNum = String(orderNumber).padStart(6, '0');
-
+      const orderNum    = String(orderNumber).padStart(6, '0');
       const vendorTotal = vendorItems.reduce((s, i) => s + i.price * (i.quantity || 1), 0);
 
       await fbDb.collection('orders').add({
@@ -453,7 +439,7 @@ async function placeOrder() {
         total:         vendorTotal,
         address:       _checkoutAddress,
         paymentMethod: _selectedPayMethod,
-        status:        'pending',      // pending → shipped → delivered
+        status:        'pending',
         createdAt:     firebase.firestore.FieldValue.serverTimestamp(),
         updatedAt:     firebase.firestore.FieldValue.serverTimestamp()
       });
@@ -510,7 +496,7 @@ function closeCheckout() {
     setTimeout(() => overlay.remove(), 300);
   }
   if (_checkoutMap) { _checkoutMap.remove(); _checkoutMap = null; }
-  _checkoutMarker = null;
+  _checkoutMarker  = null;
   _checkoutAddress = null;
   _selectedPayMethod = null;
 }
