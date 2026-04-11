@@ -420,9 +420,11 @@ function pdRenderPrice() {
 /* ══════════════════════════════════════
    SƏBƏTƏ ƏLAVƏ ET
 ══════════════════════════════════════ */
+/* ── product-detail.js → pdAddToCart() funksiyasını TAM BU KOD ilə əvəzlə ── */
+
 function pdAddToCart() {
   const p       = pdState.product;
-  const sizes   = p.sizes || [];
+  const sizes   = p.sizes  || [];
   const colors  = p.colors || [];
 
   if (sizes.length > 0 && pdState.selectedSize === null) {
@@ -436,14 +438,23 @@ function pdAddToCart() {
     return;
   }
 
+  const selSize  = pdState.selectedSize  !== null ? sizes[pdState.selectedSize]   : null;
+  const selColor = pdState.selectedColor !== null ? colors[pdState.selectedColor] : null;
+
   const cartProduct = {
     ...p,
-    selectedSize:  pdState.selectedSize !== null ? sizes[pdState.selectedSize]  : null,
-    selectedColor: pdState.selectedColor !== null ? colors[pdState.selectedColor] : null,
+    selectedSize:  selSize,
+    selectedColor: selColor,
+    // cart.add() color oxuması üçün düz sahələri də əlavə et
+    color:    selColor?.name || null,
+    colorHex: selColor?.hex  || null,
   };
 
   if (typeof cart !== 'undefined') {
-    cart.add(cartProduct);
+    // İKİNCİ ARQUMENTİ GÖNDƏR — size label-i
+    // Bu olmadan cart.add() docId-ni product.id kimi yaradır,
+    // Firestore-a size: null yazır.
+    cart.add(cartProduct, selSize?.label || null);
   }
 }
 
