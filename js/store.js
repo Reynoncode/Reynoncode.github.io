@@ -83,15 +83,10 @@ async function loadStorePage() {
    SİFARİŞLƏRİ FETCH ET (3 üsul ilə)
 ══════════════════════════════════════════ */
 async function fetchVendorOrders(uid) {
-  // Metod 1: vendorId sahəsi ilə
-  // Metod 2: items[] içində userId olan sifarişlər
-  // Hər ikisini birləşdir, dublikatları sil
-
   let allOrders = [];
   const seen = new Set();
 
   try {
-    // 1) vendorId == uid
     const snap1 = await fbDb.collection('orders')
       .where('vendorId', '==', uid)
       .orderBy('createdAt', 'desc')
@@ -102,8 +97,6 @@ async function fetchVendorOrders(uid) {
   } catch(e) { /* index yoxdursa skip */ }
 
   try {
-    // 2) items arrayContains üçün — əvvəlcə bütün sifarişlər içindən filtrə edirik
-    // (Firestore array-contains object dəstəkləmir, buna görə sellerUid sahəsini yoxlayırıq)
     const snap2 = await fbDb.collection('orders')
       .where('sellerUid', '==', uid)
       .orderBy('createdAt', 'desc')
@@ -114,8 +107,6 @@ async function fetchVendorOrders(uid) {
   } catch(e) { /* skip */ }
 
   try {
-    // 3) items[].vendorId varsa — arrayContains işləmir, amma items[0].userId yoxlaya bilərik
-    // Bütün sifarişləri çək, items içindən filtrə et
     if (allOrders.length === 0) {
       const snap3 = await fbDb.collection('orders')
         .orderBy('createdAt', 'desc')
@@ -125,7 +116,6 @@ async function fetchVendorOrders(uid) {
         if (seen.has(d.id)) return;
         const data = d.data();
         const items = data.items || [];
-        // items içindəki hər hansı məhsulun userId-si bu satıcıya aiddirsə
         const belongs = items.some(item =>
           item.userId === uid ||
           item.vendorId === uid ||
@@ -139,7 +129,6 @@ async function fetchVendorOrders(uid) {
     }
   } catch(e) { /* skip */ }
 
-  // Tarixə görə sırala
   allOrders.sort((a, b) => {
     const ta = a.createdAt?.toDate?.() || new Date(0);
     const tb = b.createdAt?.toDate?.() || new Date(0);
@@ -172,7 +161,6 @@ async function loadVendorDashboard(uid) {
 
     const listings = listSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-    // Sifarişləri 3 üsulla fetch et
     const orders = await fetchVendorOrders(uid);
 
     const totalRevenue   = orders.filter(o => o.status === 'delivered').reduce((s, o) => s + (o.total || 0), 0);
@@ -340,29 +328,51 @@ function renderOrderRow(order, statusLabel, statusColor, statusBg) {
   const itemNames = items.map(i => i.name || i.title || '').filter(Boolean).join(', ');
   const displayName = itemNames.substring(0, 50) || '—';
 
-  // Seçilmiş rəng, ölçü, ünvan
+  // Seçilmiş rəng, ölçü
   const firstItem  = items[0] || {};
   const color      = firstItem.selectedColor?.name || firstItem.color || order.color || '';
+  const colorHex   = firstItem.selectedColor?.hex  || firstItem.colorHex || '';
   const size       = firstItem.selectedSize?.label || firstItem.size  || order.size  || '';
+
+  // Ünvan
   const address    = order.address || order.deliveryAddress || order.shippingAddress || '';
   const addressStr = typeof address === 'object'
-    ? [address.city, address.district, address.street, address.apartment].filter(Boolean).join(', ')
+    ? (address.label || [address.city, address.district, address.street, address.apartment].filter(Boolean).join(', '))
     : (address || '');
 
-  const buyerName = order.buyerName || order.userName || order.customerName || '';
+  // Müştəri adı və telefonu
+  const buyerName  = order.buyerName  || order.userName || order.customerName || '';
+  const buyerPhone = order.buyerPhone || order.phone    || '';
 
   // Detail chip-ləri
   const chips = [];
-  if (color) chips.push(`<span style="background:#f5f0ff;color:#6b21a8;font-size:0.68rem;padding:2px 7px;border-radius:10px">🎨 ${color}</span>`);
-  if (size)  chips.push(`<span style="background:#f0f9ff;color:#1a4fb8;font-size:0.68rem;padding:2px 7px;border-radius:10px">📐 ${size}</span>`);
+  if (color) chips.push(`
+    <span style="background:#f5f0ff;color:#6b21a8;font-size:0.68rem;padding:2px 7px;border-radius:10px;display:inline-flex;align-items:center;gap:4px">
+      ${colorHex ? `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${colorHex};border:1px solid rgba(0,0,0,0.15);flex-shrink:0"></span>` : '🎨'} ${color}
+    </span>`);
+  if (size) chips.push(`<span style="background:#f0f9ff;color:#1a4fb8;font-size:0.68rem;padding:2px 7px;border-radius:10px">📐 ${size}</span>`);
 
   return `
     <tr data-status="${status}" style="border-bottom:1px solid var(--border)">
       <td style="padding:10px 12px">
-        <div style="font-weight:500;max-width:200px">${displayName}</div>
-        <div style="font-size:0.72rem;color:var(--muted);margin-top:2px">${items.length} məhsul${buyerName ? ' · ' + buyerName : ''}</div>
+        <div style="font-weight:500;max-width:220px">${displayName}</div>
+
+        <!-- Müştəri adı və telefon -->
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span>${items.length} məhsul</span>
+          ${buyerName  ? `<span style="color:#555">· 👤 ${buyerName}</span>` : ''}
+          ${buyerPhone ? `<span style="color:#555">· 📞 ${buyerPhone}</span>` : ''}
+        </div>
+
+        <!-- Rəng və ölçü chip-ləri -->
         ${chips.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:5px">${chips.join('')}</div>` : ''}
-        ${addressStr ? `<div style="font-size:0.68rem;color:var(--muted);margin-top:4px;display:flex;align-items:center;gap:3px"><span>📍</span><span style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${addressStr}</span></div>` : ''}
+
+        <!-- Çatdırılma ünvanı -->
+        ${addressStr ? `
+          <div style="font-size:0.68rem;color:var(--muted);margin-top:4px;display:flex;align-items:flex-start;gap:3px">
+            <span style="flex-shrink:0;margin-top:1px">📍</span>
+            <span style="max-width:200px;line-height:1.4;word-break:break-word">${addressStr}</span>
+          </div>` : ''}
       </td>
       <td style="padding:10px 12px">
         <span style="font-family:monospace;font-weight:600">#${order.orderNumber || order.id?.substring(0,6) || '—'}</span>
@@ -416,7 +426,7 @@ function openOrderStatusModal(orderId, currentStatus) {
   const statusFlow = [
     { key: 'pending',    icon: '⏳', label: 'Gözlənilir',   desc: 'Sifariş qəbul edilib, hazırlanır' },
     { key: 'processing', icon: '📦', label: 'Hazırlanır',    desc: 'Sifariş yığılır və hazırlanır' },
-    { key: 'shipped',    icon: '🚚', label: 'Yolda',         desc: 'Sifariş göndərildi, çatdırılır' },
+    { key: 'shipped',    icon: '🚚', label: 'Yolda',         desc: 'Sifariş göndərildi — stok avtomatik azalacaq' },
     { key: 'delivered',  icon: '✅', label: 'Çatdırıldı',    desc: 'Sifariş alıcıya çatdırıldı' },
   ];
 
@@ -479,14 +489,31 @@ function openOrderStatusModal(orderId, currentStatus) {
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
 }
 
-/* ── Firestore-da statusu yenilə ── */
+/* ══════════════════════════════════════════
+   STATUS YENİLƏ + STOK AZALT
+══════════════════════════════════════════ */
 async function updateOrderStatus(orderId, newStatus) {
   try {
+    // Sifarişi tap
+    const orderSnap = await fbDb.collection('orders').doc(orderId).get();
+    if (!orderSnap.exists) throw new Error('Sifariş tapılmadı');
+
+    const orderData  = orderSnap.data();
+    const prevStatus = orderData.status || 'pending';
+
+    // Statusu Firestore-da yenilə
     await fbDb.collection('orders').doc(orderId).update({
       status:    newStatus,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
+    // ── STOK AZALTMA ──
+    // Yalnız "shipped" statusuna keçəndə və əvvəlki status "shipped" deyilsə icra et
+    if (newStatus === 'shipped' && prevStatus !== 'shipped') {
+      await _decreaseStockForOrder(orderData);
+    }
+
+    // Lokal cache-i yenilə
     if (window._vendorOrders) {
       const idx = window._vendorOrders.findIndex(o => o.id === orderId);
       if (idx !== -1) window._vendorOrders[idx].status = newStatus;
@@ -499,17 +526,74 @@ async function updateOrderStatus(orderId, newStatus) {
 
     filterVendorOrders();
 
-    // Statistikaları yenilə
-    const sl = window._vendorStatusLabel;
-    const sc = window._vendorStatusColor;
-    const sb = window._vendorStatusBg;
-    const orders = window._vendorOrders || [];
-    const pendingCount   = orders.filter(o => o.status === 'pending').length;
-    const deliveredTotal = orders.filter(o => o.status === 'delivered').reduce((s,o) => s + (o.total||0), 0);
-
   } catch (err) {
     if (typeof toast !== 'undefined') toast.show('Xəta: ' + err.message, 'error');
     else alert('Xəta: ' + err.message);
+    console.error('Status yeniləmə xətası:', err);
+  }
+}
+
+/* ── Sifarişdəki hər məhsulun stokunu azalt ── */
+async function _decreaseStockForOrder(orderData) {
+  const items = orderData.items || [];
+  if (items.length === 0) return;
+
+  // Unikal listing ID-lərini topla
+  const listingIds = [...new Set(items.map(i => i.id).filter(Boolean))];
+
+  for (const listingId of listingIds) {
+    try {
+      const listingRef  = fbDb.collection('listings').doc(listingId);
+      const listingSnap = await listingRef.get();
+      if (!listingSnap.exists) continue;
+
+      const listingData = listingSnap.data();
+      const sizes       = listingData.sizes || [];
+
+      // Bu sifarişdə bu listing-dən neçə ədəd sifariş edilib
+      const orderedItems = items.filter(i => i.id === listingId);
+
+      let updated = false;
+      const newSizes = sizes.map(sizeEntry => {
+        // Sifariş edilmiş məhsullar içindən eyni ölçüdə olanı tap
+        const match = orderedItems.find(oi => {
+          const orderedSize = oi.selectedSize?.label || oi.size || null;
+          return orderedSize === sizeEntry.label;
+        });
+
+        if (match) {
+          const qty      = match.quantity || 1;
+          const newStock = Math.max(0, (parseInt(sizeEntry.stock) || 0) - qty);
+          updated = true;
+          return { ...sizeEntry, stock: newStock };
+        }
+        return sizeEntry;
+      });
+
+      // Ölçüsüz sifariş (size=null) olduqda ümumi stoku azalt
+      if (!updated) {
+        const noSizeItems = orderedItems.filter(oi => !(oi.selectedSize?.label || oi.size));
+        if (noSizeItems.length > 0) {
+          const totalQty = noSizeItems.reduce((s, i) => s + (i.quantity || 1), 0);
+          const currentStock = parseInt(listingData.stock || listingData.quantity || 0);
+          await listingRef.update({
+            stock:     Math.max(0, currentStock - totalQty),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          continue;
+        }
+      }
+
+      if (updated) {
+        await listingRef.update({
+          sizes:     newSizes,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      }
+
+    } catch (e) {
+      console.warn(`Listing ${listingId} stoku azaldılmadı:`, e.message);
+    }
   }
 }
 
@@ -530,7 +614,6 @@ function renderStorePage() {
     ? `<span style="display:inline-block;background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.7);font-size:0.7rem;padding:2px 10px;border-radius:20px;margin-left:0.75rem;letter-spacing:0.04em;vertical-align:middle;">${s.category}</span>`
     : '';
 
-  // Cover şəkli varsa hero stilini dəyiş
   const coverStyle = s.coverURL
     ? `background:url('${s.coverURL}') center/cover no-repeat;`
     : `background:linear-gradient(135deg,#1a1a1a 0%,#2c2c2c 55%,#1a1a1a 100%);`;
