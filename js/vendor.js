@@ -603,55 +603,73 @@ function vdOpenStatusModal(orderId, currentStatus) {
 ════════════════════════════════════════════════ */
 async function vdUpdateOrderStatus(orderId, newStatus) {
   try {
-    // Sifarişi tap
     const orderSnap = await fbDb.collection('orders').doc(orderId).get();
     if (!orderSnap.exists) throw new Error('Sifariş tapılmadı');
-
-    const orderData  = orderSnap.data();
-    const prevStatus = orderData.status || 'pending';
-
-    // Firestore-da statusu yenilə
-    await fbDb.collection('orders').doc(orderId).update({
+ 
+    const orderData    = orderSnap.data();
+    const prevStatus   = orderData.status || 'pending';
+    const stockDeducted = orderData.stockDeducted === true;
+ 
+    // Eyni status — heç nə etmə
+    if (prevStatus === newStatus) {
+      document.getElementById('vdStatusModal')?.remove();
+      return;
+    }
+ 
+    const updatePayload = {
       status:    newStatus,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-
-    // ── STOK AZALTMA ──
-    // Yalnız "shipped" statusuna keçəndə və əvvəl "shipped" deyilsə icra et
-    if (newStatus === 'shipped' && prevStatus !== 'shipped') {
+    };
+ 
+    // ── STOK AZALT ──
+    // Şərt: "shipped" statusuna keçir VƏ hələ stok azaldılmayıb
+    if (newStatus === 'shipped' && !stockDeducted) {
       await vdDecreaseStockForOrder(orderData);
+      updatePayload.stockDeducted = true;
     }
-
+ 
+    // ── STOK GERİ QAYTAR ──
+    // Şərt: "cancelled" statusuna keçir VƏ stok əvvəllər azaldılıb
+    if (newStatus === 'cancelled' && stockDeducted) {
+      await vdRestoreStockForOrder(orderData);
+      updatePayload.stockDeducted = false;
+    }
+ 
+    await fbDb.collection('orders').doc(orderId).update(updatePayload);
+ 
     // Lokal cache yenilə
     const idx = _vdOrders.findIndex(o => o.id === orderId);
-    if (idx !== -1) _vdOrders[idx].status = newStatus;
-
+    if (idx !== -1) {
+      _vdOrders[idx].status        = newStatus;
+      _vdOrders[idx].stockDeducted = updatePayload.stockDeducted ?? stockDeducted;
+    }
+ 
     document.getElementById('vdStatusModal')?.remove();
-
+ 
     // Statistikaları yenilə
     const pendingEl = document.getElementById('vd-pending');
     if (pendingEl) pendingEl.textContent = _vdOrders.filter(o => o.status === 'pending').length;
-
+ 
     const revenueEl = document.getElementById('vd-revenue');
     if (revenueEl) {
-      const rev = _vdOrders.filter(o => o.status === 'delivered').reduce((s,o) => s+(o.total||0), 0);
+      const rev = _vdOrders.filter(o => o.status === 'delivered').reduce((s, o) => s + (o.total || 0), 0);
       revenueEl.textContent = rev.toFixed(2) + ' ₼';
     }
-
-    // Sifariş siyahısını yenilə
+ 
     vdFilterOrders();
-
+ 
     // Son elanlar stok sütununu yenilə
     const freshListings = await vendor.getListings(_vdUid);
     _vdListings = freshListings;
     vdRenderListingRows(freshListings);
-
+ 
     showToast('Status yeniləndi ✓');
   } catch (err) {
     showToast('Xəta: ' + err.message);
     console.error('vdUpdateOrderStatus xətası:', err);
   }
 }
+ 
 
 /* ── Sifarişdəki hər məhsulun stokunu azalt ── */
 async function vdDecreaseStockForOrder(orderData) {
@@ -712,6 +730,65 @@ async function vdDecreaseStockForOrder(orderData) {
     }
   }
 }
+
+async function vdRestoreStockForOrder(orderData) {
+  const items = orderData.items || [];
+  if (items.length === 0) return;
+ 
+  const listingIds = [...new Set(items.map(i => i.id).filter(Boolean))];
+ 
+  for (const listingId of listingIds) {
+    try {
+      const listingRef  = fbDb.collection('listings').doc(listingId);
+      const listingSnap = await listingRef.get();
+      if (!listingSnap.exists) continue;
+ 
+      const listingData  = listingSnap.data();
+      const sizes        = listingData.sizes || [];
+      const orderedItems = items.filter(i => i.id === listingId);
+ 
+      let updated  = false;
+      const newSizes = sizes.map(sizeEntry => {
+        const match = orderedItems.find(oi => {
+          const orderedSize = oi.selectedSize?.label || oi.size || null;
+          return orderedSize === sizeEntry.label;
+        });
+        if (match) {
+          const qty      = match.quantity || 1;
+          const newStock = (parseInt(sizeEntry.stock) || 0) + qty;
+          updated = true;
+          return { ...sizeEntry, stock: newStock };
+        }
+        return sizeEntry;
+      });
+ 
+      // Ölçüsüz məhsul — ümumi stoku geri qaytar
+      if (!updated) {
+        const noSizeItems = orderedItems.filter(oi => !(oi.selectedSize?.label || oi.size));
+        if (noSizeItems.length > 0) {
+          const totalQty     = noSizeItems.reduce((s, i) => s + (i.quantity || 1), 0);
+          const currentStock = parseInt(listingData.stock || listingData.quantity || 0);
+          await listingRef.update({
+            stock:     currentStock + totalQty,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          continue;
+        }
+      }
+ 
+      if (updated) {
+        await listingRef.update({
+          sizes:     newSizes,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      }
+ 
+    } catch (e) {
+      console.warn(`Listing ${listingId} stoku bərpa edilmədi:`, e.message);
+    }
+  }
+}
+
 
 /* ═══════════════════════════════════════════
    MAĞAZA PARAMETRLƏRİ MODALI
