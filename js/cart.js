@@ -51,6 +51,9 @@ const cart = {
         img:      product.img || product.image || '',
         brand:    product.brand || '',
         size:     size || null,
+        // Rəng məlumatını da saxla
+        color:    product.selectedColor?.name || product.color || null,
+        colorHex: product.selectedColor?.hex  || product.colorHex || null,
         quantity: 1,
         vendorId: product.vendorId || product.userId || product.sellerId || null,
         addedAt:  firebase.firestore.FieldValue.serverTimestamp(),
@@ -134,7 +137,10 @@ function renderCartModal() {
               <div style="flex:1">
                 <div style="font-size:0.72rem;color:var(--accent);font-weight:600;text-transform:uppercase">${item.brand || ''}</div>
                 <div style="font-weight:500;margin:2px 0 6px">${item.name}</div>
-                ${item.size ? `<div style="font-size:0.8rem;color:var(--muted)">Ölçü: ${item.size}</div>` : ''}
+                ${item.size  ? `<div style="font-size:0.8rem;color:var(--muted)">Ölçü: ${item.size}</div>` : ''}
+                ${item.color ? `<div style="font-size:0.8rem;color:var(--muted);display:flex;align-items:center;gap:5px">
+                  Rəng: ${item.colorHex ? `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${item.colorHex};border:1px solid #ddd;"></span>` : ''} ${item.color}
+                </div>` : ''}
                 <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
                   <button onclick="cart.updateQty('${item.cartId}', ${item.quantity - 1})"
                     style="width:26px;height:26px;border:1px solid var(--border);border-radius:6px;background:none;font-size:1rem;display:flex;align-items:center;justify-content:center;cursor:pointer">−</button>
@@ -408,6 +414,18 @@ async function placeOrder() {
     const items = cart.getItems();
     const total = cart.getTotal();
 
+    // Müştəri məlumatlarını Firestore-dan al
+    let buyerName  = user.displayName || '';
+    let buyerPhone = '';
+    try {
+      const uSnap = await fbDb.collection('users').doc(user.uid).get();
+      if (uSnap.exists) {
+        const ud = uSnap.data();
+        buyerName  = ((ud.firstName || '') + ' ' + (ud.lastName || '')).trim() || user.displayName || '';
+        buyerPhone = ud.phone || ud.phoneNumber || '';
+      }
+    } catch(e) { /* skip */ }
+
     const vendorGroups = {};
     items.forEach(item => {
       const vid = item.vendorId || item.userId || 'unknown';
@@ -431,10 +449,19 @@ async function placeOrder() {
         orderNumber:   orderNum,
         buyerId:       user.uid,
         buyerEmail:    user.email || '',
+        buyerName:     buyerName,
+        buyerPhone:    buyerPhone,
         vendorId:      vendorId,
         items:         vendorItems.map(i => ({
-          id: i.id, name: i.name, price: i.price,
-          quantity: i.quantity, img: i.img || '', brand: i.brand || '', size: i.size || null
+          id:            i.id,
+          name:          i.name,
+          price:         i.price,
+          quantity:      i.quantity,
+          img:           i.img   || '',
+          brand:         i.brand || '',
+          size:          i.size  || null,
+          selectedSize:  i.size  ? { label: i.size } : null,
+          selectedColor: i.color ? { name: i.color, hex: i.colorHex || '' } : null,
         })),
         total:         vendorTotal,
         address:       _checkoutAddress,
