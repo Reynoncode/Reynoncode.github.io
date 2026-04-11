@@ -108,12 +108,10 @@ function initSearchPopup() {
     overlay.addEventListener('click', closeSearchPopup);
   }
 
-  /* Mağaza axtarış kartı stilləri — bir dəfə inject et */
   if (!document.getElementById('storeSearchStyles')) {
     const style = document.createElement('style');
     style.id = 'storeSearchStyles';
     style.textContent = `
-      /* ── Mağaza kartları cərgəsi ── */
       .search-store-row {
         display: flex;
         gap: 0.75rem;
@@ -140,7 +138,6 @@ function initSearchPopup() {
         transform: translateY(-3px);
         box-shadow: 0 8px 24px rgba(0,0,0,0.09);
       }
-
       .search-store-logo {
         width: 54px; height: 54px;
         border-radius: 50%;
@@ -153,10 +150,7 @@ function initSearchPopup() {
         box-shadow: 0 4px 12px rgba(0,0,0,0.18);
         overflow: hidden;
       }
-      .search-store-logo img {
-        width: 100%; height: 100%; object-fit: cover;
-      }
-
+      .search-store-logo img { width: 100%; height: 100%; object-fit: cover; }
       .search-store-name {
         font-size: 0.84rem; font-weight: 600;
         margin-bottom: 0.18rem;
@@ -206,7 +200,7 @@ function performSearch(query) {
   const catMatches   = [];
   const brandMatches = [];
   const nameMatches  = [];
-  const storeMap     = {};  /* uid → {uid, name, photoURL, count} */
+  const storeMap     = {};
 
   PRODUCTS.forEach(p => {
     const inCat   = p.category && p.category.toLowerCase().includes(q);
@@ -217,7 +211,6 @@ function performSearch(query) {
     else if (inBrand) brandMatches.push(p);
     else if (inName)  nameMatches.push(p);
 
-    /* Mağaza cəmi — yalnız Firebase elanlarından */
     if (p._fromFirebase && p.userId) {
       const sName = (p.storeName || '').toLowerCase();
       const bName = (p.brand     || '').toLowerCase();
@@ -268,13 +261,10 @@ function renderSearchPopup(query, results) {
   } else {
     let html = '';
 
-    /* 1. Mağazalar bölümü */
     if (stores.length > 0) {
       html += `<div class="search-result-group-label">Mağazalar</div>`;
       html += `<div class="search-store-row">${stores.map(s => searchStoreCard(s)).join('')}</div>`;
     }
-
-    /* 2. Məhsullar */
     if (catMatches.length > 0) {
       html += `<div class="search-result-group-label">Kateqoriya üzrə</div>`;
       html += catMatches.map(p => searchResultCard(p)).join('');
@@ -467,6 +457,18 @@ function updateCartBadge() {
   const count = cart.getCount();
   badge.textContent   = count;
   badge.style.display = count > 0 ? 'flex' : 'none';
+}
+
+/* ══════════════════════════════
+   MAĞAZA İZLƏ DÜYMƏSİ HTML
+   — store.js olmayan səhifələrdə
+     də bu funksiya mövcud olsun
+   ══════════════════════════════ */
+function followBtnHTML(following) {
+  if (following) {
+    return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>İzləyirsiniz`;
+  }
+  return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>İzlə`;
 }
 
 /* ══════════════════════════════
