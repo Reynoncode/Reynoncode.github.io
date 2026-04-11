@@ -27,7 +27,6 @@ async function loadStorePage() {
     return;
   }
 
-  // Auth state dəyişirsə yenidən yoxla
   fbAuth.onAuthStateChanged(async (user) => {
     if (user && user.uid === storeUid) {
       await loadVendorDashboard(storeUid);
@@ -45,7 +44,6 @@ async function loadStorePage() {
     const u = uSnap.exists ? uSnap.data() : {};
     const fullName = ((u.firstName || '') + ' ' + (u.lastName || '')).trim();
 
-     
     storeData = {
       uid:          storeUid,
       storeName:    v.storeName  || u.storeName  || fullName || 'Mağaza',
@@ -72,7 +70,6 @@ async function loadStorePage() {
       createdAt:    v.createdAt  || u.createdAt   || null,
       followerCount: 0,
     };
- 
 
     const [listSnap, followSnap] = await Promise.all([
       fbDb.collection('listings').where('userId', '==', storeUid).orderBy('createdAt', 'desc').get(),
@@ -110,7 +107,7 @@ async function fetchVendorOrders(uid) {
     snap1.docs.forEach(d => {
       if (!seen.has(d.id)) { seen.add(d.id); allOrders.push({ id: d.id, ...d.data() }); }
     });
-  } catch(e) { /* index yoxdursa skip */ }
+  } catch(e) {}
 
   try {
     const snap2 = await fbDb.collection('orders')
@@ -120,7 +117,7 @@ async function fetchVendorOrders(uid) {
     snap2.docs.forEach(d => {
       if (!seen.has(d.id)) { seen.add(d.id); allOrders.push({ id: d.id, ...d.data() }); }
     });
-  } catch(e) { /* skip */ }
+  } catch(e) {}
 
   try {
     if (allOrders.length === 0) {
@@ -133,17 +130,12 @@ async function fetchVendorOrders(uid) {
         const data = d.data();
         const items = data.items || [];
         const belongs = items.some(item =>
-          item.userId === uid ||
-          item.vendorId === uid ||
-          item.sellerId === uid
+          item.userId === uid || item.vendorId === uid || item.sellerId === uid
         );
-        if (belongs) {
-          seen.add(d.id);
-          allOrders.push({ id: d.id, ...data });
-        }
+        if (belongs) { seen.add(d.id); allOrders.push({ id: d.id, ...data }); }
       });
     }
-  } catch(e) { /* skip */ }
+  } catch(e) {}
 
   allOrders.sort((a, b) => {
     const ta = a.createdAt?.toDate?.() || new Date(0);
@@ -176,8 +168,7 @@ async function loadVendorDashboard(uid) {
     const city      = v.city || u.city || 'Bakı';
 
     const listings = listSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-    const orders = await fetchVendorOrders(uid);
+    const orders   = await fetchVendorOrders(uid);
 
     const totalRevenue   = orders.filter(o => o.status === 'delivered').reduce((s, o) => s + (o.total || 0), 0);
     const totalOrders    = orders.length;
@@ -192,18 +183,13 @@ async function loadVendorDashboard(uid) {
 
     content.innerHTML = `
       <div style="display:flex;gap:24px;padding:24px 0;max-width:1100px;margin:0 auto">
-
-        <!-- Sol sidebar -->
         <div style="display:flex;flex-direction:column;gap:4px;min-width:60px;align-items:center;padding:8px 0">
           ${['🏠','👤','📋','❤️','📍','🏬','🗂️','🚪'].map((icon, i) => `
             <button onclick="vendorSidebarClick(${i})" style="width:40px;height:40px;border:none;background:${i===0?'var(--accent)':'transparent'};color:${i===0?'#fff':'var(--muted)'};border-radius:10px;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;transition:all 0.2s">${icon}</button>
           `).join('')}
         </div>
 
-        <!-- Ana panel -->
         <div style="flex:1;min-width:0">
-
-          <!-- Başlıq -->
           <div style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:16px;padding:20px 24px;margin-bottom:16px">
             <div style="display:flex;align-items:center;gap:16px">
               <div style="width:48px;height:48px;border-radius:10px;background:linear-gradient(135deg,#2c2c2c,#1a1a1a);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--font-display,serif);font-size:1.2rem;font-weight:600">${initials}</div>
@@ -222,7 +208,6 @@ async function loadVendorDashboard(uid) {
             </button>
           </div>
 
-          <!-- Statistika kartları -->
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
             ${[
               { icon:'💰', label:'Ümumi gəlir',     value: totalRevenue.toFixed(2) + ' ₼' },
@@ -238,27 +223,22 @@ async function loadVendorDashboard(uid) {
             `).join('')}
           </div>
 
-          <!-- Sifarişlər cədvəli -->
           <div style="background:#fff;border:1px solid var(--border);border-radius:16px;padding:20px 24px;margin-bottom:16px">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
               <h3 style="font-size:1rem;font-weight:600">Son sifarişlər</h3>
-              <div style="display:flex;gap:8px">
-                <select id="orderStatusFilter" onchange="filterVendorOrders()" style="font-size:0.78rem;padding:4px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
-                  <option value="">Hamısı</option>
-                  <option value="pending">Gözlənilir</option>
-                  <option value="processing">Hazırlanır</option>
-                  <option value="shipped">Yolda</option>
-                  <option value="delivered">Çatdırıldı</option>
-                  <option value="cancelled">Ləğv edildi</option>
-                </select>
-              </div>
+              <select id="orderStatusFilter" onchange="filterVendorOrders()" style="font-size:0.78rem;padding:4px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
+                <option value="">Hamısı</option>
+                <option value="pending">Gözlənilir</option>
+                <option value="processing">Hazırlanır</option>
+                <option value="shipped">Yolda</option>
+                <option value="delivered">Çatdırıldı</option>
+                <option value="cancelled">Ləğv edildi</option>
+              </select>
             </div>
-
             ${orders.length === 0 ? `
               <div style="text-align:center;padding:32px;color:var(--muted);font-size:0.88rem">
                 <div style="font-size:2rem;margin-bottom:8px">📭</div>
                 Hələ sifariş yoxdur
-                <div style="font-size:0.75rem;margin-top:8px;color:#aaa">Sifarişlər buraya avtomatik düşəcək</div>
               </div>
             ` : `
               <div style="overflow-x:auto">
@@ -278,7 +258,6 @@ async function loadVendorDashboard(uid) {
             `}
           </div>
 
-          <!-- Son elanlar -->
           <div style="background:#fff;border:1px solid var(--border);border-radius:16px;padding:20px 24px">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
               <h3 style="font-size:1rem;font-weight:600">Son elanlar</h3>
@@ -317,7 +296,6 @@ async function loadVendorDashboard(uid) {
               </table>
             `}
           </div>
-
         </div>
       </div>
     `;
@@ -333,34 +311,30 @@ async function loadVendorDashboard(uid) {
   }
 }
 
-/* ── Sifariş sətri render (tam detallarla) ── */
+/* ── Sifariş sətri render ── */
 function renderOrderRow(order, statusLabel, statusColor, statusBg) {
   const status = order.status || 'pending';
   const date   = order.createdAt?.toDate
     ? order.createdAt.toDate().toLocaleDateString('az-AZ')
     : '—';
 
-  const items = order.items || [];
+  const items     = order.items || [];
   const itemNames = items.map(i => i.name || i.title || '').filter(Boolean).join(', ');
   const displayName = itemNames.substring(0, 50) || '—';
 
-  // Seçilmiş rəng, ölçü
-  const firstItem  = items[0] || {};
-  const color      = firstItem.selectedColor?.name || firstItem.color || order.color || '';
-  const colorHex   = firstItem.selectedColor?.hex  || firstItem.colorHex || '';
-  const size       = firstItem.selectedSize?.label || firstItem.size  || order.size  || '';
+  const firstItem = items[0] || {};
+  const color     = firstItem.selectedColor?.name || firstItem.color || order.color || '';
+  const colorHex  = firstItem.selectedColor?.hex  || firstItem.colorHex || '';
+  const size      = firstItem.selectedSize?.label || firstItem.size  || order.size  || '';
 
-  // Ünvan
   const address    = order.address || order.deliveryAddress || order.shippingAddress || '';
   const addressStr = typeof address === 'object'
     ? (address.label || [address.city, address.district, address.street, address.apartment].filter(Boolean).join(', '))
     : (address || '');
 
-  // Müştəri adı və telefonu
   const buyerName  = order.buyerName  || order.userName || order.customerName || '';
   const buyerPhone = order.buyerPhone || order.phone    || '';
 
-  // Detail chip-ləri
   const chips = [];
   if (color) chips.push(`
     <span style="background:#f5f0ff;color:#6b21a8;font-size:0.68rem;padding:2px 7px;border-radius:10px;display:inline-flex;align-items:center;gap:4px">
@@ -372,18 +346,12 @@ function renderOrderRow(order, statusLabel, statusColor, statusBg) {
     <tr data-status="${status}" style="border-bottom:1px solid var(--border)">
       <td style="padding:10px 12px">
         <div style="font-weight:500;max-width:220px">${displayName}</div>
-
-        <!-- Müştəri adı və telefon -->
         <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
           <span>${items.length} məhsul</span>
           ${buyerName  ? `<span style="color:#555">· 👤 ${buyerName}</span>` : ''}
           ${buyerPhone ? `<span style="color:#555">· 📞 ${buyerPhone}</span>` : ''}
         </div>
-
-        <!-- Rəng və ölçü chip-ləri -->
         ${chips.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:5px">${chips.join('')}</div>` : ''}
-
-        <!-- Çatdırılma ünvanı -->
         ${addressStr ? `
           <div style="font-size:0.68rem;color:var(--muted);margin-top:4px;display:flex;align-items:flex-start;gap:3px">
             <span style="flex-shrink:0;margin-top:1px">📍</span>
@@ -414,14 +382,13 @@ function renderOrderRow(order, statusLabel, statusColor, statusBg) {
 
 /* ── Sifariş filteri ── */
 function filterVendorOrders() {
-  const filter = document.getElementById('orderStatusFilter')?.value || '';
-  const orders = window._vendorOrders || [];
-  const sl = window._vendorStatusLabel;
-  const sc = window._vendorStatusColor;
-  const sb = window._vendorStatusBg;
-
+  const filter  = document.getElementById('orderStatusFilter')?.value || '';
+  const orders  = window._vendorOrders || [];
+  const sl      = window._vendorStatusLabel;
+  const sc      = window._vendorStatusColor;
+  const sb      = window._vendorStatusBg;
   const filtered = filter ? orders.filter(o => o.status === filter) : orders;
-  const tbody = document.getElementById('ordersTableBody');
+  const tbody    = document.getElementById('ordersTableBody');
   if (tbody) {
     tbody.innerHTML = filtered.length
       ? filtered.map(o => renderOrderRow(o, sl, sc, sb)).join('')
@@ -440,12 +407,11 @@ function openOrderStatusModal(orderId, currentStatus) {
   overlay.style.cssText = 'display:flex;align-items:center;justify-content:center;z-index:2000';
 
   const statusFlow = [
-    { key: 'pending',    icon: '⏳', label: 'Gözlənilir',   desc: 'Sifariş qəbul edilib, hazırlanır' },
-    { key: 'processing', icon: '📦', label: 'Hazırlanır',    desc: 'Sifariş yığılır və hazırlanır' },
-    { key: 'shipped',    icon: '🚚', label: 'Yolda',         desc: 'Sifariş göndərildi — stok avtomatik azalacaq' },
-    { key: 'delivered',  icon: '✅', label: 'Çatdırıldı',    desc: 'Sifariş alıcıya çatdırıldı' },
+    { key: 'pending',    icon: '⏳', label: 'Gözlənilir',  desc: 'Sifariş qəbul edilib, hazırlanır' },
+    { key: 'processing', icon: '📦', label: 'Hazırlanır',   desc: 'Sifariş yığılır və hazırlanır' },
+    { key: 'shipped',    icon: '🚚', label: 'Yolda',        desc: 'Sifariş göndərildi — stok avtomatik azalacaq' },
+    { key: 'delivered',  icon: '✅', label: 'Çatdırıldı',   desc: 'Sifariş alıcıya çatdırıldı' },
   ];
-
   const currentIdx = statusFlow.findIndex(s => s.key === currentStatus);
 
   overlay.innerHTML = `
@@ -453,48 +419,32 @@ function openOrderStatusModal(orderId, currentStatus) {
       <button class="modal-close" onclick="document.getElementById('statusChangeModal').remove()">✕</button>
       <h3 style="font-family:var(--font-display);margin-bottom:6px">Sifariş statusu</h3>
       <p style="color:var(--muted);font-size:0.83rem;margin-bottom:24px">Sifarişin cari mərhələsini seçin</p>
-
-      <!-- Progress bar -->
       <div style="display:flex;align-items:center;margin-bottom:28px">
         ${statusFlow.map((s, i) => `
           <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px">
-            <div style="width:36px;height:36px;border-radius:50%;
-              background:${i <= currentIdx ? '#1a1a1a' : 'var(--border)'};
-              color:${i <= currentIdx ? '#fff' : 'var(--muted)'};
-              display:flex;align-items:center;justify-content:center;font-size:1rem;
-              transition:all 0.3s">
+            <div style="width:36px;height:36px;border-radius:50%;background:${i<=currentIdx?'#1a1a1a':'var(--border)'};color:${i<=currentIdx?'#fff':'var(--muted)'};display:flex;align-items:center;justify-content:center;font-size:1rem;">
               ${i < currentIdx ? '✓' : s.icon}
             </div>
             <div style="font-size:0.68rem;font-weight:${i===currentIdx?'600':'400'};color:${i<=currentIdx?'var(--text)':'var(--muted)'};text-align:center;line-height:1.3">${s.label}</div>
           </div>
-          ${i < statusFlow.length - 1 ? `
-            <div style="flex:0 0 30px;height:2px;background:${i < currentIdx ? '#1a1a1a' : 'var(--border)'};margin-top:-18px"></div>
-          ` : ''}
+          ${i < statusFlow.length-1 ? `<div style="flex:0 0 30px;height:2px;background:${i<currentIdx?'#1a1a1a':'var(--border)'};margin-top:-18px"></div>` : ''}
         `).join('')}
       </div>
-
-      <!-- Status seçim düymələri -->
       <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px">
         ${statusFlow.map(s => `
           <button onclick="updateOrderStatus('${orderId}', '${s.key}')"
-            style="display:flex;align-items:center;gap:12px;padding:12px 16px;
-              border:2px solid ${s.key === currentStatus ? 'var(--accent)' : 'var(--border)'};
-              border-radius:12px;background:${s.key === currentStatus ? 'rgba(201,168,108,0.08)' : 'transparent'};
-              cursor:${s.key === currentStatus ? 'default' : 'pointer'};text-align:left;width:100%;
-              font-family:inherit;transition:all 0.2s">
+            style="display:flex;align-items:center;gap:12px;padding:12px 16px;border:2px solid ${s.key===currentStatus?'var(--accent)':'var(--border)'};border-radius:12px;background:${s.key===currentStatus?'rgba(201,168,108,0.08)':'transparent'};cursor:${s.key===currentStatus?'default':'pointer'};text-align:left;width:100%;font-family:inherit;transition:all 0.2s">
             <span style="font-size:1.2rem">${s.icon}</span>
             <div>
               <div style="font-weight:600;font-size:0.88rem">${s.label}</div>
               <div style="font-size:0.75rem;color:var(--muted)">${s.desc}</div>
             </div>
-            ${s.key === currentStatus ? `<span style="margin-left:auto;color:var(--accent);font-size:0.75rem;font-weight:600">Cari status</span>` : ''}
+            ${s.key===currentStatus ? `<span style="margin-left:auto;color:var(--accent);font-size:0.75rem;font-weight:600">Cari status</span>` : ''}
           </button>
         `).join('')}
       </div>
-
-      <!-- Ləğv et düyməsi -->
       <button onclick="updateOrderStatus('${orderId}', 'cancelled')"
-        style="width:100%;padding:10px;border:1.5px solid #fecaca;border-radius:10px;background:#fef2f2;color:#dc2626;font-size:0.82rem;font-weight:500;cursor:pointer;font-family:inherit;transition:all 0.2s">
+        style="width:100%;padding:10px;border:1.5px solid #fecaca;border-radius:10px;background:#fef2f2;color:#dc2626;font-size:0.82rem;font-weight:500;cursor:pointer;font-family:inherit;">
         ❌ Sifarişi ləğv et
       </button>
     </div>
@@ -506,40 +456,50 @@ function openOrderStatusModal(orderId, currentStatus) {
 }
 
 /* ══════════════════════════════════════════
-   STATUS YENİLƏ + STOK AZALT
+   STATUS YENİLƏ + STOK (store.js versiyası)
 ══════════════════════════════════════════ */
 async function updateOrderStatus(orderId, newStatus) {
   try {
-    // Sifarişi tap
     const orderSnap = await fbDb.collection('orders').doc(orderId).get();
     if (!orderSnap.exists) throw new Error('Sifariş tapılmadı');
 
-    const orderData  = orderSnap.data();
-    const prevStatus = orderData.status || 'pending';
+    const orderData     = orderSnap.data();
+    const prevStatus    = orderData.status || 'pending';
+    const stockDeducted = orderData.stockDeducted === true;
 
-    // Statusu Firestore-da yenilə
-    await fbDb.collection('orders').doc(orderId).update({
-      status:    newStatus,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-
-    // ── STOK AZALTMA ──
-    // Yalnız "shipped" statusuna keçəndə və əvvəlki status "shipped" deyilsə icra et
-    if (newStatus === 'shipped' && prevStatus !== 'shipped') {
-      await _decreaseStockForOrder(orderData);
+    if (prevStatus === newStatus) {
+      document.getElementById('statusChangeModal')?.remove();
+      return;
     }
 
-    // Lokal cache-i yenilə
+    const updatePayload = {
+      status:    newStatus,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    if (newStatus === 'shipped' && !stockDeducted) {
+      await _decreaseStockForOrder(orderData);
+      updatePayload.stockDeducted = true;
+    }
+
+    if (newStatus === 'cancelled' && stockDeducted) {
+      await _restoreStockForOrder(orderData);
+      updatePayload.stockDeducted = false;
+    }
+
+    await fbDb.collection('orders').doc(orderId).update(updatePayload);
+
     if (window._vendorOrders) {
       const idx = window._vendorOrders.findIndex(o => o.id === orderId);
-      if (idx !== -1) window._vendorOrders[idx].status = newStatus;
+      if (idx !== -1) {
+        window._vendorOrders[idx].status        = newStatus;
+        window._vendorOrders[idx].stockDeducted = updatePayload.stockDeducted ?? stockDeducted;
+      }
     }
 
     document.getElementById('statusChangeModal')?.remove();
-
     if (typeof toast !== 'undefined') toast.show('Status yeniləndi ✓', 'success');
     else alert('Status yeniləndi ✓');
-
     filterVendorOrders();
 
   } catch (err) {
@@ -549,67 +509,71 @@ async function updateOrderStatus(orderId, newStatus) {
   }
 }
 
-/* ── Sifarişdəki hər məhsulun stokunu azalt ── */
 async function _decreaseStockForOrder(orderData) {
   const items = orderData.items || [];
-  if (items.length === 0) return;
-
-  // Unikal listing ID-lərini topla
+  if (!items.length) return;
   const listingIds = [...new Set(items.map(i => i.id).filter(Boolean))];
-
   for (const listingId of listingIds) {
     try {
       const listingRef  = fbDb.collection('listings').doc(listingId);
       const listingSnap = await listingRef.get();
       if (!listingSnap.exists) continue;
-
-      const listingData = listingSnap.data();
-      const sizes       = listingData.sizes || [];
-
-      // Bu sifarişdə bu listing-dən neçə ədəd sifariş edilib
+      const listingData  = listingSnap.data();
+      const sizes        = listingData.sizes || [];
       const orderedItems = items.filter(i => i.id === listingId);
-
       let updated = false;
       const newSizes = sizes.map(sizeEntry => {
-        // Sifariş edilmiş məhsullar içindən eyni ölçüdə olanı tap
-        const match = orderedItems.find(oi => {
-          const orderedSize = oi.selectedSize?.label || oi.size || null;
-          return orderedSize === sizeEntry.label;
-        });
-
+        const match = orderedItems.find(oi => (oi.selectedSize?.label || oi.size || null) === sizeEntry.label);
         if (match) {
-          const qty      = match.quantity || 1;
-          const newStock = Math.max(0, (parseInt(sizeEntry.stock) || 0) - qty);
           updated = true;
-          return { ...sizeEntry, stock: newStock };
+          return { ...sizeEntry, stock: Math.max(0, (parseInt(sizeEntry.stock) || 0) - (match.quantity || 1)) };
         }
         return sizeEntry;
       });
-
-      // Ölçüsüz sifariş (size=null) olduqda ümumi stoku azalt
       if (!updated) {
         const noSizeItems = orderedItems.filter(oi => !(oi.selectedSize?.label || oi.size));
         if (noSizeItems.length > 0) {
           const totalQty = noSizeItems.reduce((s, i) => s + (i.quantity || 1), 0);
-          const currentStock = parseInt(listingData.stock || listingData.quantity || 0);
-          await listingRef.update({
-            stock:     Math.max(0, currentStock - totalQty),
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-          });
+          await listingRef.update({ stock: Math.max(0, (parseInt(listingData.stock || listingData.quantity || 0)) - totalQty), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
           continue;
         }
       }
+      if (updated) await listingRef.update({ sizes: newSizes, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    } catch(e) { console.warn(`Listing ${listingId} stoku azaldılmadı:`, e.message); }
+  }
+}
 
-      if (updated) {
-        await listingRef.update({
-          sizes:     newSizes,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
+async function _restoreStockForOrder(orderData) {
+  const items = orderData.items || [];
+  if (!items.length) return;
+  const listingIds = [...new Set(items.map(i => i.id).filter(Boolean))];
+  for (const listingId of listingIds) {
+    try {
+      const listingRef  = fbDb.collection('listings').doc(listingId);
+      const listingSnap = await listingRef.get();
+      if (!listingSnap.exists) continue;
+      const listingData  = listingSnap.data();
+      const sizes        = listingData.sizes || [];
+      const orderedItems = items.filter(i => i.id === listingId);
+      let updated = false;
+      const newSizes = sizes.map(sizeEntry => {
+        const match = orderedItems.find(oi => (oi.selectedSize?.label || oi.size || null) === sizeEntry.label);
+        if (match) {
+          updated = true;
+          return { ...sizeEntry, stock: (parseInt(sizeEntry.stock) || 0) + (match.quantity || 1) };
+        }
+        return sizeEntry;
+      });
+      if (!updated) {
+        const noSizeItems = orderedItems.filter(oi => !(oi.selectedSize?.label || oi.size));
+        if (noSizeItems.length > 0) {
+          const totalQty = noSizeItems.reduce((s, i) => s + (i.quantity || 1), 0);
+          await listingRef.update({ stock: (parseInt(listingData.stock || listingData.quantity || 0)) + totalQty, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+          continue;
+        }
       }
-
-    } catch (e) {
-      console.warn(`Listing ${listingId} stoku azaldılmadı:`, e.message);
-    }
+      if (updated) await listingRef.update({ sizes: newSizes, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    } catch(e) { console.warn(`Listing ${listingId} stoku bərpa edilmədi:`, e.message); }
   }
 }
 
@@ -618,31 +582,31 @@ function vendorSidebarClick(idx) {
 }
 
 /* ══════════════════════════════════════════
-   RENDER (müştəri görünüşü)
+   RENDER — müştəri görünüşü
 ══════════════════════════════════════════ */
 function renderStorePage() {
   const s = storeData;
- 
+
   const initials = s.storeName.split(' ').map(w => w[0] || '').join('').substring(0, 2).toUpperCase();
   const logoHTML = s.photoURL
     ? `<img src="${s.photoURL}" alt="${s.storeName}"/>`
     : initials;
- 
+
   const joinYear = s.createdAt?.toDate ? s.createdAt.toDate().getFullYear() : null;
- 
+
   const catTag = s.category
     ? `<span style="display:inline-block;background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.7);font-size:0.7rem;padding:2px 10px;border-radius:20px;margin-left:0.75rem;letter-spacing:0.04em;vertical-align:middle;">${s.category}</span>`
     : '';
- 
+
   const coverStyle = s.coverURL
     ? `background:url('${s.coverURL}') center/cover no-repeat;`
     : `background:linear-gradient(135deg,#1a1a1a 0%,#2c2c2c 55%,#1a1a1a 100%);`;
- 
+
   const coverOverlay = s.coverURL
     ? `<div style="position:absolute;inset:0;background:rgba(0,0,0,.45);border-radius:var(--radius-xl);"></div>`
     : '';
- 
-  /* ── Sosial media linklər ── */
+
+  /* Sosial media linklər */
   const socialLinks = [
     { key: 'instagram', icon: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>`, label: 'Instagram', prefix: 'https://instagram.com/' },
     { key: 'tiktok',    icon: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12a4 4 0 100 8 4 4 0 000-8z"/><path d="M15 2s1 0 2 2 2 2 3 2v4s-1 0-3-1-3-3-3-3v8"/></svg>`, label: 'TikTok',    prefix: 'https://tiktok.com/@' },
@@ -650,20 +614,17 @@ function renderStorePage() {
     { key: 'youtube',   icon: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22.54 6.42a2.78 2.78 0 00-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 001.46 6.42 29 29 0 001 12a29 29 0 00.46 5.58 2.78 2.78 0 001.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 001.95-1.96A29 29 0 0023 12a29 29 0 00-.46-5.58z"/><polygon fill="currentColor" stroke="none" points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"/></svg>`, label: 'YouTube',   prefix: 'https://' },
     { key: 'whatsapp',  icon: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>`, label: 'WhatsApp',  prefix: 'https://wa.me/' },
   ].filter(soc => s[soc.key]);
- 
-  const hasSocial   = socialLinks.length > 0;
-  const hasContact  = s.phone || s.publicEmail || s.email;
-  const hasAddress  = s.city || s.district || s.street;
-  const hasWorkInfo = s.workHours || s.deliveryDays || s.website;
- 
-  /* ── Çatdırılma mətni ── */
-  const deliveryText = s.deliveryDays
-    ? `${s.deliveryDays} iş günü ərzində çatdırılma.`
-    : '2–4 iş günü ərzində çatdırılma.';
-  const freeShipText = `${s.freeShippingThreshold} AZN üzərindəki sifarişlərə pulsuz çatdırılma.`;
- 
+
+  const hasSocial  = socialLinks.length > 0;
+  const hasContact = s.phone || s.publicEmail || s.email || s.website;
+  const hasAddress = s.city || s.district || s.street;
+
+  const deliveryText   = s.deliveryDays ? `${s.deliveryDays} iş günü ərzində çatdırılma.` : '2–4 iş günü ərzində çatdırılma.';
+  const freeShipText   = `${s.freeShippingThreshold} AZN üzərindəki sifarişlərə pulsuz çatdırılma.`;
+
   document.getElementById('storePageContent').innerHTML = `
-    <!-- ══ HERO ══ -->
+
+    <!-- HERO -->
     <div class="store-hero" style="${coverStyle}">
       ${coverOverlay}
       <div class="store-hero-inner">
@@ -684,10 +645,10 @@ function renderStorePage() {
         </button>
       </div>
     </div>
- 
-    <!-- ══ CONTENT GRID ══ -->
+
+    <!-- CONTENT GRID -->
     <div class="store-content-grid">
- 
+
       <!-- Sol: məhsullar -->
       <div>
         <div class="store-products-header">
@@ -702,18 +663,22 @@ function renderStorePage() {
              </div>`
         }
       </div>
- 
+
       <!-- Sağ: sidebar -->
       <div class="store-side-col">
- 
+
         <!-- Haqqımızda -->
         ${s.desc ? `
         <div class="store-side-card">
           <div class="store-side-title">Haqqımızda</div>
           <p class="store-side-text">${s.desc}</p>
-          ${s.brand ? `<div style="display:flex;align-items:center;gap:6px;margin-top:10px;font-size:0.8rem;color:var(--muted)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg><span>${s.brand}</span></div>` : ''}
+          ${s.brand ? `
+          <div class="store-contact-row" style="margin-top:10px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+            <span style="font-size:0.8rem;">${s.brand}</span>
+          </div>` : ''}
         </div>` : ''}
- 
+
         <!-- Kampaniya -->
         <div class="store-side-card campaign-card">
           <div class="store-side-title">Kampaniya</div>
@@ -721,7 +686,7 @@ function renderStorePage() {
           <div class="campaign-title">Hazırda kampaniya yoxdur</div>
           <p class="store-side-text">Bu mağazanın aktiv kampaniyası olmadıqda burada görünəcək.</p>
         </div>
- 
+
         <!-- Əlaqə -->
         ${hasContact ? `
         <div class="store-side-card">
@@ -746,7 +711,7 @@ function renderStorePage() {
             </a>
           </div>` : ''}
         </div>` : ''}
- 
+
         <!-- Ünvan & İş saatları -->
         ${(hasAddress || s.workHours) ? `
         <div class="store-side-card">
@@ -762,16 +727,16 @@ function renderStorePage() {
             <span>${s.workHours}</span>
           </div>` : ''}
         </div>` : ''}
- 
+
         <!-- Sosial Media -->
         ${hasSocial ? `
         <div class="store-side-card">
           <div class="store-side-title">Sosial Media</div>
           <div style="display:flex;flex-direction:column;gap:8px;">
             ${socialLinks.map(soc => {
-              const val  = s[soc.key];
-              const href = val.startsWith('http') ? val : soc.prefix + val.replace('@','');
-              const display = val.startsWith('@') ? val : '@' + val.replace(/^@/, '').replace(/^https?:\/\/[^/]+\/?/, '');
+              const val     = s[soc.key];
+              const href    = val.startsWith('http') ? val : soc.prefix + val.replace('@','');
+              const display = val.replace(/^https?:\/\/[^/]+\/?/, '').replace(/^@?/, '@').substring(0, 20);
               return `
               <a href="${href}" target="_blank" rel="noopener"
                  style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:10px;text-decoration:none;color:var(--text);transition:all .2s;font-size:0.82rem;"
@@ -779,12 +744,12 @@ function renderStorePage() {
                  onmouseout="this.style.borderColor='var(--border)';this.style.background='transparent'">
                 <span style="color:var(--accent);display:flex;align-items:center;">${soc.icon}</span>
                 <span style="font-weight:500;flex:1;">${soc.label}</span>
-                <span style="color:var(--muted);font-size:0.78rem;">${display.length > 18 ? display.substring(0,18)+'…' : display}</span>
+                <span style="color:var(--muted);font-size:0.76rem;">${display.length > 18 ? display.substring(0,18)+'…' : display}</span>
               </a>`;
             }).join('')}
           </div>
         </div>` : ''}
- 
+
         <!-- Çatdırılma -->
         <div class="store-side-card">
           <div class="store-side-title">Çatdırılma</div>
@@ -796,13 +761,21 @@ function renderStorePage() {
             <span>${deliveryText}</span>
           </div>` : ''}
         </div>
- 
+
       </div>
     </div>
   `;
- 
+
   document.title = `${s.storeName} — MODA`;
   if (storeListings.length > 0) renderProducts(storeListings, 'storeProductGrid');
+}
+
+/* ══════════════════════════════════════════
+   İZLƏ / İZLƏMƏ
+══════════════════════════════════════════ */
+function followBtnHTML(following) {
+  if (following) return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>İzləyirsiniz`;
+  return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>İzlə`;
 }
 
 async function toggleFollow() {
