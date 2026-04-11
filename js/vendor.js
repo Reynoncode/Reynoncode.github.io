@@ -56,17 +56,55 @@ const vendor = {
   },
 
   async getVendorOrders(uid) {
+    // store.js-dəki kimi 3 üsulla fetch et
+    let allOrders = [];
+    const seen = new Set();
+
     try {
-      const snap = await fbDb.collection('orders')
+      const snap1 = await fbDb.collection('orders')
         .where('vendorId', '==', uid)
         .orderBy('createdAt', 'desc')
-        .limit(50)
         .get();
-      return snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    } catch (err) {
-      console.warn('Vendor sifarişlər yüklənmədi:', err.message);
-      return [];
-    }
+      snap1.docs.forEach(d => {
+        if (!seen.has(d.id)) { seen.add(d.id); allOrders.push({ id: d.id, ...d.data() }); }
+      });
+    } catch(e) { /* index yoxdursa skip */ }
+
+    try {
+      const snap2 = await fbDb.collection('orders')
+        .where('sellerUid', '==', uid)
+        .orderBy('createdAt', 'desc')
+        .get();
+      snap2.docs.forEach(d => {
+        if (!seen.has(d.id)) { seen.add(d.id); allOrders.push({ id: d.id, ...d.data() }); }
+      });
+    } catch(e) { /* skip */ }
+
+    try {
+      if (allOrders.length === 0) {
+        const snap3 = await fbDb.collection('orders')
+          .orderBy('createdAt', 'desc')
+          .limit(200)
+          .get();
+        snap3.docs.forEach(d => {
+          if (seen.has(d.id)) return;
+          const data  = d.data();
+          const items = data.items || [];
+          const belongs = items.some(item =>
+            item.userId === uid || item.vendorId === uid || item.sellerId === uid
+          );
+          if (belongs) { seen.add(d.id); allOrders.push({ id: d.id, ...data }); }
+        });
+      }
+    } catch(e) { /* skip */ }
+
+    allOrders.sort((a, b) => {
+      const ta = a.createdAt?.toDate?.() || new Date(0);
+      const tb = b.createdAt?.toDate?.() || new Date(0);
+      return tb - ta;
+    });
+
+    return allOrders;
   }
 };
 
@@ -221,10 +259,11 @@ function renderVendorRejected(container, data) {
    ═══════════════════════════════════════════ */
 
 const VD_STATUS = {
-  pending:   { lbl: 'Gözlənilir', color: '#b7950b', bg: '#fef9e7' },
-  shipped:   { lbl: 'Yolda',      color: '#1a6fa8', bg: '#eaf4fb' },
-  delivered: { lbl: 'Çatdırıldı', color: '#1e8449', bg: '#eafaf1' },
-  cancelled: { lbl: 'Ləğv edildi',color: '#922b21', bg: '#fdf2f0' },
+  pending:    { lbl: 'Gözlənilir', color: '#b7950b', bg: '#fef9e7' },
+  processing: { lbl: 'Hazırlanır', color: '#6b21a8', bg: '#faf5ff' },
+  shipped:    { lbl: 'Yolda',      color: '#1a6fa8', bg: '#eaf4fb' },
+  delivered:  { lbl: 'Çatdırıldı', color: '#1e8449', bg: '#eafaf1' },
+  cancelled:  { lbl: 'Ləğv edildi',color: '#922b21', bg: '#fdf2f0' },
 };
 
 let _vdOrders   = [];
@@ -280,34 +319,26 @@ async function renderVendorDashboard(container, data, uid) {
       </div>
     </div>
 
-    <div class="section-card">
+    <div class="section-card" style="padding:1.5rem 1.75rem;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border);">
         <span style="font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:600;">Son sifarişlər</span>
         <select id="vdOrderFilter" onchange="vdFilterOrders()" style="font-size:0.78rem;padding:5px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--accent);font-family:inherit;">
           <option value="">Hamısı</option>
           <option value="pending">Gözlənilir</option>
+          <option value="processing">Hazırlanır</option>
           <option value="shipped">Yolda</option>
           <option value="delivered">Çatdırıldı</option>
           <option value="cancelled">Ləğv edildi</option>
         </select>
       </div>
-      <div class="vd-table-wrap">
-        <table class="vd-table">
-          <thead>
-            <tr>
-              <th>Məhsul</th><th>Sifariş №</th><th>Tarix</th><th>Məbləğ</th><th>Status</th><th></th>
-            </tr>
-          </thead>
-          <tbody id="vd-orders-tbody">
-            <tr><td colspan="6" style="text-align:center;padding:1.5rem;"><div class="spinner" style="margin:0 auto;"></div></td></tr>
-          </tbody>
-        </table>
+      <div id="vd-orders-list">
+        <div class="spinner" style="margin:1.5rem auto;"></div>
       </div>
     </div>
 
-    <div class="section-card">
-      <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;">
-        <span>Son elanlar</span>
+    <div class="section-card" style="padding:1.5rem 1.75rem;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border);">
+        <span style="font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:600;">Son elanlar</span>
         <button class="btn btn-dark" style="padding:0.4rem 0.9rem;font-size:0.78rem;"
           onclick="switchTab('listings', document.querySelector('[data-tab=listings]'))">
           Bütün elanlar →
@@ -340,61 +371,120 @@ async function renderVendorDashboard(container, data, uid) {
   document.getElementById('vd-listings').textContent = activeListings;
   document.getElementById('vd-pending').textContent  = pendingOrders;
 
-  vdRenderOrderRows(orders);
+  vdRenderOrderCards(orders);
   vdRenderListingRows(listings);
 }
 
-/* ── Sifariş sətirləri ── */
-function vdRenderOrderRows(orders) {
-  const tbody = document.getElementById('vd-orders-tbody');
-  if (!tbody) return;
+/* ══════════════════════════════════════════════════
+   SİFARİŞ KARTLARI — tam detallarla (store.js kimi)
+══════════════════════════════════════════════════ */
+function vdRenderOrderCards(orders) {
+  const container = document.getElementById('vd-orders-list');
+  if (!container) return;
 
   if (orders.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted);">Hələ sifariş yoxdur</td></tr>`;
+    container.innerHTML = `
+      <div style="text-align:center;padding:2.5rem;color:var(--muted);">
+        <div style="font-size:2rem;margin-bottom:0.5rem;">📭</div>
+        Hələ sifariş yoxdur
+      </div>`;
     return;
   }
 
-  tbody.innerHTML = orders.map(o => {
-    const st       = VD_STATUS[o.status] || { lbl: o.status || '—', color: '#888', bg: '#f5f5f5' };
-    const date     = o.createdAt?.toDate
-      ? o.createdAt.toDate().toLocaleDateString('az-AZ', { day:'2-digit', month:'2-digit', year:'numeric' })
-      : '—';
-    const itemNames = (o.items||[]).map(i => i.name).join(', ');
-    const shortName = itemNames.length > 35 ? itemNames.substring(0,35)+'…' : (itemNames||'Sifariş');
-    const orderNum  = o.orderNumber ? `#${o.orderNumber}` : `#${o.id.slice(-5).toUpperCase()}`;
+  container.innerHTML = orders.map(o => vdOrderCardHTML(o)).join('');
+}
 
-    const firstItem  = (o.items||[])[0] || {};
-    const color      = firstItem.selectedColor?.name || firstItem.color || o.color || '';
-    const size       = firstItem.selectedSize?.label || firstItem.size  || o.size  || '';
-    const addrObj    = o.address || o.deliveryAddress || o.shippingAddress || '';
-    const addressStr = typeof addrObj === 'object'
-      ? [addrObj.city, addrObj.district, addrObj.street].filter(Boolean).join(', ')
-      : (addrObj || '');
-    const buyerName  = o.buyerName || o.userName || o.customerName || '';
+function vdOrderCardHTML(o) {
+  const st   = VD_STATUS[o.status] || { lbl: o.status || '—', color: '#888', bg: '#f5f5f5' };
+  const date = o.createdAt?.toDate
+    ? o.createdAt.toDate().toLocaleDateString('az-AZ', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    : '—';
 
-    const chips = [];
-    if (color) chips.push(`<span style="background:#f5f0ff;color:#6b21a8;font-size:0.68rem;padding:2px 7px;border-radius:10px">🎨 ${color}</span>`);
-    if (size)  chips.push(`<span style="background:#f0f9ff;color:#1a4fb8;font-size:0.68rem;padding:2px 7px;border-radius:10px">📐 ${size}</span>`);
+  const items     = o.items || [];
+  const itemNames = items.map(i => i.name || i.title || '').filter(Boolean).join(', ');
+  const shortName = itemNames.length > 45 ? itemNames.substring(0, 45) + '…' : (itemNames || 'Sifariş');
+  const orderNum  = o.orderNumber ? `#${o.orderNumber}` : `#${o.id.slice(-6).toUpperCase()}`;
 
-    return `<tr>
-      <td>
-        <div style="font-weight:500;">${shortName}</div>
-        <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">${(o.items||[]).length} məhsul${buyerName?' · '+buyerName:''}</div>
-        ${chips.length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">${chips.join('')}</div>`:''}
-        ${addressStr?`<div style="font-size:0.68rem;color:var(--muted);margin-top:3px">📍 ${addressStr}</div>`:''}
-      </td>
-      <td><span style="font-family:monospace;font-weight:600;">${orderNum}</span></td>
-      <td style="color:var(--muted);">${date}</td>
-      <td style="font-weight:600;">${(o.total||0).toFixed(2)} ₼</td>
-      <td><span style="background:${st.bg};color:${st.color};padding:0.2rem 0.7rem;border-radius:20px;font-size:0.75rem;font-weight:600;white-space:nowrap;">${st.lbl}</span></td>
-      <td>
-        <button onclick="vdOpenStatusModal('${o.id}','${o.status||'pending'}')"
-          style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:0.75rem;cursor:pointer;color:var(--accent);white-space:nowrap;font-family:inherit;">
-          Status dəyiş
-        </button>
-      </td>
-    </tr>`;
-  }).join('');
+  // Məhsul detalları
+  const firstItem  = items[0] || {};
+  const color      = firstItem.selectedColor?.name || firstItem.color || o.color || '';
+  const colorHex   = firstItem.selectedColor?.hex  || firstItem.colorHex || '';
+  const size       = firstItem.selectedSize?.label || firstItem.size  || o.size  || '';
+
+  // Müştəri məlumatları
+  const buyerName  = o.buyerName  || o.userName  || o.customerName || '';
+  const buyerPhone = o.buyerPhone || o.phone     || '';
+  const buyerEmail = o.buyerEmail || '';
+
+  // Ünvan
+  const addrObj    = o.address || o.deliveryAddress || o.shippingAddress || '';
+  const addressStr = typeof addrObj === 'object'
+    ? (addrObj.label || [addrObj.city, addrObj.district, addrObj.street, addrObj.apartment].filter(Boolean).join(', '))
+    : (addrObj || '');
+
+  // Rəng chip
+  const colorChip = color
+    ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#f5f0ff;color:#6b21a8;font-size:0.7rem;padding:2px 8px;border-radius:10px;">
+        ${colorHex ? `<span style="width:9px;height:9px;border-radius:50%;background:${colorHex};border:1px solid rgba(0,0,0,.15);flex-shrink:0;display:inline-block;"></span>` : '🎨'} ${color}
+       </span>`
+    : '';
+
+  // Ölçü chip
+  const sizeChip = size
+    ? `<span style="background:#f0f9ff;color:#1a4fb8;font-size:0.7rem;padding:2px 8px;border-radius:10px;">📐 ${size}</span>`
+    : '';
+
+  return `
+    <div style="border:1px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:0.75rem;transition:box-shadow .2s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,.07)'" onmouseout="this.style.boxShadow='none'">
+
+      <!-- Üst sıra: məhsul adı + sifariş № + tarix + məbləğ + status + düymə -->
+      <div style="display:flex;align-items:flex-start;gap:0.75rem;flex-wrap:wrap;">
+        <div style="flex:1;min-width:160px;">
+          <div style="font-weight:600;font-size:0.88rem;margin-bottom:3px;">${shortName}</div>
+          <div style="font-size:0.72rem;color:var(--muted);">${items.length} məhsul</div>
+          ${(colorChip || sizeChip) ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;">${colorChip}${sizeChip}</div>` : ''}
+        </div>
+        <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;flex-shrink:0;">
+          <span style="font-family:monospace;font-weight:700;font-size:0.85rem;">${orderNum}</span>
+          <span style="color:var(--muted);font-size:0.78rem;">${date}</span>
+          <span style="font-weight:700;font-size:0.9rem;">${(o.total||0).toFixed(2)} ₼</span>
+          <span style="background:${st.bg};color:${st.color};padding:3px 10px;border-radius:20px;font-size:0.72rem;font-weight:600;white-space:nowrap;">${st.lbl}</span>
+          <button onclick="vdOpenStatusModal('${o.id}','${o.status||'pending'}')"
+            style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:0.75rem;cursor:pointer;color:var(--accent);white-space:nowrap;font-family:inherit;transition:border-color .15s;"
+            onmouseover="this.style.borderColor='#1a1a1a'"
+            onmouseout="this.style.borderColor='var(--border)'">
+            Status dəyiş
+          </button>
+        </div>
+      </div>
+
+      <!-- Alt sıra: müştəri + ünvan ayrı bölümlərdə -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:0.85rem;padding-top:0.85rem;border-top:1px solid var(--border);">
+
+        <!-- Müştəri məlumatları -->
+        <div style="background:#f8f8f8;border-radius:8px;padding:0.65rem 0.85rem;">
+          <div style="font-size:0.68rem;font-weight:600;color:var(--muted);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:0.45rem;">👤 Müştəri</div>
+          ${buyerName
+            ? `<div style="font-size:0.8rem;font-weight:500;margin-bottom:2px;">${buyerName}</div>`
+            : `<div style="font-size:0.78rem;color:var(--muted);">Ad məlumatı yoxdur</div>`}
+          ${buyerPhone
+            ? `<div style="font-size:0.76rem;color:#555;display:flex;align-items:center;gap:4px;margin-top:2px;">📞 ${buyerPhone}</div>`
+            : ''}
+          ${buyerEmail
+            ? `<div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">✉️ ${buyerEmail}</div>`
+            : ''}
+        </div>
+
+        <!-- Çatdırılma ünvanı -->
+        <div style="background:#f8f8f8;border-radius:8px;padding:0.65rem 0.85rem;">
+          <div style="font-size:0.68rem;font-weight:600;color:var(--muted);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:0.45rem;">📍 Çatdırılma ünvanı</div>
+          ${addressStr
+            ? `<div style="font-size:0.76rem;color:#555;line-height:1.5;">${addressStr}</div>`
+            : `<div style="font-size:0.78rem;color:var(--muted);">Ünvan məlumatı yoxdur</div>`}
+        </div>
+
+      </div>
+    </div>`;
 }
 
 /* ── Elan sətirləri ── */
@@ -426,14 +516,17 @@ function vdRenderListingRows(listings) {
 function vdFilterOrders() {
   const filter   = document.getElementById('vdOrderFilter')?.value || '';
   const filtered = filter ? _vdOrders.filter(o => o.status === filter) : _vdOrders;
-  vdRenderOrderRows(filtered);
+  vdRenderOrderCards(filtered);
 }
 
-/* ── Status dəyişdirmə modalı ── */
+/* ════════════════════════════════════════════════
+   STATUS MODALI
+════════════════════════════════════════════════ */
 const STATUS_FLOW = [
-  { key:'pending',   icon:'⏳', label:'Gözlənilir', desc:'Sifariş qəbul edilib, hazırlanır' },
-  { key:'shipped',   icon:'🚚', label:'Yolda',       desc:'Sifariş göndərildi, çatdırılır' },
-  { key:'delivered', icon:'✅', label:'Çatdırıldı',  desc:'Sifariş alıcıya çatdırıldı' },
+  { key:'pending',    icon:'⏳', label:'Gözlənilir', desc:'Sifariş qəbul edilib, hazırlanır' },
+  { key:'processing', icon:'📦', label:'Hazırlanır',  desc:'Sifariş yığılır və hazırlanır' },
+  { key:'shipped',    icon:'🚚', label:'Yolda',       desc:'Sifariş göndərildi — stok avtomatik azalacaq' },
+  { key:'delivered',  icon:'✅', label:'Çatdırıldı',  desc:'Sifariş alıcıya çatdırıldı' },
 ];
 
 function vdOpenStatusModal(orderId, currentStatus) {
@@ -443,7 +536,7 @@ function vdOpenStatusModal(orderId, currentStatus) {
   const currentIdx = STATUS_FLOW.findIndex(s => s.key === currentStatus);
   const overlay    = document.createElement('div');
   overlay.id       = 'vdStatusModal';
-  overlay.style.cssText = `position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);`;
+  overlay.style.cssText = `position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);`;
 
   overlay.innerHTML = `
     <div style="background:#fff;border-radius:16px;padding:28px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.15);position:relative;">
@@ -451,6 +544,8 @@ function vdOpenStatusModal(orderId, currentStatus) {
         style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--muted)">✕</button>
       <h3 style="font-family:'Playfair Display',serif;margin-bottom:6px;">Sifariş statusu</h3>
       <p style="color:var(--muted);font-size:0.82rem;margin-bottom:24px;">Sifarişin cari mərhələsini seçin</p>
+
+      <!-- Progress -->
       <div style="display:flex;align-items:center;margin-bottom:28px;">
         ${STATUS_FLOW.map((s,i) => `
           <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;">
@@ -462,10 +557,12 @@ function vdOpenStatusModal(orderId, currentStatus) {
           ${i<STATUS_FLOW.length-1?`<div style="flex:0 0 32px;height:2px;background:${i<currentIdx?'#1a1a1a':'#e8e5e0'};margin-bottom:22px;"></div>`:''}
         `).join('')}
       </div>
-      <div style="display:flex;flex-direction:column;gap:10px;">
+
+      <!-- Seçim düymələri -->
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
         ${STATUS_FLOW.map(s => `
           <button onclick="vdUpdateOrderStatus('${orderId}','${s.key}')"
-            style="display:flex;align-items:center;gap:12px;padding:12px 16px;border:2px solid ${s.key===currentStatus?'#1a1a1a':'#e8e5e0'};border-radius:12px;background:${s.key===currentStatus?'rgba(26,26,26,0.04)':'transparent'};cursor:${s.key===currentStatus?'default':'pointer'};text-align:left;width:100%;font-family:inherit;">
+            style="display:flex;align-items:center;gap:12px;padding:12px 16px;border:2px solid ${s.key===currentStatus?'#1a1a1a':'#e8e5e0'};border-radius:12px;background:${s.key===currentStatus?'rgba(26,26,26,0.04)':'transparent'};cursor:${s.key===currentStatus?'default':'pointer'};text-align:left;width:100%;font-family:inherit;transition:border-color .2s;">
             <span style="font-size:1.2rem;">${s.icon}</span>
             <div style="flex:1;">
               <div style="font-weight:600;font-size:0.88rem;">${s.label}</div>
@@ -485,32 +582,118 @@ function vdOpenStatusModal(orderId, currentStatus) {
   overlay.addEventListener('click', e => { if (e.target===overlay) overlay.remove(); });
 }
 
-/* ── Firestore-da statusu yenilə ── */
+/* ════════════════════════════════════════════════
+   STATUS YENİLƏ + STOK AZALT
+════════════════════════════════════════════════ */
 async function vdUpdateOrderStatus(orderId, newStatus) {
   try {
+    // Sifarişi tap
+    const orderSnap = await fbDb.collection('orders').doc(orderId).get();
+    if (!orderSnap.exists) throw new Error('Sifariş tapılmadı');
+
+    const orderData  = orderSnap.data();
+    const prevStatus = orderData.status || 'pending';
+
+    // Firestore-da statusu yenilə
     await fbDb.collection('orders').doc(orderId).update({
       status:    newStatus,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
+    // ── STOK AZALTMA ──
+    // Yalnız "shipped" statusuna keçəndə və əvvəl "shipped" deyilsə icra et
+    if (newStatus === 'shipped' && prevStatus !== 'shipped') {
+      await vdDecreaseStockForOrder(orderData);
+    }
+
+    // Lokal cache yenilə
     const idx = _vdOrders.findIndex(o => o.id === orderId);
     if (idx !== -1) _vdOrders[idx].status = newStatus;
 
     document.getElementById('vdStatusModal')?.remove();
 
+    // Statistikaları yenilə
     const pendingEl = document.getElementById('vd-pending');
-    if (pendingEl) pendingEl.textContent = _vdOrders.filter(o => o.status==='pending').length;
+    if (pendingEl) pendingEl.textContent = _vdOrders.filter(o => o.status === 'pending').length;
 
     const revenueEl = document.getElementById('vd-revenue');
     if (revenueEl) {
-      const rev = _vdOrders.filter(o => o.status==='delivered').reduce((s,o) => s+(o.total||0), 0);
+      const rev = _vdOrders.filter(o => o.status === 'delivered').reduce((s,o) => s+(o.total||0), 0);
       revenueEl.textContent = rev.toFixed(2) + ' ₼';
     }
 
+    // Sifariş siyahısını yenilə
     vdFilterOrders();
+
+    // Son elanlar stok sütununu yenilə
+    const freshListings = await vendor.getListings(_vdUid);
+    _vdListings = freshListings;
+    vdRenderListingRows(freshListings);
+
     showToast('Status yeniləndi ✓');
   } catch (err) {
     showToast('Xəta: ' + err.message);
+    console.error('vdUpdateOrderStatus xətası:', err);
+  }
+}
+
+/* ── Sifarişdəki hər məhsulun stokunu azalt ── */
+async function vdDecreaseStockForOrder(orderData) {
+  const items = orderData.items || [];
+  if (items.length === 0) return;
+
+  const listingIds = [...new Set(items.map(i => i.id).filter(Boolean))];
+
+  for (const listingId of listingIds) {
+    try {
+      const listingRef  = fbDb.collection('listings').doc(listingId);
+      const listingSnap = await listingRef.get();
+      if (!listingSnap.exists) continue;
+
+      const listingData = listingSnap.data();
+      const sizes       = listingData.sizes || [];
+
+      const orderedItems = items.filter(i => i.id === listingId);
+
+      let updated = false;
+      const newSizes = sizes.map(sizeEntry => {
+        const match = orderedItems.find(oi => {
+          const orderedSize = oi.selectedSize?.label || oi.size || null;
+          return orderedSize === sizeEntry.label;
+        });
+        if (match) {
+          const qty      = match.quantity || 1;
+          const newStock = Math.max(0, (parseInt(sizeEntry.stock) || 0) - qty);
+          updated = true;
+          return { ...sizeEntry, stock: newStock };
+        }
+        return sizeEntry;
+      });
+
+      // Ölçüsüz sifariş olduqda ümumi stoku azalt
+      if (!updated) {
+        const noSizeItems = orderedItems.filter(oi => !(oi.selectedSize?.label || oi.size));
+        if (noSizeItems.length > 0) {
+          const totalQty     = noSizeItems.reduce((s, i) => s + (i.quantity || 1), 0);
+          const currentStock = parseInt(listingData.stock || listingData.quantity || 0);
+          await listingRef.update({
+            stock:     Math.max(0, currentStock - totalQty),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          continue;
+        }
+      }
+
+      if (updated) {
+        await listingRef.update({
+          sizes:     newSizes,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      }
+
+    } catch (e) {
+      console.warn(`Listing ${listingId} stoku azaldılmadı:`, e.message);
+    }
   }
 }
 
@@ -634,8 +817,8 @@ async function openVendorSettings() {
         <div id="vs-tab-social" class="vs-tab" style="display:none;">
           <p style="font-size:.78rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.6;">Sosial media hesablarınızı əlavə edin. Mağaza səhifəsində görünəcək.</p>
           ${[
-            {id:'vsInstagram',icon:'📸',lbl:'Instagram',ph:'@hesabiniz',       val:v.instagram||''},
-            {id:'vsTiktok',   icon:'🎵',lbl:'TikTok',   ph:'@hesabiniz',       val:v.tiktok||''},
+            {id:'vsInstagram',icon:'📸',lbl:'Instagram',ph:'@hesabiniz',        val:v.instagram||''},
+            {id:'vsTiktok',   icon:'🎵',lbl:'TikTok',   ph:'@hesabiniz',        val:v.tiktok||''},
             {id:'vsFacebook', icon:'👥',lbl:'Facebook',  ph:'facebook.com/...',  val:v.facebook||''},
             {id:'vsYoutube',  icon:'▶️',lbl:'YouTube',  ph:'youtube.com/...',   val:v.youtube||''},
             {id:'vsWhatsapp', icon:'💬',lbl:'WhatsApp',  ph:'+994 XX XXX XX XX',val:v.whatsapp||''},
@@ -777,7 +960,6 @@ async function saveVendorSettings() {
       }, { merge: true })
     ]);
 
-    // Dashboard başlığını canlı yenilə
     const nameEl   = document.getElementById('vdStoreName');
     const metaEl   = document.getElementById('vdStoreMeta');
     const avatarEl = document.getElementById('vdStoreAvatar');
