@@ -55,6 +55,7 @@ async function loadStorePage() {
       category:  v.category || '',
       createdAt: v.createdAt || u.createdAt || null,
       followerCount: 0,
+      coverURL:  v.coverURL  || '',
     };
 
     const [listSnap, followSnap] = await Promise.all([
@@ -210,7 +211,9 @@ async function loadVendorDashboard(uid) {
                 <div style="font-size:0.8rem;color:var(--muted);margin-top:2px">${category} · ${city}</div>
               </div>
             </div>
-            <button style="display:flex;align-items:center;gap:6px;background:none;border:1px solid var(--border);border-radius:10px;padding:8px 14px;font-size:0.82rem;cursor:pointer;color:var(--muted)">
+            <button onclick="openVendorSettings()" style="display:flex;align-items:center;gap:6px;background:none;border:1px solid var(--border);border-radius:10px;padding:8px 14px;font-size:0.82rem;cursor:pointer;color:var(--muted);transition:all .2s;font-family:inherit"
+              onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+              onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
               ⚙️ Parametrlər
             </button>
           </div>
@@ -527,8 +530,18 @@ function renderStorePage() {
     ? `<span style="display:inline-block;background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.7);font-size:0.7rem;padding:2px 10px;border-radius:20px;margin-left:0.75rem;letter-spacing:0.04em;vertical-align:middle;">${s.category}</span>`
     : '';
 
+  // Cover şəkli varsa hero stilini dəyiş
+  const coverStyle = s.coverURL
+    ? `background:url('${s.coverURL}') center/cover no-repeat;`
+    : `background:linear-gradient(135deg,#1a1a1a 0%,#2c2c2c 55%,#1a1a1a 100%);`;
+
+  const coverOverlay = s.coverURL
+    ? `position:absolute;inset:0;background:rgba(0,0,0,.45);border-radius:var(--radius-xl);`
+    : ``;
+
   document.getElementById('storePageContent').innerHTML = `
-    <div class="store-hero">
+    <div class="store-hero" style="${coverStyle}">
+      ${s.coverURL ? `<div style="${coverOverlay}"></div>` : ''}
       <div class="store-hero-inner">
         <div class="store-logo">${logoHTML}</div>
         <div class="store-hero-info">
