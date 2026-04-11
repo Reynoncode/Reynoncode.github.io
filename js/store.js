@@ -45,18 +45,34 @@ async function loadStorePage() {
     const u = uSnap.exists ? uSnap.data() : {};
     const fullName = ((u.firstName || '') + ' ' + (u.lastName || '')).trim();
 
+     
     storeData = {
-      uid: storeUid,
-      storeName: v.storeName || u.storeName || fullName || 'Mağaza',
-      photoURL:  v.photoURL  || u.photoURL  || '',
-      desc:      v.desc || v.description || u.desc || '',
-      email:     u.email || '',
-      phone:     v.phone || u.phone || '',
-      category:  v.category || '',
-      createdAt: v.createdAt || u.createdAt || null,
+      uid:          storeUid,
+      storeName:    v.storeName  || u.storeName  || fullName || 'Mağaza',
+      photoURL:     v.photoURL   || u.photoURL   || '',
+      coverURL:     v.coverURL   || '',
+      desc:         v.desc       || v.description || u.desc || '',
+      email:        u.email      || '',
+      phone:        v.phone      || u.phone       || '',
+      publicEmail:  v.publicEmail || '',
+      category:     v.category   || '',
+      city:         v.city       || u.city        || '',
+      district:     v.district   || '',
+      street:       v.street     || '',
+      workHours:    v.workHours  || '',
+      brand:        v.brand      || '',
+      website:      v.website    || '',
+      deliveryDays: v.deliveryDays || '',
+      freeShippingThreshold: v.freeShippingThreshold ?? 50,
+      instagram:    v.instagram  || '',
+      tiktok:       v.tiktok     || '',
+      facebook:     v.facebook   || '',
+      youtube:      v.youtube    || '',
+      whatsapp:     v.whatsapp   || '',
+      createdAt:    v.createdAt  || u.createdAt   || null,
       followerCount: 0,
-      coverURL:  v.coverURL  || '',
     };
+ 
 
     const [listSnap, followSnap] = await Promise.all([
       fbDb.collection('listings').where('userId', '==', storeUid).orderBy('createdAt', 'desc').get(),
@@ -606,30 +622,57 @@ function vendorSidebarClick(idx) {
 ══════════════════════════════════════════ */
 function renderStorePage() {
   const s = storeData;
-
+ 
   const initials = s.storeName.split(' ').map(w => w[0] || '').join('').substring(0, 2).toUpperCase();
-  const logoHTML = s.photoURL ? `<img src="${s.photoURL}" alt="${s.storeName}"/>` : initials;
+  const logoHTML = s.photoURL
+    ? `<img src="${s.photoURL}" alt="${s.storeName}"/>`
+    : initials;
+ 
   const joinYear = s.createdAt?.toDate ? s.createdAt.toDate().getFullYear() : null;
-  const catTag   = s.category
+ 
+  const catTag = s.category
     ? `<span style="display:inline-block;background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.7);font-size:0.7rem;padding:2px 10px;border-radius:20px;margin-left:0.75rem;letter-spacing:0.04em;vertical-align:middle;">${s.category}</span>`
     : '';
-
+ 
   const coverStyle = s.coverURL
     ? `background:url('${s.coverURL}') center/cover no-repeat;`
     : `background:linear-gradient(135deg,#1a1a1a 0%,#2c2c2c 55%,#1a1a1a 100%);`;
-
+ 
   const coverOverlay = s.coverURL
-    ? `position:absolute;inset:0;background:rgba(0,0,0,.45);border-radius:var(--radius-xl);`
-    : ``;
-
+    ? `<div style="position:absolute;inset:0;background:rgba(0,0,0,.45);border-radius:var(--radius-xl);"></div>`
+    : '';
+ 
+  /* ── Sosial media linklər ── */
+  const socialLinks = [
+    { key: 'instagram', icon: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>`, label: 'Instagram', prefix: 'https://instagram.com/' },
+    { key: 'tiktok',    icon: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12a4 4 0 100 8 4 4 0 000-8z"/><path d="M15 2s1 0 2 2 2 2 3 2v4s-1 0-3-1-3-3-3-3v8"/></svg>`, label: 'TikTok',    prefix: 'https://tiktok.com/@' },
+    { key: 'facebook',  icon: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>`, label: 'Facebook',  prefix: 'https://' },
+    { key: 'youtube',   icon: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22.54 6.42a2.78 2.78 0 00-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 001.46 6.42 29 29 0 001 12a29 29 0 00.46 5.58 2.78 2.78 0 001.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 001.95-1.96A29 29 0 0023 12a29 29 0 00-.46-5.58z"/><polygon fill="currentColor" stroke="none" points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"/></svg>`, label: 'YouTube',   prefix: 'https://' },
+    { key: 'whatsapp',  icon: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>`, label: 'WhatsApp',  prefix: 'https://wa.me/' },
+  ].filter(soc => s[soc.key]);
+ 
+  const hasSocial   = socialLinks.length > 0;
+  const hasContact  = s.phone || s.publicEmail || s.email;
+  const hasAddress  = s.city || s.district || s.street;
+  const hasWorkInfo = s.workHours || s.deliveryDays || s.website;
+ 
+  /* ── Çatdırılma mətni ── */
+  const deliveryText = s.deliveryDays
+    ? `${s.deliveryDays} iş günü ərzində çatdırılma.`
+    : '2–4 iş günü ərzində çatdırılma.';
+  const freeShipText = `${s.freeShippingThreshold} AZN üzərindəki sifarişlərə pulsuz çatdırılma.`;
+ 
   document.getElementById('storePageContent').innerHTML = `
+    <!-- ══ HERO ══ -->
     <div class="store-hero" style="${coverStyle}">
-      ${s.coverURL ? `<div style="${coverOverlay}"></div>` : ''}
+      ${coverOverlay}
       <div class="store-hero-inner">
         <div class="store-logo">${logoHTML}</div>
         <div class="store-hero-info">
           <div class="store-hero-name">${s.storeName}${catTag}</div>
-          ${s.desc ? `<div class="store-hero-desc">${s.desc}</div>` : '<div style="margin-bottom:1.1rem;"></div>'}
+          ${s.desc
+            ? `<div class="store-hero-desc">${s.desc}</div>`
+            : '<div style="margin-bottom:1.1rem;"></div>'}
           <div class="store-hero-stats">
             <div class="store-stat"><span id="followerCount">${s.followerCount}</span><small>İzləyici</small></div>
             <div class="store-stat"><span>${storeListings.length}</span><small>Məhsul</small></div>
@@ -641,8 +684,11 @@ function renderStorePage() {
         </button>
       </div>
     </div>
-
+ 
+    <!-- ══ CONTENT GRID ══ -->
     <div class="store-content-grid">
+ 
+      <!-- Sol: məhsullar -->
       <div>
         <div class="store-products-header">
           <h2 class="store-products-title">Məhsullar</h2>
@@ -650,39 +696,113 @@ function renderStorePage() {
         </div>
         ${storeListings.length > 0
           ? `<div class="product-grid" id="storeProductGrid"></div>`
-          : `<div class="store-empty"><div style="font-size:3rem;margin-bottom:1rem;">🏷️</div><p>Bu mağazada hələ məhsul yoxdur</p></div>`
+          : `<div class="store-empty">
+               <div style="font-size:3rem;margin-bottom:1rem;">🏷️</div>
+               <p>Bu mağazada hələ məhsul yoxdur</p>
+             </div>`
         }
       </div>
+ 
+      <!-- Sağ: sidebar -->
       <div class="store-side-col">
-        ${s.desc ? `<div class="store-side-card"><div class="store-side-title">Haqqımızda</div><p class="store-side-text">${s.desc}</p></div>` : ''}
+ 
+        <!-- Haqqımızda -->
+        ${s.desc ? `
+        <div class="store-side-card">
+          <div class="store-side-title">Haqqımızda</div>
+          <p class="store-side-text">${s.desc}</p>
+          ${s.brand ? `<div style="display:flex;align-items:center;gap:6px;margin-top:10px;font-size:0.8rem;color:var(--muted)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg><span>${s.brand}</span></div>` : ''}
+        </div>` : ''}
+ 
+        <!-- Kampaniya -->
         <div class="store-side-card campaign-card">
           <div class="store-side-title">Kampaniya</div>
           <div class="campaign-badge">Aktiv deyil</div>
           <div class="campaign-title">Hazırda kampaniya yoxdur</div>
           <p class="store-side-text">Bu mağazanın aktiv kampaniyası olmadıqda burada görünəcək.</p>
         </div>
-        ${(s.phone || s.email) ? `
+ 
+        <!-- Əlaqə -->
+        ${hasContact ? `
         <div class="store-side-card">
           <div class="store-side-title">Əlaqə</div>
-          ${s.phone ? `<div class="store-contact-row"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.4 1.18 2 2 0 012 1h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0122 16.92z"/></svg><span>${s.phone}</span></div>` : ''}
-          ${s.email ? `<div class="store-contact-row"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><span>${s.email}</span></div>` : ''}
+          ${s.phone ? `
+          <div class="store-contact-row">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.4 1.18 2 2 0 012 1h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0122 16.92z"/></svg>
+            <span>${s.phone}</span>
+          </div>` : ''}
+          ${(s.publicEmail || s.email) ? `
+          <div class="store-contact-row">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            <span>${s.publicEmail || s.email}</span>
+          </div>` : ''}
+          ${s.website ? `
+          <div class="store-contact-row">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+            <a href="${s.website.startsWith('http') ? s.website : 'https://'+s.website}" target="_blank" rel="noopener"
+               style="color:var(--accent);text-decoration:none;font-size:0.835rem;"
+               onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+              ${s.website.replace(/^https?:\/\//, '')}
+            </a>
+          </div>` : ''}
         </div>` : ''}
+ 
+        <!-- Ünvan & İş saatları -->
+        ${(hasAddress || s.workHours) ? `
+        <div class="store-side-card">
+          <div class="store-side-title">Ünvan & İş saatları</div>
+          ${hasAddress ? `
+          <div class="store-contact-row" style="align-items:flex-start;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-top:2px;flex-shrink:0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span style="line-height:1.55;">${[s.street, s.district, s.city].filter(Boolean).join(', ')}</span>
+          </div>` : ''}
+          ${s.workHours ? `
+          <div class="store-contact-row">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span>${s.workHours}</span>
+          </div>` : ''}
+        </div>` : ''}
+ 
+        <!-- Sosial Media -->
+        ${hasSocial ? `
+        <div class="store-side-card">
+          <div class="store-side-title">Sosial Media</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            ${socialLinks.map(soc => {
+              const val  = s[soc.key];
+              const href = val.startsWith('http') ? val : soc.prefix + val.replace('@','');
+              const display = val.startsWith('@') ? val : '@' + val.replace(/^@/, '').replace(/^https?:\/\/[^/]+\/?/, '');
+              return `
+              <a href="${href}" target="_blank" rel="noopener"
+                 style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:10px;text-decoration:none;color:var(--text);transition:all .2s;font-size:0.82rem;"
+                 onmouseover="this.style.borderColor='var(--accent)';this.style.background='var(--bg)'"
+                 onmouseout="this.style.borderColor='var(--border)';this.style.background='transparent'">
+                <span style="color:var(--accent);display:flex;align-items:center;">${soc.icon}</span>
+                <span style="font-weight:500;flex:1;">${soc.label}</span>
+                <span style="color:var(--muted);font-size:0.78rem;">${display.length > 18 ? display.substring(0,18)+'…' : display}</span>
+              </a>`;
+            }).join('')}
+          </div>
+        </div>` : ''}
+ 
+        <!-- Çatdırılma -->
         <div class="store-side-card">
           <div class="store-side-title">Çatdırılma</div>
           <div class="store-delivery-tag">✓ Pulsuz çatdırılma</div>
-          <p class="store-side-text">50 AZN üzərindəki sifarişlərə pulsuz çatdırılma.</p>
+          <p class="store-side-text">${freeShipText}</p>
+          ${s.deliveryDays ? `
+          <div class="store-contact-row" style="margin-top:8px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+            <span>${deliveryText}</span>
+          </div>` : ''}
         </div>
+ 
       </div>
     </div>
   `;
-
+ 
   document.title = `${s.storeName} — MODA`;
   if (storeListings.length > 0) renderProducts(storeListings, 'storeProductGrid');
-}
-
-function followBtnHTML(following) {
-  if (following) return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>İzləyirsiniz`;
-  return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>İzlə`;
 }
 
 async function toggleFollow() {
