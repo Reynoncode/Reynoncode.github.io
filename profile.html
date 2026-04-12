@@ -666,11 +666,7 @@ async function loadOrders(uid) {
 /* ── Wishlist ── */
 async function loadWishlist(uid) {
   try {
-    const snap = await fbDb
-      .collection('wishlists')
-      .doc(uid)
-      .collection('items')
-      .get();
+    const snap = await fbDb.collection('wishlists').doc(uid).get();
 
     const container  = document.getElementById('wishlistItems');
     const statWishEl = document.getElementById('statWishlist');
@@ -678,33 +674,37 @@ async function loadWishlist(uid) {
     if (statWishEl) statWishEl.textContent = snap.size;
     if (!container) return;
 
-    if (snap.empty) {
-      container.innerHTML = '<p style="color:var(--muted);font-size:.875rem;">Bəyəndikləriniz yoxdur.</p>';
-      return;
-    }
+    const wishItems = snap.exists ? (snap.data().items || []) : [];
+if (statWishEl) statWishEl.textContent = wishItems.length;
 
-    container.innerHTML = '';
-    snap.forEach(doc => {
-      const item = doc.data();
-      container.innerHTML += `
-        <div class="order-item">
-          <div class="order-img">
-            ${item.img
-              ? `<img src="${item.img}" alt="${item.name || ''}" style="width:100%;height:100%;object-fit:cover;">`
-              : '❤️'}
-          </div>
-          <div class="order-info">
-            <div class="order-name">${item.name || '—'}</div>
-            <div class="order-meta">${item.brand || ''}</div>
-          </div>
-          <div class="order-right">
-            <div class="order-price">${(item.price || 0).toFixed(2)} ₼</div>
-            <button onclick="removeFromWishlist('${doc.id}', '${uid}')"
-              style="background:none;border:none;color:var(--muted);font-size:0.78rem;cursor:pointer;text-decoration:underline;margin-top:4px;">
-              Sil
-            </button>
-          </div>
-        </div>`;
+if (wishItems.length === 0) {
+  container.innerHTML = '<p style="color:var(--muted);font-size:.875rem;">Bəyəndikləriniz yoxdur.</p>';
+  return;
+}
+
+wishItems.forEach((item, index) => {
+  // item.image (products.js-də image saxlanır, img yox)
+  const imgSrc = item.image || item.img || '';
+  container.innerHTML += `
+    <div class="order-item">
+      <div class="order-img">
+        ${imgSrc
+          ? `<img src="${imgSrc}" alt="${item.name||''}" style="width:100%;height:100%;object-fit:cover;">`
+          : '❤️'}
+      </div>
+      <div class="order-info">
+        <div class="order-name">${item.name || '—'}</div>
+        <div class="order-meta">${item.brand || ''}</div>
+      </div>
+      <div class="order-right">
+        <div class="order-price">${(item.price || 0).toFixed(2)} ₼</div>
+        <button onclick="removeFromWishlist('${item.id}', '${uid}')"
+          style="background:none;border:none;color:var(--muted);font-size:0.78rem;cursor:pointer;text-decoration:underline;margin-top:4px;">
+          Sil
+        </button>
+      </div>
+    </div>`;
+});
     });
 
   } catch (err) {
