@@ -32,6 +32,19 @@ function renderHeader() {
     </div>
 
     <div class="header-right">
+
+      <!-- İstək siyahısı düyməsi (səbətin solunda) -->
+      <button class="btn-wishlist" id="wishlistBtn" onclick="openWishlistModal()" title="İstək siyahısı">
+        <svg width="20" height="20" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06
+                   a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84
+                   a5.5 5.5 0 0 0 0-7.78z"/>
+        </svg>
+        <span class="wishlist-header-badge" id="wishlistHeaderBadge" style="display:none">0</span>
+      </button>
+
+      <!-- Səbət düyməsi -->
       <button class="btn-cart" id="cartBtn" title="Səbət">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0"/>
@@ -63,15 +76,21 @@ function renderHeader() {
   }
 
   updateCartBadge();
+  /* Wishlist badge-i də yenilə */
+  if (typeof updateWishlistBadge === 'function') updateWishlistBadge();
 }
 
 function initHeaderEvents() {
-  const signinBtn = document.getElementById('signinBtn');
-  const cartBtn   = document.getElementById('cartBtn');
-  const userBtn   = document.getElementById('userBtn');
+  const signinBtn  = document.getElementById('signinBtn');
+  const cartBtn    = document.getElementById('cartBtn');
+  const userBtn    = document.getElementById('userBtn');
+  const wishlistBtn = document.getElementById('wishlistBtn');
 
-  if (signinBtn) signinBtn.addEventListener('click', () => modal.open('authModal'));
-  if (cartBtn)   cartBtn.addEventListener('click', () => modal.open('cartModal'));
+  if (signinBtn)   signinBtn.addEventListener('click',   () => modal.open('authModal'));
+  if (cartBtn)     cartBtn.addEventListener('click',     () => modal.open('cartModal'));
+  if (wishlistBtn) wishlistBtn.addEventListener('click', () => {
+    if (typeof openWishlistModal === 'function') openWishlistModal();
+  });
 
   if (userBtn) userBtn.addEventListener('click', () => {
     window.location.href = 'profile.html';
@@ -481,5 +500,7 @@ document.addEventListener('DOMContentLoaded', () => {
   fbAuth.onAuthStateChanged(user => {
     cart.init(user ? user.uid : null);
     renderHeader();
+    /* Wishlist badge-i yenilə */
+    if (typeof updateWishlistBadge === 'function') updateWishlistBadge();
   });
 });
