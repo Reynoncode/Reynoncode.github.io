@@ -21,20 +21,12 @@ async function loadStorePage() {
     return;
   }
 
-  const cu = fbAuth.currentUser;
-  if (cu && cu.uid === storeUid) {
-    await loadVendorDashboard(storeUid);
-    return;
-  }
-
-  fbAuth.onAuthStateChanged(async (user) => {
-    if (user && user.uid === storeUid) {
-      await loadVendorDashboard(storeUid);
-      return;
-    }
-  });
+  // ← loadVendorDashboard yönləndiricisi buradan ÇIXARILDI
+  // Öz mağazana baxanda da normal mağaza səhifəsi açılacaq
 
   try {
+    const cu = fbAuth.currentUser;
+
     const [vSnap, uSnap] = await Promise.all([
       fbDb.collection('vendors').doc(storeUid).get(),
       fbDb.collection('users').doc(storeUid).get()
