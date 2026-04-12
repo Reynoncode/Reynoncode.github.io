@@ -331,19 +331,52 @@ function injectCartStyles() {
       font-weight: 700;
       color: var(--text, #1a1a1a);
     }
+    .cart-item-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+      margin-top: 6px;
+    }
     .cart-item-remove {
       background: none;
-      border: none;
-      font-size: 0.71rem;
+      border: 1.5px solid var(--border, #e8e2da);
+      border-radius: 7px;
+      font-size: 0.75rem;
       color: var(--muted, #7a7a7a);
       cursor: pointer;
-      text-decoration: underline;
-      margin-top: 3px;
-      display: block;
-      text-align: right;
-      padding: 0;
+      padding: 4px 10px;
+      font-family: inherit;
+      transition: all 0.18s;
+      white-space: nowrap;
     }
-    .cart-item-remove:hover { color: #e63946; }
+    .cart-item-remove:hover {
+      border-color: #e63946;
+      color: #e63946;
+      background: #fff5f5;
+    }
+    .cart-item-fav {
+      width: 30px; height: 30px;
+      border: 1.5px solid var(--border, #e8e2da);
+      border-radius: 7px;
+      background: none;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.18s;
+      flex-shrink: 0;
+    }
+    .cart-item-fav:hover {
+      border-color: #e63946;
+      background: #fff5f5;
+    }
+    .cart-item-fav.active {
+      border-color: #e63946;
+      background: #fff5f5;
+    }
+    .cart-item-fav svg {
+      width: 14px; height: 14px;
+      transition: all 0.18s;
+    }
 
     /* ── Önərilənlər ── */
     .cart-suggest-section {
@@ -366,7 +399,11 @@ function injectCartStyles() {
       padding-bottom: 12px;
       scrollbar-width: none;
       -ms-overflow-style: none;
+      cursor: grab;
+      user-select: none;
+      -webkit-overflow-scrolling: touch;
     }
+    .cart-suggest-row:active { cursor: grabbing; }
     .cart-suggest-row::-webkit-scrollbar { display: none; }
     .cart-suggest-card {
       flex-shrink: 0;
@@ -691,6 +728,21 @@ async function renderCartModal() {
 
   injectCartStyles();
 
+  // Wishlist ID-lərini yüklə
+  let favIds = new Set();
+  const user = fbAuth.currentUser;
+  if (user) {
+    try {
+      const snap = await fbDb.collection('wishlists').doc(user.uid).get();
+      if (snap.exists) {
+        (snap.data().items || []).forEach(i => favIds.add(String(i.id)));
+      }
+    } catch(e) {}
+  }
+
+  // items-ə _isFav əlavə et
+  const itemsWithFav = items.map(i => ({ ...i, _isFav: favIds.has(String(i.id)) }));
+
   overlay.innerHTML = `
     <div class="cart-panel">
 
@@ -703,14 +755,14 @@ async function renderCartModal() {
       </div>
 
       <div class="cart-panel-body">
-        ${items.length === 0 ? `
+        ${itemsWithFav.length === 0 ? `
           <div class="cart-empty">
             <div class="cart-empty-icon">🛍️</div>
             <p>Səbətiniz boşdur</p>
           </div>
         ` : `
           <div class="cart-item-list">
-            ${items.map(item => {
+            ${itemsWithFav.map(item => {
               const imgSrc = item.img || '';
               return `
               <div class="cart-item-card">
@@ -740,8 +792,20 @@ async function renderCartModal() {
                     </div>
                     <div class="cart-item-price-col">
                       <div class="cart-item-price">${(item.price * item.quantity).toFixed(2)} ₼</div>
-                      <button class="cart-item-remove"
-                        onclick="cart.remove('${item.cartId}')">Sil</button>
+                      <div class="cart-item-actions">
+                        <button class="cart-item-fav ${item._isFav ? 'active' : ''}"
+                          onclick="toggleFavFromCart(this, '${item.id}', '${item.name}', ${item.price}, '${item.img || ''}', '${item.brand || ''}')"
+                          title="İstək siyahısına əlavə et">
+                          <svg viewBox="0 0 24 24"
+                            fill="${item._isFav ? '#e63946' : 'none'}"
+                            stroke="${item._isFav ? '#e63946' : '#aaa'}"
+                            stroke-width="2">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/>
+                          </svg>
+                        </button>
+                        <button class="cart-item-remove"
+                          onclick="cart.remove('${item.cartId}')">Sil</button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -759,7 +823,7 @@ async function renderCartModal() {
       </div>
 
       <div class="cart-panel-footer">
-        ${items.length > 0 ? `
+        ${itemsWithFav.length > 0 ? `
           <div class="cart-coupon-row">
             <input class="cart-coupon-input" type="text" id="cartCouponInput"
               placeholder="Kupon kodu əlavə et..." />
@@ -800,9 +864,11 @@ async function renderCartModal() {
 
   overlay.onclick = e => { if (e.target === overlay) modal.close('cartModal'); };
 
+  initSuggestScroll();
+
   // Önərilənləri async yüklə
-  if (items.length > 0) {
-    getSuggestedProducts(items).then(suggested => {
+  if (itemsWithFav.length > 0) {
+    getSuggestedProducts(itemsWithFav).then(suggested => {
       const row = document.getElementById('cartSuggestRow');
       if (!row) return;
       if (!suggested.length) {
@@ -823,6 +889,68 @@ function applyCoupon() {
   const code = input.value.trim().toUpperCase();
   if (!code) { toast.show('Kupon kodu daxil edin', 'default'); return; }
   toast.show(`"${code}" kuponu tətbiq edildi — tezliklə aktiv olacaq`, 'default');
+}
+
+/* ── Cart-dan wishlist-ə əlavə et / çıxar ── */
+async function toggleFavFromCart(btn, productId, name, price, img, brand) {
+  const user = fbAuth.currentUser;
+  if (!user) {
+    modal.open('authModal');
+    toast.show('Sevimlilərə əlavə etmək üçün daxil olun', 'default');
+    return;
+  }
+
+  const isActive = btn.classList.contains('active');
+  const svg      = btn.querySelector('svg');
+  const ref      = fbDb.collection('wishlists').doc(user.uid);
+
+  // Optimistik UI
+  btn.classList.toggle('active');
+  svg.setAttribute('fill',   isActive ? 'none'    : '#e63946');
+  svg.setAttribute('stroke', isActive ? '#aaa'    : '#e63946');
+
+  try {
+    const snap  = await ref.get();
+    const items = snap.exists ? (snap.data().items || []) : [];
+
+    let newItems;
+    if (!isActive) {
+      if (items.some(i => String(i.id) === String(productId))) return;
+      newItems = [...items, {
+        id: String(productId), name, price: Number(price),
+        image: img, brand
+      }];
+      toast.show(`${name} istək siyahısına əlavə edildi ❤️`, 'success');
+    } else {
+      newItems = items.filter(i => String(i.id) !== String(productId));
+      toast.show(`${name} istək siyahısından çıxarıldı`, 'default');
+    }
+
+    await ref.set({ items: newItems }, { merge: false });
+  } catch(err) {
+    // Geri al
+    btn.classList.toggle('active');
+    svg.setAttribute('fill',   isActive ? '#e63946' : 'none');
+    svg.setAttribute('stroke', isActive ? '#e63946' : '#aaa');
+    toast.show('Xəta baş verdi', 'error');
+  }
+}
+
+/* ── Önərilənlər drag-scroll ── */
+function initSuggestScroll() {
+  const row = document.getElementById('cartSuggestRow');
+  if (!row) return;
+  let isDown = false, startX = 0, scrollLeft = 0;
+  row.addEventListener('mousedown', e => {
+    isDown = true; startX = e.pageX - row.offsetLeft; scrollLeft = row.scrollLeft;
+  });
+  row.addEventListener('mouseleave', () => isDown = false);
+  row.addEventListener('mouseup',    () => isDown = false);
+  row.addEventListener('mousemove',  e => {
+    if (!isDown) return;
+    e.preventDefault();
+    row.scrollLeft = scrollLeft - (e.pageX - row.offsetLeft - startX);
+  });
 }
 
 /* ══════════════════════════════
