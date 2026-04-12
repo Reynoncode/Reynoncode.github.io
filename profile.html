@@ -10,6 +10,8 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="js/firebase.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+  <!-- Dil faylı ən əvvəl yüklənməlidir -->
+  <script src="js/lang.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -94,8 +96,7 @@
     .sidebar.collapsed .vendor-menu-badge { display: none; }
     .sidebar.collapsed .menu-divider { margin: 0.25rem 0; }
     .sidebar.collapsed .menu-item {
-      padding: 0.85rem 0;
-      justify-content: center;
+      padding: 0.85rem 0; justify-content: center;
       border-left: 3px solid transparent;
     }
     .sidebar.collapsed .menu-item.active { border-left-color: var(--accent); }
@@ -107,9 +108,7 @@
       background: var(--accent); color: #fff;
       padding: 0.3rem 0.7rem; border-radius: 6px;
       font-size: 0.75rem; white-space: nowrap;
-      opacity: 0; pointer-events: none;
-      transition: opacity 0.15s;
-      z-index: 200;
+      opacity: 0; pointer-events: none; transition: opacity 0.15s; z-index: 200;
     }
     .sidebar.collapsed .menu-item:hover::after { opacity: 1; }
 
@@ -184,11 +183,6 @@
     .wishlist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 1rem; }
     .wish-card { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; cursor: pointer; transition: transform .2s, box-shadow .2s; }
     .wish-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.07); }
-    .wish-img { width: 100%; aspect-ratio: 3/4; background: var(--tag-bg); display: flex; align-items: center; justify-content: center; font-size: 2rem; color: var(--muted); }
-    .wish-img img { width: 100%; height: 100%; object-fit: cover; }
-    .wish-info { padding: 0.6rem 0.75rem; }
-    .wish-name { font-size: 0.8rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .wish-price { font-size: 0.8rem; color: var(--muted); margin-top: 0.15rem; }
 
     .addr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
     .addr-card { border: 1px solid var(--border); border-radius: 10px; padding: 1rem; font-size: 0.85rem; line-height: 1.6; position: relative; }
@@ -208,39 +202,13 @@
       background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
     }
     .vendor-hero-inner { position: relative; z-index: 1; text-align: center; padding: 1rem 0; }
-    .vendor-hero-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
-    .vendor-hero-title { font-family: 'Playfair Display', serif; font-size: 1.6rem; color: #fff; margin-bottom: 0.5rem; }
-    .vendor-hero-sub { color: rgba(255,255,255,0.6); font-size: 0.875rem; margin-bottom: 1.25rem; }
-    .vendor-features { display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap; }
-    .vendor-feature { color: rgba(255,255,255,0.75); font-size: 0.82rem; display: flex; align-items: center; gap: 0.4rem; }
-    .vendor-feature span { color: #4ade80; font-weight: 700; }
-
     .vendor-status-badge { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
     .vendor-status-badge.pending  { background: #fef9e7; color: #b7950b; }
     .vendor-status-badge.approved { background: #eafaf1; color: #1e8449; }
     .vendor-status-badge.rejected { background: #fdf2f0; color: var(--danger); }
 
-    .vd-header-card { background: linear-gradient(135deg, #f8f9fa 0%, #fff 100%); }
-    .vd-store-header { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
-    .vd-store-avatar {
-      width: 52px; height: 52px; border-radius: 12px;
-      background: var(--accent); color: #fff;
-      display: flex; align-items: center; justify-content: center;
-      font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 600;
-      flex-shrink: 0;
-    }
-    .vd-store-info { flex: 1; }
-    .vd-store-name { font-family: 'Playfair Display', serif; font-size: 1.2rem; }
-    .vd-store-meta { font-size: 0.82rem; color: var(--muted); margin-top: 0.2rem; }
-    .vd-settings-btn { margin-left: auto; font-size: 0.8rem; padding: 0.5rem 1rem; }
-
     .vd-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
-    .vd-stat-card {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 12px; padding: 1.25rem;
-      display: flex; align-items: center; gap: 1rem;
-      transition: box-shadow 0.2s;
-    }
+    .vd-stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; display: flex; align-items: center; gap: 1rem; transition: box-shadow 0.2s; }
     .vd-stat-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.07); }
     .vd-stat-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; }
     .vd-stat-num { font-size: 1.4rem; font-weight: 700; font-family: 'Playfair Display', serif; line-height: 1.2; }
@@ -268,6 +236,13 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     #loadingOverlay p { font-size: 0.85rem; color: var(--muted); }
 
+    /* 3-sütunlu dob/gender/lang sırası */
+    .three-col-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1rem;
+    }
+
     @media (max-width: 900px) {
       .vd-stats-grid { grid-template-columns: repeat(2, 1fr); }
     }
@@ -280,12 +255,16 @@
       .addr-grid { grid-template-columns: 1fr; }
       .vd-stats-grid { grid-template-columns: 1fr 1fr; }
       header { padding: 0 1rem; }
+      .three-col-row { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
 
-<div id="loadingOverlay"><div class="spinner"></div><p>Yüklənir...</p></div>
+<div id="loadingOverlay">
+  <div class="spinner"></div>
+  <p data-i18n="p.loading">Yüklənir...</p>
+</div>
 
 <div class="banner">🚚 50 AZN üzərindəki sifarişlərə pulsuz çatdırılma &nbsp;|&nbsp; Yeni kolleksiya gəldi ✨</div>
 
@@ -293,8 +272,6 @@
   <a href="index.html" class="logo">MODA</a>
   <nav class="header-nav">
     <a href="index.html">Ana səhifə</a>
-    <a href="#">Kolleksiya</a>
-    <a href="#">Endirimlər</a>
     <div class="cart-icon">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
         <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/>
@@ -311,29 +288,29 @@
   <aside class="sidebar">
     <div class="avatar-section">
       <div class="avatar" id="avatarInitials">AH</div>
-      <div class="avatar-name" id="sidebarName">Aysel Həsənova</div>
-      <div class="avatar-email" id="sidebarEmail">aysel@example.com</div>
+      <div class="avatar-name" id="sidebarName">İstifadəçi</div>
+      <div class="avatar-email" id="sidebarEmail"></div>
     </div>
     <nav class="sidebar-menu">
       <a class="menu-item active" data-tab="overview" data-tooltip="İcmal" onclick="switchTab('overview', this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-        <span class="menu-label">İcmal</span>
+        <span class="menu-label" data-i18n="nav.overview">İcmal</span>
       </a>
       <a class="menu-item" data-tab="profile" data-tooltip="Məlumatlarım" onclick="switchTab('profile', this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <span class="menu-label">Məlumatlarım</span>
+        <span class="menu-label" data-i18n="nav.myInfo">Məlumatlarım</span>
       </a>
       <a class="menu-item" data-tab="orders" data-tooltip="Sifarişlərim" onclick="switchTab('orders', this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-        <span class="menu-label">Sifarişlərim</span>
+        <span class="menu-label" data-i18n="nav.orders">Sifarişlərim</span>
       </a>
       <a class="menu-item" data-tab="wishlist" data-tooltip="İstək siyahısı" onclick="switchTab('wishlist', this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
-        <span class="menu-label">İstək siyahısı</span>
+        <span class="menu-label" data-i18n="nav.wishlist">İstək siyahısı</span>
       </a>
       <a class="menu-item" data-tab="addresses" data-tooltip="Ünvanlarım" onclick="switchTab('addresses', this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-        <span class="menu-label">Ünvanlarım</span>
+        <span class="menu-label" data-i18n="nav.addresses">Ünvanlarım</span>
       </a>
 
       <div class="menu-divider"></div>
@@ -343,21 +320,21 @@
           <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
           <polyline points="9 22 9 12 15 12 15 22"/>
         </svg>
-        <span class="menu-label">Satıcı paneli</span>
-        <span class="vendor-menu-badge new" id="vendorMenuBadge">Yeni</span>
+        <span class="menu-label" data-i18n="nav.vendor">Satıcı paneli</span>
+        <span class="vendor-menu-badge new" id="vendorMenuBadge" data-i18n="vendor.new">Yeni</span>
       </a>
 
       <a class="menu-item" data-tab="listings" data-tooltip="Elanlarım" onclick="switchTab('listings', this)" id="listingsMenuItem" style="display:none;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
           <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>
         </svg>
-        <span class="menu-label">Elanlarım</span>
+        <span class="menu-label" data-i18n="nav.listings">Elanlarım</span>
       </a>
 
       <div class="menu-divider"></div>
       <a class="menu-item logout" data-tooltip="Çıxış" onclick="logout()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        <span class="menu-label">Çıxış</span>
+        <span class="menu-label" data-i18n="nav.logout">Çıxış</span>
       </a>
     </nav>
   </aside>
@@ -368,15 +345,26 @@
     <!-- OVERVIEW -->
     <div id="tab-overview">
       <div class="section-card">
-        <div class="section-title">Xoş gəlmisiniz, <span id="welcomeName">Aysel</span> 👋</div>
+        <div class="section-title">
+          <span data-i18n="p.welcome">Xoş gəlmisiniz</span>, <span id="welcomeName"></span> 👋
+        </div>
         <div class="stats">
-          <div class="stat"><div class="stat-num" id="statOrders">—</div><div class="stat-lbl">Ümumi sifariş</div></div>
-          <div class="stat"><div class="stat-num" id="statWishlist">—</div><div class="stat-lbl">İstək siyahısı</div></div>
-          <div class="stat"><div class="stat-num" id="statSpent">—</div><div class="stat-lbl">Ümumi xərc</div></div>
+          <div class="stat">
+            <div class="stat-num" id="statOrders">—</div>
+            <div class="stat-lbl" data-i18n="p.totalOrders">Ümumi sifariş</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num" id="statWishlist">—</div>
+            <div class="stat-lbl" data-i18n="p.wishlist">İstək siyahısı</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num" id="statSpent">—</div>
+            <div class="stat-lbl" data-i18n="p.totalSpent">Ümumi xərc</div>
+          </div>
         </div>
       </div>
       <div class="section-card">
-        <div class="section-title">Son sifarişlər</div>
+        <div class="section-title" data-i18n="p.recentOrders">Son sifarişlər</div>
         <div id="recentOrders"><div class="spinner" style="margin:1rem auto;"></div></div>
       </div>
     </div>
@@ -384,43 +372,89 @@
     <!-- PROFILE -->
     <div id="tab-profile" style="display:none">
       <div class="section-card">
-        <div class="section-title">Şəxsi məlumatlar</div>
+        <div class="section-title" data-i18n="p.personalInfo">Şəxsi məlumatlar</div>
         <div class="form-grid">
-          <div class="form-group"><label>Ad</label><input type="text" id="firstName" /></div>
-          <div class="form-group"><label>Soyad</label><input type="text" id="lastName" /></div>
-          <div class="form-group"><label>E-poçt</label><input type="email" id="emailField" /></div>
-          <div class="form-group"><label>Telefon</label><input type="tel" id="phoneField" placeholder="+994 XX XXX XX XX" /></div>
-          <div class="form-group"><label>Doğum tarixi</label><input type="date" id="dobField" /></div>
+
           <div class="form-group">
-            <label>Cins</label>
-            <select id="genderField">
-              <option value="Qadın">Qadın</option>
-              <option value="Kişi">Kişi</option>
-              <option value="Qeyd etmək istəmirəm">Qeyd etmək istəmirəm</option>
-            </select>
+            <label data-i18n="p.firstName">Ad</label>
+            <input type="text" id="firstName" />
           </div>
-          <div class="form-group full"><label>Qeyd</label><textarea id="noteField" placeholder="Özünüz haqqında qısa məlumat..."></textarea></div>
+          <div class="form-group">
+            <label data-i18n="p.lastName">Soyad</label>
+            <input type="text" id="lastName" />
+          </div>
+          <div class="form-group">
+            <label data-i18n="p.email">E-poçt</label>
+            <input type="email" id="emailField" />
+          </div>
+          <div class="form-group">
+            <label data-i18n="p.phone">Telefon</label>
+            <input type="tel" id="phoneField" data-i18n-ph="p.phonePh" placeholder="+994 XX XXX XX XX" />
+          </div>
+
+          <!-- ═══ 3 sütunlu sıra: Doğum tarixi | Cinsiyyət | Dil ═══ -->
+          <div class="form-group full">
+            <div class="three-col-row">
+              <div class="form-group">
+                <label data-i18n="p.dob">Doğum tarixi</label>
+                <input type="date" id="dobField" />
+              </div>
+              <div class="form-group">
+                <label data-i18n="p.gender">Cinsiyyət</label>
+                <select id="genderField">
+                  <option value="Qadın" data-i18n="gender.female">Qadın</option>
+                  <option value="Kişi" data-i18n="gender.male">Kişi</option>
+                  <option value="Qeyd etmək istəmirəm" data-i18n="gender.notSay">Qeyd etmək istəmirəm</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label data-i18n="p.lang">Dil</label>
+                <select id="langField" onchange="handleLangChange(this.value)">
+                  <option value="az">🇦🇿 Azərbaycanca</option>
+                  <option value="ru">🇷🇺 Русский</option>
+                  <option value="en">🇬🇧 English</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <!-- ════════════════════════════════════════════════════ -->
+
+          <div class="form-group full">
+            <label data-i18n="p.note">Qeyd</label>
+            <textarea id="noteField" data-i18n-ph="p.notePh" placeholder="Özünüz haqqında qısa məlumat..."></textarea>
+          </div>
         </div>
         <div class="btn-row">
-          <button class="btn btn-outline">Ləğv et</button>
-          <button class="btn btn-dark" onclick="saveProfile()">Yadda saxla</button>
+          <button class="btn btn-outline" data-i18n="p.cancel">Ləğv et</button>
+          <button class="btn btn-dark" onclick="saveProfile()" data-i18n="p.save">Yadda saxla</button>
         </div>
       </div>
       <div class="section-card">
-        <div class="section-title">Şifrəni dəyiş</div>
+        <div class="section-title" data-i18n="p.changePass">Şifrəni dəyiş</div>
         <div class="form-grid">
-          <div class="form-group full"><label>Cari şifrə</label><input type="password" id="currentPass" placeholder="••••••••" /></div>
-          <div class="form-group"><label>Yeni şifrə</label><input type="password" id="newPass" placeholder="••••••••" /></div>
-          <div class="form-group"><label>Yeni şifrəni təkrarla</label><input type="password" id="confirmPass" placeholder="••••••••" /></div>
+          <div class="form-group full">
+            <label data-i18n="p.currentPass">Cari şifrə</label>
+            <input type="password" id="currentPass" placeholder="••••••••" />
+          </div>
+          <div class="form-group">
+            <label data-i18n="p.newPass">Yeni şifrə</label>
+            <input type="password" id="newPass" placeholder="••••••••" />
+          </div>
+          <div class="form-group">
+            <label data-i18n="p.confirmPass">Yeni şifrəni təkrarla</label>
+            <input type="password" id="confirmPass" placeholder="••••••••" />
+          </div>
         </div>
-        <div class="btn-row"><button class="btn btn-dark" onclick="changePassword()">Şifrəni yenilə</button></div>
+        <div class="btn-row">
+          <button class="btn btn-dark" onclick="changePassword()" data-i18n="p.updatePass">Şifrəni yenilə</button>
+        </div>
       </div>
     </div>
 
     <!-- ORDERS -->
     <div id="tab-orders" style="display:none">
       <div class="section-card">
-        <div class="section-title">Sifarişlərim</div>
+        <div class="section-title" data-i18n="nav.orders">Sifarişlərim</div>
         <div id="allOrders"><div class="spinner" style="margin:1rem auto;"></div></div>
       </div>
     </div>
@@ -428,7 +462,7 @@
     <!-- WISHLIST -->
     <div id="tab-wishlist" style="display:none">
       <div class="section-card">
-        <div class="section-title">İstək siyahısı</div>
+        <div class="section-title" data-i18n="nav.wishlist">İstək siyahısı</div>
         <div id="wishlistItems"></div>
       </div>
     </div>
@@ -436,11 +470,13 @@
     <!-- ADDRESSES -->
     <div id="tab-addresses" style="display:none">
       <div class="section-card">
-        <div class="section-title">Ünvanlarım</div>
+        <div class="section-title" data-i18n="nav.addresses">Ünvanlarım</div>
         <div class="addr-grid" id="addressGrid">
-          <div class="addr-card add-addr-card" style="border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;min-height:140px;color:var(--muted);flex-direction:column;gap:0.5rem;" onclick="showToast('Yeni ünvan funksiyası tezliklə')">
+          <div class="addr-card add-addr-card"
+            style="border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;min-height:140px;color:var(--muted);flex-direction:column;gap:0.5rem;"
+            onclick="showToast(t('p.addressSoon'))">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-            <span style="font-size:0.85rem;">Yeni ünvan əlavə et</span>
+            <span style="font-size:0.85rem;" data-i18n="p.addAddress">Yeni ünvan əlavə et</span>
           </div>
         </div>
       </div>
@@ -480,31 +516,52 @@ fbAuth.onAuthStateChanged(async (user) => {
     console.warn('Profil yüklənmə xətası:', err.message);
   }
   document.getElementById('loadingOverlay').style.display = 'none';
+  applyLang();
 });
 
-/* ── Vendor badge ── */
+/* ══════════════════════════════
+   DİL
+══════════════════════════════ */
+function handleLangChange(lang) {
+  setLang(lang);
+  /* Firestore-a da yaz */
+  if (currentUser) {
+    fbDb.collection('users').doc(currentUser.uid).set({ lang }, { merge: true });
+  }
+}
+
+/* ══════════════════════════════
+   VENDOR BADGE
+══════════════════════════════ */
 async function updateVendorMenuBadge(uid) {
   const data  = await vendor.getStatus(uid);
   const badge = document.getElementById('vendorMenuBadge');
   if (!badge) return;
 
   if (!data) {
-    badge.textContent = 'Yeni'; badge.className = 'vendor-menu-badge new';
+    badge.textContent = t('vendor.new');     badge.className = 'vendor-menu-badge new';
   } else if (data.status === 'pending') {
-    badge.textContent = 'Baxılır'; badge.className = 'vendor-menu-badge pending';
+    badge.textContent = t('vendor.pending'); badge.className = 'vendor-menu-badge pending';
   } else if (data.status === 'approved') {
-    badge.textContent = 'Aktiv'; badge.className = 'vendor-menu-badge approved';
+    badge.textContent = t('vendor.active');  badge.className = 'vendor-menu-badge approved';
     const listingsItem = document.getElementById('listingsMenuItem');
     if (listingsItem) listingsItem.style.display = '';
   } else if (data.status === 'rejected') {
-    badge.textContent = 'Rədd'; badge.className = 'vendor-menu-badge pending';
+    badge.textContent = t('vendor.rejected'); badge.className = 'vendor-menu-badge pending';
   }
 }
 
-/* ── İstifadəçi məlumatları ── */
+/* ══════════════════════════════
+   İSTİFADƏÇİ MƏLUMATLAR
+══════════════════════════════ */
 async function loadUserData(user) {
   const doc  = await fbDb.collection('users').doc(user.uid).get();
   const data = doc.exists ? doc.data() : {};
+
+  /* Dil tərcihi Firestore-dan yüklə */
+  if (data.lang && ['az','ru','en'].includes(data.lang)) {
+    localStorage.setItem('sitelang', data.lang);
+  }
 
   const first    = data.firstName || '';
   const last     = data.lastName  || '';
@@ -526,16 +583,24 @@ async function loadUserData(user) {
   document.getElementById('emailField').value = user.email || '';
   document.getElementById('phoneField').value = data.phone  || '';
   document.getElementById('dobField').value   = data.dob    || '';
+
   const gSel = document.getElementById('genderField');
   [...gSel.options].forEach(o => { o.selected = o.value === (data.gender || 'Qadın'); });
+
   document.getElementById('noteField').value  = data.note   || '';
+
+  /* Dil seçicisini cari dilə set et */
+  applyLang();
 }
 
-/* ── Profil saxla ── */
+/* ══════════════════════════════
+   PROFİL SAXLA
+══════════════════════════════ */
 async function saveProfile() {
   if (!currentUser) return;
   const first = document.getElementById('firstName').value.trim();
   const last  = document.getElementById('lastName').value.trim();
+  const lang  = document.getElementById('langField').value;
   try {
     await fbDb.collection('users').doc(currentUser.uid).set({
       firstName: first, lastName: last,
@@ -543,47 +608,55 @@ async function saveProfile() {
       dob:    document.getElementById('dobField').value,
       gender: document.getElementById('genderField').value,
       note:   document.getElementById('noteField').value.trim(),
+      lang,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
+
     const full = (first + ' ' + last).trim();
     document.getElementById('sidebarName').textContent    = full || 'İstifadəçi';
     document.getElementById('welcomeName').textContent    = first || full;
     document.getElementById('avatarInitials').textContent = ((first[0]||'') + (last[0]||'')).toUpperCase() || '?';
-    showToast('Məlumatlar yadda saxlandı ✓');
+
+    /* Dil tərcihi dəyişibsə tətbiq et */
+    setLang(lang);
+    showToast(t('p.saved'));
   } catch (err) { showToast('Xəta: ' + err.message); }
 }
 
-/* ── Şifrə dəyiş ── */
+/* ══════════════════════════════
+   ŞİFRƏ DƏYİŞ
+══════════════════════════════ */
 async function changePassword() {
   const current = document.getElementById('currentPass').value;
   const newPass = document.getElementById('newPass').value;
   const confirm = document.getElementById('confirmPass').value;
-  if (!current || !newPass || !confirm) { showToast('Bütün sahələri doldurun'); return; }
-  if (newPass !== confirm) { showToast('Yeni şifrələr uyğun gəlmir'); return; }
-  if (newPass.length < 6)  { showToast('Şifrə ən az 6 simvol olmalıdır'); return; }
+  if (!current || !newPass || !confirm) { showToast(t('p.fillAll')); return; }
+  if (newPass !== confirm) { showToast(t('p.passNoMatch')); return; }
+  if (newPass.length < 6)  { showToast(t('p.passShort')); return; }
   try {
     const cred = firebase.auth.EmailAuthProvider.credential(currentUser.email, current);
     await currentUser.reauthenticateWithCredential(cred);
     await currentUser.updatePassword(newPass);
     ['currentPass','newPass','confirmPass'].forEach(id => document.getElementById(id).value = '');
-    showToast('Şifrə uğurla yeniləndi ✓');
+    showToast(t('p.passSaved'));
   } catch (err) {
-    showToast('Xəta: ' + (err.code === 'auth/wrong-password' ? 'Cari şifrə yanlışdır' : err.message));
+    showToast('Xəta: ' + (err.code === 'auth/wrong-password' ? t('p.passWrong') : err.message));
   }
 }
 
-/* ── Sifarişlər ── */
+/* ══════════════════════════════
+   SİFARİŞLƏR
+══════════════════════════════ */
 async function loadOrders(uid) {
   const STATUS_MAP = {
-    delivered: { lbl: 'Çatdırıldı', cls: 'badge-success' },
-    shipped:   { lbl: 'Yolda',      cls: 'badge-shipped' },
-    pending:   { lbl: 'Hazırlanır', cls: 'badge-pending' },
-    cancelled: { lbl: 'Ləğv edildi',cls: 'badge-pending' },
+    delivered: { lbl: t('order.delivered'), cls: 'badge-success' },
+    shipped:   { lbl: t('order.shipped'),   cls: 'badge-shipped' },
+    pending:   { lbl: t('order.pending'),   cls: 'badge-pending' },
+    cancelled: { lbl: t('order.cancelled'), cls: 'badge-pending' },
   };
 
   try {
-    const snap = await fbDb
-      .collection('orders')
+    const snap = await fbDb.collection('orders')
       .where('buyerId', '==', uid)
       .orderBy('createdAt', 'desc')
       .limit(30)
@@ -601,7 +674,7 @@ async function loadOrders(uid) {
     if (statOrdersEl) statOrdersEl.textContent = snap.size;
 
     if (snap.empty) {
-      const emptyMsg = '<p style="color:var(--muted);font-size:.875rem;">Hələ sifariş yoxdur.</p>';
+      const emptyMsg = `<p style="color:var(--muted);font-size:.875rem;">${t('p.noOrders')}</p>`;
       allOrdersEl.innerHTML = emptyMsg;
       recentOrdEl.innerHTML = emptyMsg;
       if (statSpentEl) statSpentEl.textContent = '0 ₼';
@@ -612,10 +685,10 @@ async function loadOrders(uid) {
     let rendered   = 0;
 
     snap.forEach(doc => {
-      const o   = doc.data();
-      const st  = STATUS_MAP[o.status] || { lbl: o.status || '—', cls: 'badge-pending' };
+      const o  = doc.data();
+      const st = STATUS_MAP[o.status] || { lbl: o.status || '—', cls: 'badge-pending' };
       const date = o.createdAt?.toDate
-        ? o.createdAt.toDate().toLocaleDateString('az-AZ', { day: 'numeric', month: 'long', year: 'numeric' })
+        ? o.createdAt.toDate().toLocaleDateString(getCurrentLang() === 'ru' ? 'ru-RU' : getCurrentLang() === 'en' ? 'en-GB' : 'az-AZ', { day: 'numeric', month: 'long', year: 'numeric' })
         : '—';
 
       totalSpent += o.total || 0;
@@ -623,13 +696,9 @@ async function loadOrders(uid) {
       const itemNames = (o.items || []).map(i => i.name).join(', ');
       const shortName = itemNames.length > 50 ? itemNames.substring(0, 50) + '…' : (itemNames || 'Sifariş');
       const firstImg  = (o.items || [])[0]?.img || '';
-      const imgHTML   = firstImg
-        ? `<img src="${firstImg}" alt="${shortName}" style="width:100%;height:100%;object-fit:cover;">`
-        : '🛍️';
+      const imgHTML   = firstImg ? `<img src="${firstImg}" alt="${shortName}" style="width:100%;height:100%;object-fit:cover;">` : '🛍️';
       const orderNum  = o.orderNumber ? `#${o.orderNumber}` : `#${doc.id.slice(-5).toUpperCase()}`;
-      const addrLabel = o.address?.label
-        ? o.address.label.substring(0, 60) + (o.address.label.length > 60 ? '…' : '')
-        : '';
+      const addrLabel = o.address?.label ? o.address.label.substring(0, 60) + (o.address.label.length > 60 ? '…' : '') : '';
 
       const html = `
         <div class="order-item">
@@ -637,8 +706,7 @@ async function loadOrders(uid) {
           <div class="order-info">
             <div class="order-name">${shortName}</div>
             <div class="order-meta">
-              <span style="font-family:monospace;font-weight:600;">${orderNum}</span>
-              · ${date}
+              <span style="font-family:monospace;font-weight:600;">${orderNum}</span> · ${date}
               ${addrLabel ? `<br><span style="font-size:0.75rem;color:var(--muted);">📍 ${addrLabel}</span>` : ''}
             </div>
           </div>
@@ -658,25 +726,25 @@ async function loadOrders(uid) {
   } catch (err) {
     console.warn('Sifarişlər yüklənmədi:', err.message);
     const el = document.getElementById('allOrders');
-    if (el) el.innerHTML = `<p style="color:var(--muted);font-size:.875rem;">Sifarişlər yüklənə bilmədi.</p>`;
+    if (el) el.innerHTML = `<p style="color:var(--muted);font-size:.875rem;">${t('p.noOrders')}</p>`;
   }
 }
 
-/* ── Wishlist ── */
+/* ══════════════════════════════
+   WİSHLİST
+══════════════════════════════ */
 async function loadWishlist(uid) {
   try {
     const snap = await fbDb.collection('wishlists').doc(uid).get();
-
     const container  = document.getElementById('wishlistItems');
     const statWishEl = document.getElementById('statWishlist');
-
     const items = snap.exists ? (snap.data().items || []) : [];
 
     if (statWishEl) statWishEl.textContent = items.length;
     if (!container) return;
 
     if (items.length === 0) {
-      container.innerHTML = '<p style="color:var(--muted);font-size:.875rem;">Bəyəndikləriniz yoxdur.</p>';
+      container.innerHTML = `<p style="color:var(--muted);font-size:.875rem;">${t('p.noWishlist')}</p>`;
       return;
     }
 
@@ -705,8 +773,8 @@ async function loadWishlist(uid) {
 
   } catch (err) {
     console.warn('Wishlist yüklənmədi:', err.message);
-    const container = document.getElementById('wishlistItems');
-    if (container) container.innerHTML = '<p style="color:var(--muted);font-size:.875rem;">Yüklənə bilmədi.</p>';
+    const el = document.getElementById('wishlistItems');
+    if (el) el.innerHTML = `<p style="color:var(--muted);font-size:.875rem;">${t('p.noWishlist')}</p>`;
   }
 }
 
@@ -718,13 +786,13 @@ async function removeFromWishlist(itemId, uid) {
     const newItems = (snap.data().items || []).filter(i => String(i.id) !== String(itemId));
     await ref.set({ items: newItems }, { merge: false });
     await loadWishlist(uid);
-    showToast('Məhsul silindi');
-  } catch (err) {
-    console.warn('Silmə xətası:', err.message);
-  }
+    showToast(t('toast.wishDel'));
+  } catch (err) { console.warn('Silmə xətası:', err.message); }
 }
 
-/* ── Ünvanlar ── */
+/* ══════════════════════════════
+   ÜNVANLAR
+══════════════════════════════ */
 async function loadAddresses(uid) {
   try {
     const snap = await fbDb.collection('addresses').where('userId', '==', uid).get();
@@ -741,7 +809,7 @@ async function loadAddresses(uid) {
           ${a.street || ''}<br>${a.city || ''}, ${a.zip || ''}<br>Azərbaycan<br>${a.phone || ''}
           <div class="addr-actions">
             <button class="addr-btn" onclick="showToast('Redaktə tezliklə')">Redaktə et</button>
-            <button class="addr-btn" onclick="deleteAddress('${doc.id}')">Sil</button>
+            <button class="addr-btn" onclick="deleteAddress('${doc.id}')">${t('p.cancel') === 'Ləğv et' ? 'Sil' : 'Delete'}</button>
           </div>`;
         grid.appendChild(card);
       });
@@ -754,20 +822,21 @@ async function deleteAddress(id) {
   if (!confirm('Bu ünvanı silmək istəyirsiniz?')) return;
   await fbDb.collection('addresses').doc(id).delete();
   await loadAddresses(currentUser.uid);
-  showToast('Ünvan silindi');
+  showToast(t('toast.addrDel'));
 }
 
-/* ── Çıxış ── */
+/* ══════════════════════════════
+   ÇIXIŞ
+══════════════════════════════ */
 async function logout() {
   await fbAuth.signOut();
   window.location.href = 'index.html';
 }
 
-/* ── Tab keçidi ── */
+/* ══════════════════════════════
+   TAB KEÇİDİ
+══════════════════════════════ */
 function switchTab(name, el) {
-  if (name !== 'vendor' && name !== 'listings') {
-    expandSidebar();
-  }
   document.querySelectorAll('[id^="tab-"]').forEach(t => t.style.display = 'none');
   document.getElementById('tab-' + name).style.display = '';
   document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
@@ -775,21 +844,28 @@ function switchTab(name, el) {
 
   if (name === 'vendor'   && currentUser) loadVendorTab(currentUser.uid);
   if (name === 'listings' && currentUser) loadListingsTab(currentUser.uid);
-  if (name === 'profile') initAvatarUpload();
+  if (name === 'profile')  { initAvatarUpload(); applyLang(); }
+
+  applyLang();
 }
 
-/* ── Toast ── */
+/* ══════════════════════════════
+   TOAST
+══════════════════════════════ */
 function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2800);
+  const toastEl = document.getElementById('toast');
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  setTimeout(() => toastEl.classList.remove('show'), 2800);
 }
 
 document.querySelectorAll('.menu-item').forEach(el => {
   el.addEventListener('click', e => e.preventDefault());
 });
 
-/* ── Profil şəkli yükləmə ── */
+/* ══════════════════════════════
+   PROFİL ŞƏKLİ YÜKLƏMƏ
+══════════════════════════════ */
 function initAvatarUpload() {
   const avatarEl = document.getElementById('avatarInitials');
   if (!avatarEl || avatarEl.dataset.uploadReady) return;
@@ -808,21 +884,15 @@ function initAvatarUpload() {
   overlay.innerHTML = `
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
       stroke="#fff" stroke-width="2"
-      style="opacity:0;transition:opacity .2s;drop-shadow(0 1px 2px rgba(0,0,0,.5))">
+      style="opacity:0;transition:opacity .2s">
       <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
       <circle cx="12" cy="13" r="4"/>
     </svg>`;
   avatarEl.appendChild(overlay);
 
   const svg = overlay.querySelector('svg');
-  avatarEl.addEventListener('mouseenter', () => {
-    overlay.style.background = 'rgba(0,0,0,0.5)';
-    svg.style.opacity = '1';
-  });
-  avatarEl.addEventListener('mouseleave', () => {
-    overlay.style.background = 'rgba(0,0,0,0)';
-    svg.style.opacity = '0';
-  });
+  avatarEl.addEventListener('mouseenter', () => { overlay.style.background = 'rgba(0,0,0,0.5)'; svg.style.opacity = '1'; });
+  avatarEl.addEventListener('mouseleave', () => { overlay.style.background = 'rgba(0,0,0,0)'; svg.style.opacity = '0'; });
 
   const fileInput = document.createElement('input');
   fileInput.type   = 'file';
@@ -835,54 +905,32 @@ function initAvatarUpload() {
   fileInput.addEventListener('change', async () => {
     const file = fileInput.files[0];
     if (!file || !currentUser) return;
-
     overlay.style.background = 'rgba(0,0,0,0.6)';
-    overlay.innerHTML = `<div style="color:#fff;font-size:0.68rem;font-weight:600;text-align:center;line-height:1.3;">Yüklənir...</div>`;
-
+    overlay.innerHTML = `<div style="color:#fff;font-size:0.68rem;font-weight:600;text-align:center;line-height:1.3;">${t('p.loading')}</div>`;
     try {
       const storageRef = firebase.storage().ref(`users/${currentUser.uid}/profile`);
       await storageRef.put(file);
       const photoURL = await storageRef.getDownloadURL();
-
-      await fbDb.collection('users').doc(currentUser.uid).set(
-        { photoURL },
-        { merge: true }
-      );
-
+      await fbDb.collection('users').doc(currentUser.uid).set({ photoURL }, { merge: true });
       const existingImg = avatarEl.querySelector('img');
       if (existingImg) {
         existingImg.src = photoURL;
       } else {
-        [...avatarEl.childNodes].forEach(n => {
-          if (n !== overlay) n.remove();
-        });
+        [...avatarEl.childNodes].forEach(n => { if (n !== overlay) n.remove(); });
         const img = document.createElement('img');
         img.src = photoURL;
         img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;';
         avatarEl.insertBefore(img, overlay);
       }
-
       showToast('Profil şəkli yeniləndi ✓');
     } catch (err) {
       showToast('Xəta: ' + err.message);
     } finally {
       overlay.style.background = 'rgba(0,0,0,0)';
-      overlay.innerHTML = `
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-          stroke="#fff" stroke-width="2"
-          style="opacity:0;transition:opacity .2s">
-          <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
-          <circle cx="12" cy="13" r="4"/>
-        </svg>`;
+      overlay.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" style="opacity:0;transition:opacity .2s"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>`;
       const newSvg = overlay.querySelector('svg');
-      avatarEl.addEventListener('mouseenter', () => {
-        overlay.style.background = 'rgba(0,0,0,0.5)';
-        newSvg.style.opacity = '1';
-      });
-      avatarEl.addEventListener('mouseleave', () => {
-        overlay.style.background = 'rgba(0,0,0,0)';
-        newSvg.style.opacity = '0';
-      });
+      avatarEl.addEventListener('mouseenter', () => { overlay.style.background = 'rgba(0,0,0,0.5)'; newSvg.style.opacity = '1'; });
+      avatarEl.addEventListener('mouseleave', () => { overlay.style.background = 'rgba(0,0,0,0)'; newSvg.style.opacity = '0'; });
       fileInput.value = '';
     }
   });
