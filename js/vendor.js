@@ -360,7 +360,7 @@ async function renderVendorDashboard(container, data, uid) {
           <option value="cancelled">Ləğv edildi</option>
         </select>
       </div>
-      <div id="vd-orders-list">
+      <div id="vd-orders-list" style="max-height:420px;overflow-y:auto;padding-right:4px;">
         <div class="spinner" style="margin:1.5rem auto;"></div>
       </div>
     </div>
@@ -902,14 +902,14 @@ async function openVendorSettings() {
         <div id="vs-tab-social" class="vs-tab" style="display:none;">
           <p style="font-size:.78rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.6;">Sosial media hesablarınızı əlavə edin. Mağaza səhifəsində görünəcək.</p>
           ${[
-            {id:'vsInstagram',icon:'📸',lbl:'Instagram',ph:'@hesabiniz',        val:v.instagram||''},
-            {id:'vsTiktok',   icon:'🎵',lbl:'TikTok',   ph:'@hesabiniz',        val:v.tiktok||''},
-            {id:'vsFacebook', icon:'👥',lbl:'Facebook',  ph:'facebook.com/...',  val:v.facebook||''},
-            {id:'vsYoutube',  icon:'▶️',lbl:'YouTube',  ph:'youtube.com/...',   val:v.youtube||''},
-            {id:'vsWhatsapp', icon:'💬',lbl:'WhatsApp',  ph:'+994 XX XXX XX XX',val:v.whatsapp||''},
+            {id:'vsInstagram',icon:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="ig1" cx="30%" cy="107%" r="150%"><stop offset="0%" stop-color="#fdf497"/><stop offset="5%" stop-color="#fdf497"/><stop offset="45%" stop-color="#fd5949"/><stop offset="60%" stop-color="#d6249f"/><stop offset="90%" stop-color="#285AEB"/></radialGradient></defs><rect x="2" y="2" width="20" height="20" rx="5" fill="url(#ig1)"/><circle cx="12" cy="12" r="4" stroke="white" stroke-width="1.8" fill="none"/><circle cx="17.5" cy="6.5" r="1.2" fill="white"/></svg>`,lbl:'Instagram',ph:'@hesabiniz',        val:v.instagram||''},
+            {id:'vsTiktok',   icon:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" rx="6" fill="#010101"/><path d="M16.6 8.4a4.6 4.6 0 01-2.8-.9v6.1a4.1 4.1 0 11-4.1-4.1h.4v2.1h-.4a2 2 0 102 2V5h2.1a4.6 4.6 0 002.8 3.4z" fill="white"/><path d="M16.6 8.4a4.6 4.6 0 002.4.7V7a2.6 2.6 0 01-2.4-1.3v2.7z" fill="#69C9D0"/><path d="M9.7 13.6a2 2 0 100 4 2 2 0 000-4z" fill="#EE1D52"/><path d="M16.6 8.4V5.7a4.6 4.6 0 002.4 1.3v2.1a4.6 4.6 0 01-2.4-.7zM13.8 7.5v6.1a4.1 4.1 0 01-4.1 4.1 4.1 4.1 0 01-4.1-4.1 4.1 4.1 0 014.1-4.1h.4v2.1h-.4a2 2 0 102 2V5h2.1v2.5z" fill="white"/></svg>`,lbl:'TikTok',   ph:'@hesabiniz',        val:v.tiktok||''},
+            {id:'vsFacebook', icon:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" rx="6" fill="#1877F2"/><path d="M16 12h-2.5v7H11v-7H9v-2.5h2V8c0-1.7 1-2.5 2.5-2.5h2V8h-1.5c-.6 0-.5.3-.5.7V9.5H16L15.5 12z" fill="white"/></svg>`,lbl:'Facebook',  ph:'facebook.com/...',  val:v.facebook||''},
+            {id:'vsYoutube',  icon:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" rx="6" fill="#FF0000"/><path d="M19.6 8.2a2 2 0 00-1.4-1.4C16.8 6.5 12 6.5 12 6.5s-4.8 0-6.2.3A2 2 0 004.4 8.2 20 20 0 004 12a20 20 0 00.4 3.8 2 2 0 001.4 1.4c1.4.3 6.2.3 6.2.3s4.8 0 6.2-.3a2 2 0 001.4-1.4A20 20 0 0020 12a20 20 0 00-.4-3.8z" fill="white"/><polygon points="10,15 15,12 10,9" fill="#FF0000"/></svg>`,lbl:'YouTube',  ph:'youtube.com/...',   val:v.youtube||''},
+            {id:'vsWhatsapp', icon:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" rx="6" fill="#25D366"/><path d="M12 4a8 8 0 00-6.9 12L4 20l4.1-1.1A8 8 0 1012 4zm0 14.5a6.4 6.4 0 01-3.3-.9l-.2-.1-2.4.6.7-2.3-.2-.2a6.5 6.5 0 1111.4-6.5 6.5 6.5 0 01-6 9.4zm3.5-4.8c-.2-.1-1.1-.5-1.3-.6-.2-.1-.3-.1-.4.1-.1.2-.5.6-.6.7-.1.1-.2.1-.4 0-.2-.1-.8-.3-1.5-.9-.6-.5-.9-1.1-1-1.3-.1-.2 0-.3.1-.4l.3-.3.2-.3v-.3l-.6-1.5c-.1-.4-.3-.3-.4-.3h-.4c-.1 0-.3.1-.5.2-.2.2-.7.7-.7 1.6s.7 1.9.8 2c.1.1 1.4 2.2 3.5 3 .5.2.9.3 1.2.4.5.1 1 .1 1.3.1.4-.1 1.2-.5 1.3-1 .1-.5.1-.9.1-1 0-.1-.2-.2-.4-.2z" fill="white"/></svg>`,lbl:'WhatsApp',  ph:'+994 XX XXX XX XX',val:v.whatsapp||''},
           ].map(s=>`
             <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem;">
-              <div style="width:36px;height:36px;border-radius:10px;background:var(--bg,#faf9f7);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;">${s.icon}</div>
+              <div style="width:36px;height:36px;border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${s.icon}</div>
               <div style="flex:1;"><div style="font-size:.72rem;font-weight:500;color:#555;margin-bottom:.2rem">${s.lbl}</div><input type="text" id="${s.id}" value="${s.val}" placeholder="${s.ph}" style="${vsInputStyle()}margin:0;"></div>
             </div>
           `).join('')}
