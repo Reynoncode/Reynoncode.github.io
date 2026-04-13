@@ -69,10 +69,18 @@ function renderHeader() {
       }
     </div>
   `;
-
+   
   const header = document.querySelector('header');
   if (header) {
     header.innerHTML = headerHTML;
+     
+  if (!document.getElementById('headerMobileStyles')) {
+      const s = document.createElement('style');
+      s.id = 'headerMobileStyles';
+      s.textContent = `@media (max-width: 768px) { .btn-user span { display: none; } }`;
+      document.head.appendChild(s);
+    }
+     
     initHeaderEvents();
     initSearchPopup();
   }
