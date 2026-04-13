@@ -57,6 +57,7 @@ let PRODUCTS = [...STATIC_PRODUCTS];
 
 /* ══════════════════════════════
    FİREBASE-DƏN ELANLAR
+   Vendor kateqoriyalarını da yükləyir
    ══════════════════════════════ */
 async function loadListings() {
   try {
@@ -70,10 +71,44 @@ async function loadListings() {
       _fromFirebase: true
     }));
 
+    /* ── Vendor kateqoriyalarını yüklə ── */
+    const userIds = [...new Set(listings.map(l => l.userId).filter(Boolean))];
+    const vendorCatMap = {};
+
+    if (userIds.length > 0) {
+      /* Firebase 'in' sorğusu max 30 dəstəkləyir — hissələrə böl */
+      for (let i = 0; i < userIds.length; i += 30) {
+        const chunk = userIds.slice(i, i + 30);
+        try {
+          const vSnap = await fbDb.collection('vendors')
+            .where(firebase.firestore.FieldPath.documentId(), 'in', chunk)
+            .get();
+          vSnap.docs.forEach(d => {
+            const data = d.data();
+            /* Yeni sistem: categories array; köhnə sistem: category string */
+            vendorCatMap[d.id] = data.categories
+              || (data.category ? [data.category] : []);
+          });
+        } catch (e) {
+          console.warn('Vendor kateqoriyaları yüklənmədi:', e.message);
+        }
+      }
+    }
+
+    /* Hər elanın üzərinə vendor kateqoriyalarını yaz */
+    listings.forEach(l => {
+      l.vendorCategories = vendorCatMap[l.userId] || [];
+    });
+
     PRODUCTS = [...listings, ...STATIC_PRODUCTS];
     renderProducts(PRODUCTS);
+
     const countEl = document.getElementById('productCount');
     if (countEl) countEl.textContent = `${PRODUCTS.length} məhsul`;
+
+    /* Səhifə yükləndikdən sonra aktiv filtri tətbiq et */
+    if (typeof applyFilter === 'function') applyFilter();
+
   } catch (err) {
     console.warn('Elanlar yüklənmədi:', err.message);
     renderProducts(STATIC_PRODUCTS);
@@ -169,7 +204,6 @@ async function renderProducts(products, containerId = 'productGrid') {
     } catch (e) {}
   }
 
-  // ✅ initCardClicks() BURADAN SİLİNDİ — product-detail.js idarə edir
   grid.innerHTML = products.map(p => createProductCard(p, favIds)).join('');
 }
 
