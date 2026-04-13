@@ -547,7 +547,7 @@ function vdOrderCardHTML(o) {
         <span style="color:var(--muted);font-size:0.78rem;">${date}</span>
         <span style="flex:1;"></span>
         <span style="font-weight:700;font-size:0.9rem;">${(o.total||0).toFixed(2)} ₼</span>
-        <span style="background:${st.bg};color:${st.color};padding:3px 10px;border-radius:20px;font-size:0.72rem;font-weight:600;white-space:nowrap;">${st.lbl}</span>
+        <span style="background:${st.bg};color:${st.color};padding:3px 10px;border-radius:20px;font-size:0.72rem;font-weight:600;">${st.lbl}</span>
         <button onclick="vdOpenStatusModal('${o.id}','${o.status||'pending'}')"
           style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:0.75rem;cursor:pointer;color:var(--accent);white-space:nowrap;font-family:inherit;transition:border-color .15s;"
           onmouseover="this.style.borderColor='#1a1a1a'"
@@ -561,7 +561,7 @@ function vdOrderCardHTML(o) {
         </div>
         ${itemsHTML || '<div style="font-size:0.78rem;color:var(--muted);">Məhsul məlumatı yoxdur</div>'}
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border);">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border);">
         <div style="background:#f8f8f8;border-radius:8px;padding:0.65rem 0.85rem;">
           <div style="font-size:0.68rem;font-weight:600;color:var(--muted);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:0.45rem;">👤 Müştəri</div>
           ${buyerName
