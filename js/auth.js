@@ -6,16 +6,16 @@
 const auth = {
 
   /* ── Cari istifadəçini al ── */
-  getUser() {
-    const u = fbAuth.currentUser;
-    if (!u) return null;
-    return {
-      id:       u.uid,
-      name:     u.displayName || u.email.split('@')[0],
-      email:    u.email,
-      photoURL: u.photoURL || null
-    };
-  },
+ getUser() {
+  const u = fbAuth.currentUser;
+  if (!u) return null;
+  return {
+    id:       u.uid,
+    name:     u.displayName || u.email.split('@')[0],
+    email:    u.email,
+    photoURL: window._firestorePhotoURL || u.photoURL || null
+  };
+},
 
   /* ── Email/Şifrə ilə giriş ── */
   async login(email, password) {
@@ -115,18 +115,31 @@ function _authError(code) {
    ══════════════════════════════ */
 function _initAuthStateHeader() {
   fbAuth.onAuthStateChanged(async (user) => {
-    /* renderHeader funksiyası components.js-də var.
-       Mövcud deyilsə atla. */
+    
+    if (user) {
+      // Firestore-dan photoURL oxu (base64 ola bilər)
+      try {
+        const snap = await fbDb.collection('users').doc(user.uid).get();
+        if (snap.exists && snap.data().photoURL) {
+          window._firestorePhotoURL = snap.data().photoURL;
+        } else {
+          window._firestorePhotoURL = null;
+        }
+      } catch(e) {
+        window._firestorePhotoURL = null;
+      }
+    } else {
+      window._firestorePhotoURL = null;
+    }
+
     if (typeof renderHeader === 'function') {
       renderHeader(user ? auth.getUser() : null);
     }
 
-    /* Cart-ı da yenilə */
     if (typeof cart !== 'undefined' && typeof cart.init === 'function') {
       cart.init(user ? user.uid : null);
     }
 
-    /* updateCartBadge */
     if (typeof updateCartBadge === 'function') {
       updateCartBadge();
     }
