@@ -810,15 +810,15 @@ async function saveAddress() {
     const isDefault = document.getElementById('addrIsDefault').checked;
 
     /* Əsas ünvan seçilibsə digərlərini sıfırla */
-    if (isDefault && !_editingDocId) {
-      const batch = fbDb.batch();
-      _profileAddresses.forEach(a => {
-        if (a.isDefault) {
-          batch.update(fbDb.collection('addresses').doc(a._docId), { isDefault: false });
-        }
-      });
-      await batch.commit();
+    if (isDefault) {
+  const batch = fbDb.batch();
+  _profileAddresses.forEach(a => {
+    if (a.isDefault && a._docId !== _editingDocId) {
+      batch.update(fbDb.collection('addresses').doc(a._docId), { isDefault: false });
     }
+  });
+  await batch.commit();
+}
 
     const addrData = {
       userId:    currentUser.uid,
@@ -1135,7 +1135,6 @@ async function loadAddresses(uid) {
   try {
     const snap = await fbDb.collection('addresses')
       .where('userId', '==', uid)
-      .orderBy('createdAt', 'desc')
       .get();
 
     _profileAddresses = snap.docs.map(d => ({ _docId: d.id, ...d.data() }));
