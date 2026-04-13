@@ -1282,7 +1282,37 @@ async function logout() {
    TAB KEÇİDİ
    ══════════════════════════════ */
 function switchTab(name, el) {
+  document.querySelectorAll('[id^="tab-"]').forEach(t => t.style.display = 'none');
+  document.getElementById('tab-' + name).style.display = '';
 
+  document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+  const sidebarItem = document.querySelector(`.menu-item[data-tab="${name}"]`);
+  if (sidebarItem) sidebarItem.classList.add('active');
+
+  document.querySelectorAll('#mobileMenuBar .mob-item').forEach(m => m.classList.remove('active'));
+  const mobItem = document.querySelector(`#mobileMenuBar .mob-item[data-tab="${name}"]`);
+  if (mobItem) mobItem.classList.add('active');
+
+  if (window.innerWidth <= 768) {
+    const sidebar = document.querySelector('.sidebar');
+    const mobBar  = document.getElementById('mobileMenuBar');
+    if (name === 'overview') {
+      if (sidebar) sidebar.classList.remove('mobile-hidden');
+      if (mobBar)  mobBar.style.display = 'none';
+    } else {
+      if (sidebar) sidebar.classList.add('mobile-hidden');
+      if (mobBar)  mobBar.style.display = 'flex';
+    }
+  }
+
+  if (name === 'vendor'   && currentUser) loadVendorTab(currentUser.uid);
+  if (name === 'listings' && currentUser) loadListingsTab(currentUser.uid);
+  if (name === 'profile')  { initAvatarUpload(); applyLang(); }
+  applyLang();
+}
+
+/* ══════════════════════════════
+   TOAST
 /* ══════════════════════════════
    TOAST
    ══════════════════════════════ */
