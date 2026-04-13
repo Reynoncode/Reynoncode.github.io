@@ -551,6 +551,21 @@
     <div id="tab-profile" style="display:none">
       <div class="section-card">
         <div class="section-title" data-i18n="p.personalInfo">Şəxsi məlumatlar</div>
+
+        <!-- PROFİL RƏSMİ -->
+        <div style="display:flex;align-items:center;gap:1.25rem;margin-bottom:1.25rem;padding-bottom:1.25rem;border-bottom:1px solid var(--border);">
+          <div id="profileTabAvatar" style="width:72px;height:72px;border-radius:50%;background:var(--tag-bg);display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:600;color:var(--accent);overflow:hidden;flex-shrink:0;border:2px solid var(--border);"></div>
+          <div>
+            <div style="font-size:0.85rem;font-weight:500;margin-bottom:0.4rem;">Profil şəkli</div>
+            <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.65rem;">JPG, PNG — maks. 5MB</div>
+            <button class="btn btn-outline" onclick="document.getElementById('profileTabFileInput').click()" style="font-size:0.78rem;padding:0.45rem 1rem;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Şəkil seç
+            </button>
+            <input type="file" id="profileTabFileInput" accept="image/*" style="display:none" onchange="uploadProfileTabPhoto(this.files[0])" />
+          </div>
+        </div>
+
         <div class="form-grid">
           <div class="form-group">
             <label data-i18n="p.firstName">Ad</label>
@@ -1301,6 +1316,7 @@ function switchTab(name, el) {
     if (name === 'overview') {
       if (sidebar) sidebar.classList.remove('mobile-hidden');
       if (mobBar)  mobBar.style.display = 'none';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
       if (sidebar) sidebar.classList.add('mobile-hidden');
       if (mobBar)  mobBar.style.display = 'flex';
@@ -1309,12 +1325,37 @@ function switchTab(name, el) {
 
   if (name === 'vendor'   && currentUser) loadVendorTab(currentUser.uid);
   if (name === 'listings' && currentUser) loadListingsTab(currentUser.uid);
-  if (name === 'profile')  { initAvatarUpload(); applyLang(); }
+  if (name === 'profile')  { initAvatarUpload(); syncProfileTabAvatar(); applyLang(); }
   applyLang();
 }
-
 /* ══════════════════════════════
-   TOAST
+   PROFİL TAB FOTO YÜKLƏMƏ
+   ══════════════════════════════ */
+function syncProfileTabAvatar() {
+  const tabAvatar = document.getElementById('profileTabAvatar');
+  const sideAvatar = document.getElementById('avatarInitials');
+  if (!tabAvatar || !sideAvatar) return;
+  tabAvatar.innerHTML = sideAvatar.innerHTML || sideAvatar.textContent;
+}
+
+async function uploadProfileTabPhoto(file) {
+  if (!file || !currentUser) return;
+  const tabAvatar = document.getElementById('profileTabAvatar');
+  if (tabAvatar) tabAvatar.style.opacity = '0.5';
+  try {
+    const storageRef = firebase.storage().ref(`users/${currentUser.uid}/profile`);
+    await storageRef.put(file);
+    const photoURL = await storageRef.getDownloadURL();
+    await fbDb.collection('users').doc(currentUser.uid).set({ photoURL }, { merge: true });
+    const imgHTML = `<img src="${photoURL}" style="width:100%;height:100%;object-fit:cover;">`;
+    if (tabAvatar) tabAvatar.innerHTML = imgHTML;
+    const sideAvatar = document.getElementById('avatarInitials');
+    if (sideAvatar) sideAvatar.innerHTML = imgHTML;
+    showToast('Profil şəkli yeniləndi ✓');
+  } catch (err) { showToast('Xəta: ' + err.message); }
+  finally { if (tabAvatar) tabAvatar.style.opacity = '1'; document.getElementById('profileTabFileInput').value = ''; }
+}
+
 /* ══════════════════════════════
    TOAST
    ══════════════════════════════ */
