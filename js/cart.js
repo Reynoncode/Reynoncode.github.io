@@ -1070,7 +1070,7 @@ function initSuggestScroll() {
 }
 
 /* ══════════════════════════════════════════════════════════
-   CHECKOUT — tam yenilənmiş ünvan sistemi ilə
+   CHECKOUT — Saxlanmış ünvanlar + yeni ünvan sistemi
    ══════════════════════════════════════════════════════════ */
 
 let _checkoutAddress  = null;   /* seçilmiş ünvan obyekti */
@@ -1099,26 +1099,49 @@ async function openAddressStep() {
   const old = document.getElementById('checkoutOverlay');
   if (old) old.remove();
 
-  /* Saxlanmış ünvanları yüklə */
-  _savedAddresses = [];
-  _selectedSavedId = null;
-  _useNewMap = false;
-  _checkoutAddress = null;
+  /* Dəyişənləri sıfırla */
+  _savedAddresses   = [];
+  _selectedSavedId  = null;
+  _useNewMap        = false;
+  _checkoutAddress  = null;
 
   const user = fbAuth.currentUser;
   if (user) {
     try {
+      /* orderBy olmadan çək — index tələb etmir, client-side sort edirik */
       const snap = await fbDb.collection('addresses')
         .where('userId', '==', user.uid)
-        .orderBy('createdAt', 'desc')
         .get();
-      _savedAddresses = snap.docs.map(d => ({ _docId: d.id, ...d.data() }));
-    } catch(e) { console.warn('Ünvanlar yüklənmədi:', e); }
+      _savedAddresses = snap.docs
+        .map(d => ({ _docId: d.id, ...d.data() }))
+        .sort((a, b) => {
+          /* Əsas ünvan ən üstdə, sonra createdAt-a görə */
+          if (a.isDefault && !b.isDefault) return -1;
+          if (!a.isDefault && b.isDefault) return 1;
+          const ta = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+          const tb = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+          return tb - ta;
+        });
+    } catch(e) {
+      console.warn('Ünvanlar yüklənmədi:', e);
+    }
   }
 
-  /* Əgər saxlanmış ünvan yoxdursa birbaşa xəritəni aç */
+  /* Saxlanmış ünvan yoxdursa — birbaşa yeni ünvan rejimi */
   if (_savedAddresses.length === 0) {
     _useNewMap = true;
+  } else {
+    /* Əsas ünvanı default seçili göstər */
+    const defaultAddr = _savedAddresses.find(a => a.isDefault) || _savedAddresses[0];
+    _selectedSavedId = defaultAddr._docId;
+    _checkoutAddress = {
+      lat:       defaultAddr.lat       || null,
+      lng:       defaultAddr.lng       || null,
+      label:     defaultAddr.label     || 'Saxlanmış ünvan',
+      building:  defaultAddr.building  || '',
+      apartment: defaultAddr.apartment || '',
+      note:      defaultAddr.note      || ''
+    };
   }
 
   const overlay = document.createElement('div');
@@ -1128,10 +1151,8 @@ async function openAddressStep() {
       <button class="co-close" onclick="closeCheckout()">✕</button>
       <div class="co-title">Çatdırılma ünvanı</div>
       <div class="co-sub">Ünvanı seçin və ya yeni əlavə edin</div>
-
       <div id="coAddressBody"></div>
-
-      <button id="addrNextBtn" class="co-next-btn" onclick="goToPayment()" disabled>
+      <button id="addrNextBtn" class="co-next-btn" onclick="goToPayment()" ${_checkoutAddress ? '' : 'disabled'}>
         Ödənişə keç →
       </button>
     </div>
@@ -1144,24 +1165,33 @@ async function openAddressStep() {
   _renderAddressBody();
 }
 
+/* ── Address body render ── */
 function _renderAddressBody() {
   const container = document.getElementById('coAddressBody');
   if (!container) return;
 
   let html = '';
 
-  /* Saxlanmış ünvanlar */
+  /* ── 1. Saxlanmış ünvanlar ── */
   if (_savedAddresses.length > 0) {
     html += `<div class="saved-addr-list" id="savedAddrList">`;
     _savedAddresses.forEach(addr => {
       const isSelected = _selectedSavedId === addr._docId;
-      const detail = [addr.building ? `Bina: ${addr.building}` : '', addr.apartment ? `Mənzil: ${addr.apartment}` : '', addr.note ? addr.note : ''].filter(Boolean).join(' · ');
+      const detailParts = [];
+      if (addr.building)  detailParts.push(`Bina: ${addr.building}`);
+      if (addr.apartment) detailParts.push(`Mənzil: ${addr.apartment}`);
+      if (addr.note)      detailParts.push(addr.note);
+      const detail = detailParts.join(' · ');
+      const shortLabel = addr.label
+        ? (addr.label.length > 65 ? addr.label.substring(0, 65) + '…' : addr.label)
+        : 'Ünvan';
+
       html += `
         <div class="saved-addr-card ${isSelected ? 'selected' : ''}"
-          onclick="_selectSavedAddr('${addr._docId}')">
+             onclick="_selectSavedAddr('${addr._docId}')">
           <div class="sa-radio"></div>
           <div class="sa-body">
-            <div class="sa-label">📍 ${addr.label ? addr.label.substring(0, 70) + (addr.label.length > 70 ? '…' : '') : 'Ünvan'}</div>
+            <div class="sa-label">📍 ${shortLabel}</div>
             ${detail ? `<div class="sa-detail">${detail}</div>` : ''}
           </div>
           ${addr.isDefault ? '<span class="sa-default-tag">Əsas</span>' : ''}
@@ -1170,16 +1200,18 @@ function _renderAddressBody() {
     html += `</div>`;
   }
 
-  /* Yeni ünvan toggle düyməsi */
+  /* ── 2. "Yeni ünvan əlavə et" toggle düyməsi ── */
   html += `
     <div class="new-addr-toggle ${_useNewMap ? 'active' : ''}" id="newAddrToggle" onclick="_toggleNewMap()">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="16"/>
+        <line x1="8" y1="12" x2="16" y2="12"/>
       </svg>
       ${_savedAddresses.length > 0 ? 'Yeni ünvan əlavə et' : 'Xəritədən ünvan seç'}
     </div>`;
 
-  /* Xəritə bölümü (yalnız _useNewMap aktivdirsə) */
+  /* ── 3. Xəritə bölümü — yalnız _useNewMap aktiv olanda görünür ── */
   if (_useNewMap) {
     html += `
       <div id="checkoutMap"></div>
@@ -1217,27 +1249,29 @@ function _renderAddressBody() {
   _updateNextBtn();
 }
 
+/* ── Saxlanmış ünvan seç ── */
 function _selectSavedAddr(docId) {
   _selectedSavedId = docId;
-  _useNewMap = false;
+  _useNewMap       = false;
   _checkoutAddress = null;
 
-  /* Seçilmiş ünvanı tap */
   const addr = _savedAddresses.find(a => a._docId === docId);
   if (addr) {
     _checkoutAddress = {
-      lat:      addr.lat || null,
-      lng:      addr.lng || null,
-      label:    addr.label || 'Saxlanmış ünvan',
-      building:  addr.building || '',
+      lat:       addr.lat       || null,
+      lng:       addr.lng       || null,
+      label:     addr.label     || 'Saxlanmış ünvan',
+      building:  addr.building  || '',
       apartment: addr.apartment || '',
-      note:      addr.note || ''
+      note:      addr.note      || ''
     };
   }
 
+  _destroyCheckoutMap();
   _renderAddressBody();
 }
 
+/* ── Yeni ünvan toggle ── */
 function _toggleNewMap() {
   _useNewMap = !_useNewMap;
   if (_useNewMap) {
@@ -1248,19 +1282,16 @@ function _toggleNewMap() {
   _renderAddressBody();
 }
 
+/* ── Yeni ünvan hazırlıq yoxlaması ── */
 function _checkNewAddrReady() {
-  const building   = (document.getElementById('addrBuilding')?.value   || '').trim();
-  const apartment  = (document.getElementById('addrApartment')?.value  || '').trim();
-  /* Xəritə seçimi + ən azı bina nömrəsi olsun */
-  const mapOk = _checkoutAddress && _checkoutAddress.lat;
-  const fieldsOk = building.length > 0;
-  const btn = document.getElementById('addrNextBtn');
-  if (btn) {
-    const ok = mapOk && fieldsOk;
-    btn.disabled = !ok;
-  }
+  const building  = (document.getElementById('addrBuilding')?.value  || '').trim();
+  const mapOk     = _checkoutAddress && _checkoutAddress.lat;
+  const fieldsOk  = building.length > 0;
+  const btn       = document.getElementById('addrNextBtn');
+  if (btn) btn.disabled = !(mapOk && fieldsOk);
 }
 
+/* ── Next düyməsi vəziyyəti ── */
 function _updateNextBtn() {
   const btn = document.getElementById('addrNextBtn');
   if (!btn) return;
@@ -1274,6 +1305,7 @@ function _updateNextBtn() {
   btn.disabled = !ok;
 }
 
+/* ── Leaflet yüklə ── */
 function _loadLeaflet(cb) {
   if (window.L) { cb(); return; }
   const link = document.createElement('link');
@@ -1286,6 +1318,7 @@ function _loadLeaflet(cb) {
   document.head.appendChild(script);
 }
 
+/* ── Xəritəni başlat ── */
 function _initCheckoutMap() {
   const mapEl = document.getElementById('checkoutMap');
   if (!mapEl || !window.L || _checkoutMap) return;
@@ -1310,6 +1343,7 @@ function _initCheckoutMap() {
   });
 }
 
+/* ── Reverse geocode ── */
 async function _reverseGeocode(lat, lng) {
   const textEl = document.getElementById('addrText');
   if (textEl) textEl.textContent = 'Ünvan axtarılır...';
@@ -1326,13 +1360,14 @@ async function _reverseGeocode(lat, lng) {
   _checkNewAddrReady();
 }
 
+/* ── Xəritəni məhv et ── */
 function _destroyCheckoutMap() {
   if (_checkoutMap) { _checkoutMap.remove(); _checkoutMap = null; }
   _checkoutMarker = null;
 }
 
+/* ── Ödənişə keç ── */
 async function goToPayment() {
-  /* Yeni ünvan yazılıbsa — detail-ları checkout address-ə əlavə et */
   if (_useNewMap && _checkoutAddress) {
     _checkoutAddress.building  = (document.getElementById('addrBuilding')?.value  || '').trim();
     _checkoutAddress.apartment = (document.getElementById('addrApartment')?.value || '').trim();
@@ -1373,7 +1408,9 @@ function openPaymentStep() {
   const overlay = document.getElementById('checkoutOverlay');
   if (!overlay) return;
   const total = cart.getTotal();
-  const addrLabel = _checkoutAddress ? _checkoutAddress.label.substring(0, 80) + (_checkoutAddress.label.length > 80 ? '…' : '') : '—';
+  const addrLabel = _checkoutAddress
+    ? (_checkoutAddress.label.length > 80 ? _checkoutAddress.label.substring(0, 80) + '…' : _checkoutAddress.label)
+    : '—';
   const addrDetail = [
     _checkoutAddress?.building  ? `Bina: ${_checkoutAddress.building}` : '',
     _checkoutAddress?.apartment ? `Mənzil: ${_checkoutAddress.apartment}` : '',
@@ -1436,10 +1473,13 @@ function openPaymentStep() {
     </button>
   `;
 
-  /* wallet seçimini başlanğıcda aktiv et */
   _selectedPayMethod = 'wallet';
   const wr = document.getElementById('walletRadio');
-  if (wr) { wr.style.background = '#1a1a1a'; wr.style.borderColor = '#1a1a1a'; wr.innerHTML = '<span style="width:7px;height:7px;background:#fff;border-radius:50%;display:block"></span>'; }
+  if (wr) {
+    wr.style.background  = '#1a1a1a';
+    wr.style.borderColor = '#1a1a1a';
+    wr.innerHTML = '<span style="width:7px;height:7px;background:#fff;border-radius:50%;display:block"></span>';
+  }
 }
 
 let _selectedPayMethod = null;
@@ -1461,8 +1501,7 @@ function updatePlaceBtn() {
   const terms = document.getElementById('termsCheck');
   const btn   = document.getElementById('placeOrderBtn');
   if (!btn) return;
-  const ok = _selectedPayMethod && terms && terms.checked;
-  btn.disabled = !ok;
+  btn.disabled = !(_selectedPayMethod && terms && terms.checked);
 }
 
 /* ────────────────────────────────────────────
@@ -1508,14 +1547,13 @@ async function placeOrder() {
 
       const vendorTotal = vendorItems.reduce((s, i) => s + i.price * (i.quantity || 1), 0);
 
-      /* Ünvan — tam strukturla saxla */
       const addressData = {
-        label:     _checkoutAddress.label || '',
+        label:     _checkoutAddress.label     || '',
         building:  _checkoutAddress.building  || '',
         apartment: _checkoutAddress.apartment || '',
         note:      _checkoutAddress.note      || '',
-        lat:       _checkoutAddress.lat || null,
-        lng:       _checkoutAddress.lng || null,
+        lat:       _checkoutAddress.lat       || null,
+        lng:       _checkoutAddress.lng       || null,
       };
 
       await fbDb.collection('orders').add({
