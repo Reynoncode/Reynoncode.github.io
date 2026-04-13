@@ -56,7 +56,6 @@ const vendor = {
   },
 
   async getVendorOrders(uid) {
-    // store.js-dəki kimi 3 üsulla fetch et
     let allOrders = [];
     const seen = new Set();
 
@@ -68,7 +67,7 @@ const vendor = {
       snap1.docs.forEach(d => {
         if (!seen.has(d.id)) { seen.add(d.id); allOrders.push({ id: d.id, ...d.data() }); }
       });
-    } catch(e) { /* index yoxdursa skip */ }
+    } catch(e) {}
 
     try {
       const snap2 = await fbDb.collection('orders')
@@ -78,7 +77,7 @@ const vendor = {
       snap2.docs.forEach(d => {
         if (!seen.has(d.id)) { seen.add(d.id); allOrders.push({ id: d.id, ...d.data() }); }
       });
-    } catch(e) { /* skip */ }
+    } catch(e) {}
 
     try {
       if (allOrders.length === 0) {
@@ -96,7 +95,7 @@ const vendor = {
           if (belongs) { seen.add(d.id); allOrders.push({ id: d.id, ...data }); }
         });
       }
-    } catch(e) { /* skip */ }
+    } catch(e) {}
 
     allOrders.sort((a, b) => {
       const ta = a.createdAt?.toDate?.() || new Date(0);
@@ -274,41 +273,61 @@ async function renderVendorDashboard(container, data, uid) {
   _vdUid = uid;
   collapseSidebarForVendor();
 
+  /* Cover arxa plan stili */
+  const coverStyle = data.coverURL
+    ? `background: url('${data.coverURL}') center/cover no-repeat;`
+    : `background: linear-gradient(135deg,#1a1a1a 0%,#2c2c2c 55%,#1a1a1a 100%);`;
+
+  /* Logo HTML */
+  const logoHTML = data.photoURL
+    ? `<img src="${data.photoURL}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
+    : `<span style="font-size:1.6rem;font-weight:600;color:#fff;">${(data.storeName||'M')[0].toUpperCase()}</span>`;
+
   container.innerHTML = `
-    <div class="section-card vd-header-card" style="padding:0;overflow:hidden;border-radius:12px;">
-      <div style="
-        position:relative;
-        height:140px;
-        background:${data.coverURL
-          ? `url('${data.coverURL}') center/cover no-repeat`
-          : 'linear-gradient(135deg,#1a1a1a 0%,#2c2c2c 55%,#1a1a1a 100%)'
-        };
-      ">
-        ${data.coverURL ? `<div style="position:absolute;inset:0;background:rgba(0,0,0,.35);border-radius:12px 12px 0 0;"></div>` : ''}
-        <button class="btn btn-outline vd-settings-btn" onclick="openVendorSettings()" style="position:absolute;top:12px;right:12px;background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.4);color:#fff;backdrop-filter:blur(4px);">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+
+    <!-- ═══ HEADER KARTI ═══ -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:0;">
+
+      <!-- Cover bölməsi -->
+      <div style="position:relative;height:130px;${coverStyle}">
+        <div style="position:absolute;inset:0;background:rgba(0,0,0,0.4);"></div>
+        <!-- Parametrlər düyməsi cover üzərində -->
+        <button onclick="openVendorSettings()"
+          style="position:absolute;top:12px;right:12px;display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;border:1.5px solid rgba(255,255,255,0.5);background:rgba(255,255,255,0.12);color:#fff;font-size:0.8rem;font-weight:500;cursor:pointer;font-family:inherit;backdrop-filter:blur(4px);transition:background .2s;"
+          onmouseover="this.style.background='rgba(255,255,255,0.22)'"
+          onmouseout="this.style.background='rgba(255,255,255,0.12)'">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="3"/>
             <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
           </svg>
           Parametrlər
         </button>
       </div>
-      <div class="vd-store-header" style="padding:0 1.5rem 1.25rem;margin-top:-36px;position:relative;z-index:1;">
-        <div class="vd-store-avatar" id="vdStoreAvatar" style="border:3px solid #fff;box-shadow:0 2px 12px rgba(0,0,0,.15);">
-          ${data.photoURL
-            ? `<img src="${data.photoURL}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
-            : (data.storeName||'M')[0].toUpperCase()
-          }
+
+      <!-- Mağaza məlumatları bölməsi -->
+      <div style="padding:0 1.5rem 1.25rem;display:flex;align-items:flex-end;gap:1rem;margin-top:-32px;position:relative;z-index:2;">
+        <!-- Avatar — cover-dən aşağı sallanır -->
+        <div id="vdStoreAvatar"
+          style="width:64px;height:64px;min-width:64px;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,#2c2c2c,#1a1a1a);border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          ${logoHTML}
         </div>
-        <div class="vd-store-info" style="padding-top:0.5rem;">
-          <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
-            <h2 class="vd-store-name" id="vdStoreName">${data.storeName}</h2>
-            <div class="vendor-status-badge approved"><span>●</span> Aktiv</div>
+        <!-- Ad + kateqoriya + aktiv badge -->
+        <div style="padding-bottom:0.25rem;min-width:0;flex:1;">
+          <div style="display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap;">
+            <h2 id="vdStoreName"
+              style="font-family:'Playfair Display',serif;font-size:1.15rem;font-weight:700;color:var(--accent);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              ${data.storeName}
+            </h2>
+            <div class="vendor-status-badge approved" style="flex-shrink:0;"><span>●</span> Aktiv</div>
           </div>
-          <p class="vd-store-meta" id="vdStoreMeta">${data.category} · ${data.city}</p>
+          <p id="vdStoreMeta"
+            style="font-size:0.8rem;color:var(--muted);margin:0.2rem 0 0;">
+            ${data.category} · ${data.city}
+          </p>
         </div>
       </div>
     </div>
+    <!-- ═══════════════════ -->
 
     <div class="vd-stats-grid">
       <div class="vd-stat-card">
@@ -386,7 +405,7 @@ async function renderVendorDashboard(container, data, uid) {
 }
 
 /* ══════════════════════════════════════════════════
-   SİFARİŞ KARTLARI — tam detallarla (store.js kimi)
+   SİFARİŞ KARTLARI
 ══════════════════════════════════════════════════ */
 function vdRenderOrderCards(orders) {
   const container = document.getElementById('vd-orders-list');
@@ -404,8 +423,6 @@ function vdRenderOrderCards(orders) {
   container.innerHTML = orders.map(o => vdOrderCardHTML(o)).join('');
 }
 
-/* ── vendor.js → vdOrderCardHTML() funksiyasını TAM BU KOD ilə əvəzlə ── */
-
 function vdOrderCardHTML(o) {
   const st   = VD_STATUS[o.status] || { lbl: o.status || '—', color: '#888', bg: '#f5f5f5' };
   const date = o.createdAt?.toDate
@@ -415,18 +432,15 @@ function vdOrderCardHTML(o) {
   const items    = o.items || [];
   const orderNum = o.orderNumber ? `#${o.orderNumber}` : `#${o.id.slice(-6).toUpperCase()}`;
 
-  // Müştəri məlumatları
   const buyerName  = o.buyerName  || o.userName  || o.customerName || '';
   const buyerPhone = o.buyerPhone || o.phone     || '';
   const buyerEmail = o.buyerEmail || '';
 
-  // Ünvan
   const addrObj    = o.address || o.deliveryAddress || o.shippingAddress || '';
   const addressStr = typeof addrObj === 'object'
     ? (addrObj.label || [addrObj.city, addrObj.district, addrObj.street, addrObj.apartment].filter(Boolean).join(', '))
     : (addrObj || '');
 
-  // Hər məhsul üçün ölçü + rəng chiplərini render et
   function itemChips(item) {
     const color    = item.selectedColor?.name || item.color    || '';
     const colorHex = item.selectedColor?.hex  || item.colorHex || '';
@@ -450,7 +464,6 @@ function vdOrderCardHTML(o) {
       : '';
   }
 
-  // Məhsullar siyahısı
   const itemsHTML = items.map(item => {
     const name  = item.name || item.title || '—';
     const price = ((item.price || 0) * (item.quantity || 1)).toFixed(2);
@@ -466,8 +479,6 @@ function vdOrderCardHTML(o) {
 
   return `
     <div style="border:1px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:0.75rem;transition:box-shadow .2s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,.07)'" onmouseout="this.style.boxShadow='none'">
-
-      <!-- Üst sıra: sifariş № + tarix + məbləğ + status + düymə -->
       <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;margin-bottom:0.75rem;">
         <span style="font-family:monospace;font-weight:700;font-size:0.85rem;">${orderNum}</span>
         <span style="color:var(--muted);font-size:0.78rem;">${date}</span>
@@ -481,18 +492,13 @@ function vdOrderCardHTML(o) {
           Status dəyiş
         </button>
       </div>
-
-      <!-- Məhsullar siyahısı (hər biri öz ölçü/rəng/miqdarı ilə) -->
       <div style="margin-bottom:0.85rem;">
         <div style="font-size:0.68rem;font-weight:600;color:var(--muted);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:0.4rem;">
           📦 Məhsullar (${items.length})
         </div>
         ${itemsHTML || '<div style="font-size:0.78rem;color:var(--muted);">Məhsul məlumatı yoxdur</div>'}
       </div>
-
-      <!-- Alt sıra: müştəri + ünvan -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border);">
-
         <div style="background:#f8f8f8;border-radius:8px;padding:0.65rem 0.85rem;">
           <div style="font-size:0.68rem;font-weight:600;color:var(--muted);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:0.45rem;">👤 Müştəri</div>
           ${buyerName
@@ -501,19 +507,16 @@ function vdOrderCardHTML(o) {
           ${buyerPhone ? `<div style="font-size:0.76rem;color:#555;display:flex;align-items:center;gap:4px;margin-top:2px;">📞 ${buyerPhone}</div>` : ''}
           ${buyerEmail ? `<div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">✉️ ${buyerEmail}</div>` : ''}
         </div>
-
         <div style="background:#f8f8f8;border-radius:8px;padding:0.65rem 0.85rem;">
           <div style="font-size:0.68rem;font-weight:600;color:var(--muted);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:0.45rem;">📍 Çatdırılma ünvanı</div>
           ${addressStr
             ? `<div style="font-size:0.76rem;color:#555;line-height:1.5;">${addressStr}</div>`
             : `<div style="font-size:0.78rem;color:var(--muted);">Ünvan məlumatı yoxdur</div>`}
         </div>
-
       </div>
     </div>`;
 }
 
-/* ── Elan sətirləri ── */
 function vdRenderListingRows(listings) {
   const tbody = document.getElementById('vd-listings-tbody');
   if (!tbody) return;
@@ -538,7 +541,6 @@ function vdRenderListingRows(listings) {
   }).join('');
 }
 
-/* ── Filter ── */
 function vdFilterOrders() {
   const filter   = document.getElementById('vdOrderFilter')?.value || '';
   const filtered = filter ? _vdOrders.filter(o => o.status === filter) : _vdOrders;
@@ -570,8 +572,6 @@ function vdOpenStatusModal(orderId, currentStatus) {
         style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--muted)">✕</button>
       <h3 style="font-family:'Playfair Display',serif;margin-bottom:6px;">Sifariş statusu</h3>
       <p style="color:var(--muted);font-size:0.82rem;margin-bottom:24px;">Sifarişin cari mərhələsini seçin</p>
-
-      <!-- Progress -->
       <div style="display:flex;align-items:center;margin-bottom:28px;">
         ${STATUS_FLOW.map((s,i) => `
           <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;">
@@ -583,8 +583,6 @@ function vdOpenStatusModal(orderId, currentStatus) {
           ${i<STATUS_FLOW.length-1?`<div style="flex:0 0 32px;height:2px;background:${i<currentIdx?'#1a1a1a':'#e8e5e0'};margin-bottom:22px;"></div>`:''}
         `).join('')}
       </div>
-
-      <!-- Seçim düymələri -->
       <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
         ${STATUS_FLOW.map(s => `
           <button onclick="vdUpdateOrderStatus('${orderId}','${s.key}')"
@@ -615,73 +613,63 @@ async function vdUpdateOrderStatus(orderId, newStatus) {
   try {
     const orderSnap = await fbDb.collection('orders').doc(orderId).get();
     if (!orderSnap.exists) throw new Error('Sifariş tapılmadı');
- 
-    const orderData    = orderSnap.data();
-    const prevStatus   = orderData.status || 'pending';
+
+    const orderData     = orderSnap.data();
+    const prevStatus    = orderData.status || 'pending';
     const stockDeducted = orderData.stockDeducted === true;
- 
-    // Eyni status — heç nə etmə
+
     if (prevStatus === newStatus) {
       document.getElementById('vdStatusModal')?.remove();
       return;
     }
- 
+
     const updatePayload = {
       status:    newStatus,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
- 
-    // ── STOK AZALT ──
-    // Şərt: "shipped" statusuna keçir VƏ hələ stok azaldılmayıb
+
     if (newStatus === 'shipped' && !stockDeducted) {
       await vdDecreaseStockForOrder(orderData);
       updatePayload.stockDeducted = true;
     }
- 
-    // ── STOK GERİ QAYTAR ──
-    // Şərt: "cancelled" statusuna keçir VƏ stok əvvəllər azaldılıb
+
     if (newStatus === 'cancelled' && stockDeducted) {
       await vdRestoreStockForOrder(orderData);
       updatePayload.stockDeducted = false;
     }
- 
+
     await fbDb.collection('orders').doc(orderId).update(updatePayload);
- 
-    // Lokal cache yenilə
+
     const idx = _vdOrders.findIndex(o => o.id === orderId);
     if (idx !== -1) {
       _vdOrders[idx].status        = newStatus;
       _vdOrders[idx].stockDeducted = updatePayload.stockDeducted ?? stockDeducted;
     }
- 
+
     document.getElementById('vdStatusModal')?.remove();
- 
-    // Statistikaları yenilə
+
     const pendingEl = document.getElementById('vd-pending');
     if (pendingEl) pendingEl.textContent = _vdOrders.filter(o => o.status === 'pending').length;
- 
+
     const revenueEl = document.getElementById('vd-revenue');
     if (revenueEl) {
       const rev = _vdOrders.filter(o => o.status === 'delivered').reduce((s, o) => s + (o.total || 0), 0);
       revenueEl.textContent = rev.toFixed(2) + ' ₼';
     }
- 
+
     vdFilterOrders();
- 
-    // Son elanlar stok sütununu yenilə
+
     const freshListings = await vendor.getListings(_vdUid);
     _vdListings = freshListings;
     vdRenderListingRows(freshListings);
- 
+
     showToast('Status yeniləndi ✓');
   } catch (err) {
     showToast('Xəta: ' + err.message);
     console.error('vdUpdateOrderStatus xətası:', err);
   }
 }
- 
 
-/* ── Sifarişdəki hər məhsulun stokunu azalt ── */
 async function vdDecreaseStockForOrder(orderData) {
   const items = orderData.items || [];
   if (items.length === 0) return;
@@ -696,7 +684,6 @@ async function vdDecreaseStockForOrder(orderData) {
 
       const listingData = listingSnap.data();
       const sizes       = listingData.sizes || [];
-
       const orderedItems = items.filter(i => i.id === listingId);
 
       let updated = false;
@@ -714,7 +701,6 @@ async function vdDecreaseStockForOrder(orderData) {
         return sizeEntry;
       });
 
-      // Ölçüsüz sifariş olduqda ümumi stoku azalt
       if (!updated) {
         const noSizeItems = orderedItems.filter(oi => !(oi.selectedSize?.label || oi.size));
         if (noSizeItems.length > 0) {
@@ -734,7 +720,6 @@ async function vdDecreaseStockForOrder(orderData) {
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
       }
-
     } catch (e) {
       console.warn(`Listing ${listingId} stoku azaldılmadı:`, e.message);
     }
@@ -744,19 +729,19 @@ async function vdDecreaseStockForOrder(orderData) {
 async function vdRestoreStockForOrder(orderData) {
   const items = orderData.items || [];
   if (items.length === 0) return;
- 
+
   const listingIds = [...new Set(items.map(i => i.id).filter(Boolean))];
- 
+
   for (const listingId of listingIds) {
     try {
       const listingRef  = fbDb.collection('listings').doc(listingId);
       const listingSnap = await listingRef.get();
       if (!listingSnap.exists) continue;
- 
+
       const listingData  = listingSnap.data();
       const sizes        = listingData.sizes || [];
       const orderedItems = items.filter(i => i.id === listingId);
- 
+
       let updated  = false;
       const newSizes = sizes.map(sizeEntry => {
         const match = orderedItems.find(oi => {
@@ -771,8 +756,7 @@ async function vdRestoreStockForOrder(orderData) {
         }
         return sizeEntry;
       });
- 
-      // Ölçüsüz məhsul — ümumi stoku geri qaytar
+
       if (!updated) {
         const noSizeItems = orderedItems.filter(oi => !(oi.selectedSize?.label || oi.size));
         if (noSizeItems.length > 0) {
@@ -785,20 +769,18 @@ async function vdRestoreStockForOrder(orderData) {
           continue;
         }
       }
- 
+
       if (updated) {
         await listingRef.update({
           sizes:     newSizes,
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
       }
- 
     } catch (e) {
       console.warn(`Listing ${listingId} stoku bərpa edilmədi:`, e.message);
     }
   }
 }
-
 
 /* ═══════════════════════════════════════════
    MAĞAZA PARAMETRLƏRİ MODALI
@@ -1063,13 +1045,24 @@ async function saveVendorSettings() {
       }, { merge: true })
     ]);
 
+    /* Dashboard header-i canlı yenilə */
     const nameEl   = document.getElementById('vdStoreName');
     const metaEl   = document.getElementById('vdStoreMeta');
     const avatarEl = document.getElementById('vdStoreAvatar');
-    if (nameEl)   nameEl.textContent = payload.storeName;
-    if (metaEl)   metaEl.textContent = `${payload.category} · ${payload.city}`;
+    if (nameEl) nameEl.textContent = payload.storeName;
+    if (metaEl) metaEl.textContent = `${payload.category} · ${payload.city}`;
     if (avatarEl && window._vsLogoBase64) {
       avatarEl.innerHTML = `<img src="${window._vsLogoBase64}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    }
+
+    /* Cover-i dashboard-da canlı yenilə */
+    const coverDiv = document.querySelector('#tab-vendor > div:first-child > div:first-child');
+    if (coverDiv) {
+      if (payload.coverURL) {
+        coverDiv.style.background = `url('${payload.coverURL}') center/cover no-repeat`;
+      } else if (window._vsCoverBase64 === '__remove__') {
+        coverDiv.style.background = 'linear-gradient(135deg,#1a1a1a 0%,#2c2c2c 55%,#1a1a1a 100%)';
+      }
     }
 
     showToast('Parametrlər saxlanıldı ✓');
