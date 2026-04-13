@@ -272,6 +272,8 @@ header {
 /* ── RESPONSIVE ── */
 @media (max-width: 768px) {
   .header-logo-wrap { display: none; }
+  .btn-user span { display: none; }
+  .btn-user { padding: 6px 8px; }
 
   .header-search {
     flex: 1;
