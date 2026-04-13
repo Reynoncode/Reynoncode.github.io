@@ -36,6 +36,8 @@ const auth = {
         uid:         result.user.uid,
         email,
         displayName: name,
+        firstName:   name.split(' ')[0] || name,
+        lastName:    name.split(' ').slice(1).join(' ') || '',
         photoURL:    '',
         createdAt:   firebase.firestore.FieldValue.serverTimestamp()
       });
@@ -51,13 +53,15 @@ const auth = {
       const provider = new firebase.auth.GoogleAuthProvider();
       const result   = await fbAuth.signInWithPopup(provider);
 
-      // İlk dəfə girişdə Firestore profilini yarat
       const snap = await fbDb.collection('users').doc(result.user.uid).get();
       if (!snap.exists) {
+        const nameParts = (result.user.displayName || '').split(' ');
         await fbDb.collection('users').doc(result.user.uid).set({
           uid:         result.user.uid,
           email:       result.user.email,
           displayName: result.user.displayName,
+          firstName:   nameParts[0] || '',
+          lastName:    nameParts.slice(1).join(' ') || '',
           photoURL:    result.user.photoURL || '',
           createdAt:   firebase.firestore.FieldValue.serverTimestamp()
         });
@@ -103,6 +107,35 @@ function _authError(code) {
   };
   return map[code] || 'Xəta baş verdi. Yenidən cəhd edin.';
 }
+
+/* ══════════════════════════════
+   AUTH STATE — Header Render
+   onAuthStateChanged dinləyicisi bütün səhifələrdə
+   header-ı düzgün render edir
+   ══════════════════════════════ */
+function _initAuthStateHeader() {
+  fbAuth.onAuthStateChanged(async (user) => {
+    /* renderHeader funksiyası components.js-də var.
+       Mövcud deyilsə atla. */
+    if (typeof renderHeader === 'function') {
+      renderHeader(user ? auth.getUser() : null);
+    }
+
+    /* Cart-ı da yenilə */
+    if (typeof cart !== 'undefined' && typeof cart.init === 'function') {
+      cart.init(user ? user.uid : null);
+    }
+
+    /* updateCartBadge */
+    if (typeof updateCartBadge === 'function') {
+      updateCartBadge();
+    }
+  });
+}
+
+/* DOMContentLoaded-da başlat */
+document.addEventListener('DOMContentLoaded', _initAuthStateHeader);
+
 
 /* ══════════════════════════════
    AUTH MODAL — Giriş / Qeydiyyat / Google
@@ -178,7 +211,6 @@ function initAuthModal() {
       </div>
     `;
 
-    // Hadisə dinləyiciləri
     overlay.querySelector('.modal-close').addEventListener('click', () => modal.close('authModal'));
     overlay.querySelector('#toggleAuth').addEventListener('click', e => {
       e.preventDefault();
@@ -215,8 +247,10 @@ function initAuthModal() {
 
     if (result.success) {
       modal.close('authModal');
-      toast.show(isLoginMode ? 'Xoş gəldiniz! 👋' : 'Qeydiyyat uğurlu oldu! 🎉', 'success');
-      // renderHeader onAuthStateChanged tərəfindən çağrılacaq
+      if (typeof toast !== 'undefined') {
+        toast.show(isLoginMode ? 'Xoş gəldiniz! 👋' : 'Qeydiyyat uğurlu oldu! 🎉', 'success');
+      }
+      /* onAuthStateChanged renderHeader-i özü çağıracaq */
     } else {
       showError(result.error);
       resetBtn();
@@ -241,7 +275,9 @@ function initAuthModal() {
 
     if (result.success) {
       modal.close('authModal');
-      toast.show('Google ilə giriş uğurlu oldu! 🎉', 'success');
+      if (typeof toast !== 'undefined') {
+        toast.show('Google ilə giriş uğurlu oldu! 🎉', 'success');
+      }
     } else {
       const errorEl = document.getElementById('authError');
       errorEl.textContent   = result.error;
