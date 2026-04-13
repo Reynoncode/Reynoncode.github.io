@@ -112,14 +112,11 @@ function injectCartStyles() {
   const style = document.createElement('style');
   style.id = 'cartModalStyles';
   style.textContent = `
-    /* ── Overlay: mərkəzləşdirici ── */
     #cartModal {
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
     }
-
-    /* ── Panel ── */
     .cart-panel {
       width: 100%;
       max-width: 500px;
@@ -140,8 +137,6 @@ function injectCartStyles() {
       transform: translateY(0) scale(1);
       opacity: 1;
     }
-
-    /* ── Header ── */
     .cart-panel-header {
       display: flex;
       align-items: center;
@@ -186,8 +181,6 @@ function injectCartStyles() {
       color: #fff;
       border-color: var(--text, #1a1a1a);
     }
-
-    /* ── Scrollable body ── */
     .cart-panel-body {
       flex: 1;
       overflow-y: auto;
@@ -200,8 +193,6 @@ function injectCartStyles() {
       background: var(--border, #e8e2da);
       border-radius: 4px;
     }
-
-    /* ── Empty state ── */
     .cart-empty {
       display: flex;
       flex-direction: column;
@@ -214,8 +205,6 @@ function injectCartStyles() {
     }
     .cart-empty-icon { font-size: 3rem; opacity: 0.5; }
     .cart-empty p { font-size: 0.95rem; margin: 0; }
-
-    /* ── Məhsul kartları ── */
     .cart-item-list {
       padding: 12px 16px;
       display: flex;
@@ -231,12 +220,9 @@ function injectCartStyles() {
       padding: 12px;
       transition: box-shadow 0.18s;
     }
-    .cart-item-card:hover {
-      box-shadow: 0 4px 18px rgba(0,0,0,0.07);
-    }
+    .cart-item-card:hover { box-shadow: 0 4px 18px rgba(0,0,0,0.07); }
     .cart-item-img {
-      width: 82px;
-      height: 106px;
+      width: 82px; height: 106px;
       object-fit: cover;
       border-radius: 10px;
       flex-shrink: 0;
@@ -350,11 +336,7 @@ function injectCartStyles() {
       transition: all 0.18s;
       white-space: nowrap;
     }
-    .cart-item-remove:hover {
-      border-color: #e63946;
-      color: #e63946;
-      background: #fff5f5;
-    }
+    .cart-item-remove:hover { border-color: #e63946; color: #e63946; background: #fff5f5; }
     .cart-item-fav {
       width: 30px; height: 30px;
       border: 1.5px solid var(--border, #e8e2da);
@@ -365,20 +347,9 @@ function injectCartStyles() {
       transition: all 0.18s;
       flex-shrink: 0;
     }
-    .cart-item-fav:hover {
-      border-color: #e63946;
-      background: #fff5f5;
-    }
-    .cart-item-fav.active {
-      border-color: #e63946;
-      background: #fff5f5;
-    }
-    .cart-item-fav svg {
-      width: 14px; height: 14px;
-      transition: all 0.18s;
-    }
-
-    /* ── Önərilənlər ── */
+    .cart-item-fav:hover { border-color: #e63946; background: #fff5f5; }
+    .cart-item-fav.active { border-color: #e63946; background: #fff5f5; }
+    .cart-item-fav svg { width: 14px; height: 14px; transition: all 0.18s; }
     .cart-suggest-section {
       padding: 14px 16px 8px;
       border-top: 1.5px solid var(--border, #e8e2da);
@@ -398,7 +369,6 @@ function injectCartStyles() {
       overflow-x: auto;
       padding-bottom: 12px;
       scrollbar-width: none;
-      -ms-overflow-style: none;
       cursor: grab;
       user-select: none;
       -webkit-overflow-scrolling: touch;
@@ -422,8 +392,7 @@ function injectCartStyles() {
       box-shadow: 0 6px 20px rgba(0,0,0,0.09);
     }
     .cart-suggest-img-wrap {
-      width: 100%;
-      height: 128px;
+      width: 100%; height: 128px;
       overflow: hidden;
       background: #f0ece6;
     }
@@ -433,9 +402,7 @@ function injectCartStyles() {
       display: block;
       transition: transform 0.3s;
     }
-    .cart-suggest-card:hover .cart-suggest-img-wrap img {
-      transform: scale(1.05);
-    }
+    .cart-suggest-card:hover .cart-suggest-img-wrap img { transform: scale(1.05); }
     .cart-suggest-info { padding: 8px 8px 6px; }
     .cart-suggest-brand {
       font-size: 0.63rem;
@@ -455,11 +422,7 @@ function injectCartStyles() {
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
-    .cart-suggest-price {
-      font-size: 0.78rem;
-      font-weight: 700;
-      color: var(--text, #1a1a1a);
-    }
+    .cart-suggest-price { font-size: 0.78rem; font-weight: 700; color: var(--text, #1a1a1a); }
     .cart-suggest-add {
       position: absolute;
       top: 8px; right: 8px;
@@ -475,16 +438,10 @@ function injectCartStyles() {
       transition: all 0.18s;
       box-shadow: 0 2px 8px rgba(0,0,0,0.18);
     }
-    .cart-suggest-card:hover .cart-suggest-add {
-      opacity: 1;
-      transform: scale(1);
-    }
-
-    /* ── Skeleton ── */
+    .cart-suggest-card:hover .cart-suggest-add { opacity: 1; transform: scale(1); }
     .cart-suggest-skeleton {
       flex-shrink: 0;
-      width: 128px;
-      height: 195px;
+      width: 128px; height: 195px;
       border-radius: 12px;
       background: linear-gradient(90deg, var(--border,#e8e2da) 25%, #f5f2ee 50%, var(--border,#e8e2da) 75%);
       background-size: 200% 100%;
@@ -494,22 +451,15 @@ function injectCartStyles() {
       0%   { background-position: 200% 0; }
       100% { background-position: -200% 0; }
     }
-
-    /* ── Footer ── */
     .cart-panel-footer {
       flex-shrink: 0;
       padding: 14px 20px 18px;
       border-top: 2px solid var(--border, #e8e2da);
       background: var(--bg, #faf7f4);
     }
-    .cart-coupon-row {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 12px;
-    }
+    .cart-coupon-row { display: flex; gap: 8px; margin-bottom: 12px; }
     .cart-coupon-input {
-      flex: 1;
-      height: 38px;
+      flex: 1; height: 38px;
       border: 1.5px solid var(--border, #e8e2da);
       border-radius: 8px;
       padding: 0 12px;
@@ -537,12 +487,7 @@ function injectCartStyles() {
       white-space: nowrap;
     }
     .cart-coupon-btn:hover { background: var(--accent, #c9a86c); color: #fff; }
-    .cart-price-rows {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-      margin-bottom: 12px;
-    }
+    .cart-price-rows { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
     .cart-price-row {
       display: flex;
       justify-content: space-between;
@@ -593,15 +538,264 @@ function injectCartStyles() {
     }
     .cart-checkout-btn:active { transform: translateY(0); }
 
+    /* ═══ CHECKOUT OVERLAY ═══ */
+    #checkoutOverlay {
+      position: fixed; inset: 0; z-index: 1100;
+      background: rgba(0,0,0,0.55);
+      display: flex; align-items: center; justify-content: center;
+      padding: 1rem;
+      opacity: 0; transition: opacity 0.25s;
+    }
+    #checkoutOverlay.open { opacity: 1; }
+    #checkoutOverlay .co-modal {
+      background: var(--bg, #faf7f4);
+      border-radius: 18px;
+      width: 100%;
+      max-width: 580px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 28px;
+      position: relative;
+      transform: translateY(20px) scale(0.98);
+      transition: transform 0.3s cubic-bezier(.22,.68,0,1.2);
+      scrollbar-width: thin;
+    }
+    #checkoutOverlay.open .co-modal {
+      transform: translateY(0) scale(1);
+    }
+    .co-close {
+      position: absolute; top: 18px; right: 18px;
+      width: 32px; height: 32px;
+      border: 1.5px solid var(--border, #e8e2da);
+      border-radius: 50%;
+      background: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; color: var(--muted, #7a7a7a);
+      transition: all 0.18s;
+    }
+    .co-close:hover { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+    .co-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.3rem; font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .co-sub { color: var(--muted, #7a7a7a); font-size: 0.84rem; margin-bottom: 20px; }
+    .co-back-btn {
+      background: none; border: none;
+      color: var(--muted, #7a7a7a);
+      font-size: 0.82rem; cursor: pointer;
+      margin-bottom: 14px;
+      display: inline-flex; align-items: center; gap: 5px;
+      font-family: inherit;
+      transition: color 0.15s;
+      padding: 0;
+    }
+    .co-back-btn:hover { color: #1a1a1a; }
+
+    /* Saved address cards */
+    .saved-addr-list {
+      display: flex; flex-direction: column; gap: 10px;
+      margin-bottom: 16px;
+    }
+    .saved-addr-card {
+      border: 2px solid var(--border, #e8e2da);
+      border-radius: 12px;
+      padding: 13px 16px;
+      cursor: pointer;
+      transition: all 0.18s;
+      display: flex; align-items: flex-start; gap: 12px;
+      position: relative;
+    }
+    .saved-addr-card:hover { border-color: #aaa; box-shadow: 0 3px 12px rgba(0,0,0,0.06); }
+    .saved-addr-card.selected { border-color: #1a1a1a; background: #fafafa; }
+    .saved-addr-card .sa-radio {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      border: 2px solid var(--border, #e8e2da);
+      flex-shrink: 0;
+      margin-top: 2px;
+      transition: all 0.15s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .saved-addr-card.selected .sa-radio {
+      border-color: #1a1a1a;
+      background: #1a1a1a;
+    }
+    .saved-addr-card.selected .sa-radio::after {
+      content: '';
+      width: 7px; height: 7px;
+      background: #fff;
+      border-radius: 50%;
+      display: block;
+    }
+    .sa-body { flex: 1; min-width: 0; }
+    .sa-label { font-weight: 600; font-size: 0.88rem; margin-bottom: 2px; }
+    .sa-detail { font-size: 0.78rem; color: var(--muted, #7a7a7a); line-height: 1.5; }
+    .sa-default-tag {
+      position: absolute; top: 10px; right: 12px;
+      font-size: 0.62rem; background: #1a1a1a; color: #fff;
+      padding: 2px 7px; border-radius: 20px; font-weight: 600;
+    }
+
+    /* New address toggle */
+    .new-addr-toggle {
+      border: 2px dashed var(--border, #e8e2da);
+      border-radius: 12px;
+      padding: 13px 16px;
+      cursor: pointer;
+      display: flex; align-items: center; gap: 10px;
+      color: var(--muted, #7a7a7a);
+      font-size: 0.88rem;
+      font-weight: 500;
+      transition: all 0.18s;
+      margin-bottom: 16px;
+    }
+    .new-addr-toggle:hover { border-color: #1a1a1a; color: #1a1a1a; }
+    .new-addr-toggle.active { border-color: #1a1a1a; color: #1a1a1a; border-style: solid; }
+
+    /* Map */
+    #checkoutMap {
+      width: 100%;
+      height: 280px;
+      border-radius: 12px;
+      border: 1.5px solid var(--border, #e8e2da);
+      margin-bottom: 14px;
+      background: #e8e0d8;
+      overflow: hidden;
+    }
+    .addr-display-box {
+      background: #f7f4f0;
+      border-radius: 10px;
+      padding: 11px 15px;
+      font-size: 0.85rem;
+      color: var(--muted, #7a7a7a);
+      margin-bottom: 14px;
+      min-height: 40px;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    /* Address detail fields */
+    .addr-detail-fields {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .addr-detail-fields .adf-full { grid-column: 1 / -1; }
+    .adf-group { display: flex; flex-direction: column; gap: 5px; }
+    .adf-group label { font-size: 0.75rem; color: var(--muted,#7a7a7a); font-weight: 600; letter-spacing: 0.03em; }
+    .adf-group input, .adf-group textarea {
+      border: 1.5px solid var(--border, #e8e2da);
+      border-radius: 9px;
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      font-family: inherit;
+      background: var(--bg-card, #fff);
+      color: #1a1a1a;
+      outline: none;
+      transition: border-color 0.18s;
+      width: 100%;
+    }
+    .adf-group input:focus, .adf-group textarea:focus { border-color: #1a1a1a; }
+    .adf-group textarea { resize: none; min-height: 60px; }
+
+    /* Save address checkbox */
+    .save-addr-row {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.82rem; color: var(--muted,#7a7a7a);
+      margin-bottom: 18px; cursor: pointer;
+    }
+    .save-addr-row input[type=checkbox] { accent-color: #1a1a1a; width: 15px; height: 15px; cursor: pointer; }
+
+    .co-next-btn {
+      width: 100%;
+      height: 46px;
+      background: #1a1a1a;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.93rem;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .co-next-btn:hover:not(:disabled) { background: #333; transform: translateY(-1px); }
+    .co-next-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+
+    /* Payment */
+    .pay-method-option {
+      display: flex; align-items: center; gap: 14px;
+      padding: 15px 16px;
+      border: 2px solid var(--border, #e8e2da);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: border-color 0.18s;
+      margin-bottom: 10px;
+    }
+    .pay-method-option.selected { border-color: #1a1a1a; }
+    .pay-method-icon {
+      width: 42px; height: 42px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; flex-shrink: 0;
+    }
+    .pay-method-radio {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      border: 2px solid var(--border, #e8e2da);
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .pay-method-option.selected .pay-method-radio {
+      background: #1a1a1a; border-color: #1a1a1a;
+    }
+    .pay-method-option.selected .pay-method-radio::after {
+      content: '';
+      width: 7px; height: 7px;
+      background: #fff;
+      border-radius: 50%;
+    }
+    .terms-box {
+      background: #f7f4f0;
+      border-radius: 10px;
+      padding: 13px 15px;
+      font-size: 0.78rem;
+      color: var(--muted, #7a7a7a);
+      line-height: 1.6;
+      margin-bottom: 14px;
+    }
+    .terms-check-row {
+      display: flex; align-items: flex-start; gap: 9px;
+      font-size: 0.83rem; color: var(--muted,#7a7a7a);
+      cursor: pointer; margin-bottom: 18px;
+    }
+    .terms-check-row input { accent-color: #1a1a1a; margin-top: 2px; cursor: pointer; }
+    .price-summary {
+      border-top: 1px solid var(--border, #e8e2da);
+      padding-top: 14px;
+      margin-bottom: 16px;
+    }
+    .price-summary-row {
+      display: flex; justify-content: space-between;
+      font-size: 0.84rem; color: var(--muted, #7a7a7a);
+      margin-bottom: 6px;
+    }
+    .price-summary-row.total {
+      font-size: 1rem; font-weight: 700;
+      color: #1a1a1a;
+      padding-top: 8px;
+      border-top: 1px solid var(--border,#e8e2da);
+      margin-top: 4px;
+    }
+
     @media (max-width: 540px) {
-      .cart-panel {
-        max-width: 100%;
-        max-height: 100dvh;
-        border-radius: 0;
-      }
-      #cartModal {
-        align-items: flex-end !important;
-      }
+      .cart-panel { max-width: 100%; max-height: 100dvh; border-radius: 0; }
+      #cartModal { align-items: flex-end !important; }
+      #checkoutOverlay .co-modal { max-height: 100dvh; border-radius: 0; }
+      .addr-detail-fields { grid-template-columns: 1fr; }
     }
   `;
   document.head.appendChild(style);
@@ -613,17 +807,12 @@ function injectCartStyles() {
 async function getSuggestedProducts(cartItems) {
   if (cartItems.length === 0) {
     try {
-      const snap = await fbDb.collection('listings')
-        .orderBy('createdAt', 'desc')
-        .limit(5)
-        .get();
+      const snap = await fbDb.collection('listings').orderBy('createdAt', 'desc').limit(5).get();
       return snap.docs.map(d => ({ id: d.id, ...d.data(), _fromFirebase: true }));
     } catch { return []; }
   }
 
-  const vendorIds = [...new Set(
-    cartItems.map(i => i.vendorId || i.userId || null).filter(Boolean)
-  )];
+  const vendorIds = [...new Set(cartItems.map(i => i.vendorId || i.userId || null).filter(Boolean))];
   const cartProductIds = new Set(cartItems.map(i => String(i.id)));
   let suggested = [];
 
@@ -631,39 +820,26 @@ async function getSuggestedProducts(cartItems) {
     try {
       for (const vid of vendorIds) {
         if (suggested.length >= 5) break;
-        const snap = await fbDb.collection('listings')
-          .where('userId', '==', vid)
-          .orderBy('createdAt', 'desc')
-          .limit(10)
-          .get();
-        const items = snap.docs
-          .map(d => ({ id: d.id, ...d.data(), _fromFirebase: true }))
-          .filter(p => !cartProductIds.has(String(p.id)));
+        const snap = await fbDb.collection('listings').where('userId', '==', vid).orderBy('createdAt', 'desc').limit(10).get();
+        const items = snap.docs.map(d => ({ id: d.id, ...d.data(), _fromFirebase: true })).filter(p => !cartProductIds.has(String(p.id)));
         suggested.push(...items);
       }
-    } catch(e) { console.warn('Vendor məhsulları yüklənmədi', e); }
+    } catch(e) {}
   }
 
   if (suggested.length < 5) {
     try {
       const suggestedIds = new Set(suggested.map(p => String(p.id)));
-      const snap = await fbDb.collection('listings')
-        .orderBy('createdAt', 'desc')
-        .limit(30)
-        .get();
+      const snap = await fbDb.collection('listings').orderBy('createdAt', 'desc').limit(30).get();
       const others = snap.docs
         .map(d => ({ id: d.id, ...d.data(), _fromFirebase: true }))
-        .filter(p =>
-          !cartProductIds.has(String(p.id)) &&
-          !suggestedIds.has(String(p.id)) &&
-          !vendorIds.includes(p.userId)
-        );
+        .filter(p => !cartProductIds.has(String(p.id)) && !suggestedIds.has(String(p.id)) && !vendorIds.includes(p.userId));
       for (let i = others.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [others[i], others[j]] = [others[j], others[i]];
       }
       suggested.push(...others.slice(0, 5 - suggested.length));
-    } catch(e) { console.warn('Əlavə məhsullar yüklənmədi', e); }
+    } catch(e) {}
   }
 
   return suggested.slice(0, 5);
@@ -675,34 +851,26 @@ function suggestedProductCard(p) {
   return `
     <div class="cart-suggest-card" onclick="openProductFromCart('${p.id}')">
       <div class="cart-suggest-img-wrap">
-        <img src="${img}" alt="${p.name || ''}" loading="lazy"
-          onerror="this.parentElement.style.background='#e8e2da'" />
+        <img src="${img}" alt="${p.name || ''}" loading="lazy" onerror="this.parentElement.style.background='#e8e2da'" />
       </div>
       <div class="cart-suggest-info">
         <div class="cart-suggest-brand">${brand}</div>
         <div class="cart-suggest-name">${p.name || ''}</div>
         <div class="cart-suggest-price">${p.price || 0} ₼</div>
       </div>
-      <button class="cart-suggest-add"
-        onclick="event.stopPropagation(); quickAddFromSuggested('${p.id}')"
-        title="Səbətə əlavə et">
+      <button class="cart-suggest-add" onclick="event.stopPropagation(); quickAddFromSuggested('${p.id}')" title="Səbətə əlavə et">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="14" height="14">
-          <line x1="12" y1="5" x2="12" y2="19"/>
-          <line x1="5" y1="12" x2="19" y2="12"/>
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
         </svg>
       </button>
-    </div>
-  `;
+    </div>`;
 }
 
 function openProductFromCart(productId) {
   modal.close('cartModal');
   if (typeof PRODUCTS !== 'undefined') {
     const p = PRODUCTS.find(p => String(p.id) === String(productId));
-    if (p && typeof openProductDetail === 'function') {
-      openProductDetail(p);
-      return;
-    }
+    if (p && typeof openProductDetail === 'function') { openProductDetail(p); return; }
   }
   if (typeof openProductDetail === 'function') openProductDetail({ id: productId });
 }
@@ -728,24 +896,19 @@ async function renderCartModal() {
 
   injectCartStyles();
 
-  // Wishlist ID-lərini yüklə
   let favIds = new Set();
   const user = fbAuth.currentUser;
   if (user) {
     try {
       const snap = await fbDb.collection('wishlists').doc(user.uid).get();
-      if (snap.exists) {
-        (snap.data().items || []).forEach(i => favIds.add(String(i.id)));
-      }
+      if (snap.exists) (snap.data().items || []).forEach(i => favIds.add(String(i.id)));
     } catch(e) {}
   }
 
-  // items-ə _isFav əlavə et
   const itemsWithFav = items.map(i => ({ ...i, _isFav: favIds.has(String(i.id)) }));
 
   overlay.innerHTML = `
     <div class="cart-panel">
-
       <div class="cart-panel-header">
         <div class="cart-panel-title">
           🛒 Səbətim
@@ -762,57 +925,40 @@ async function renderCartModal() {
           </div>
         ` : `
           <div class="cart-item-list">
-            ${itemsWithFav.map(item => {
-              const imgSrc = item.img || '';
-              return `
+            ${itemsWithFav.map(item => `
               <div class="cart-item-card">
-                <img class="cart-item-img"
-                  src="${imgSrc}"
-                  alt="${item.name}"
-                  loading="lazy"
-                  onerror="this.style.background='#e8e2da';this.style.opacity='0'"
-                />
+                <img class="cart-item-img" src="${item.img || ''}" alt="${item.name}" loading="lazy" onerror="this.style.background='#e8e2da';this.style.opacity='0'"/>
                 <div class="cart-item-body">
                   <div class="cart-item-brand">${item.brand || ''}</div>
                   <div class="cart-item-name">${item.name}</div>
                   <div class="cart-item-variants">
                     ${item.size  ? `<span class="cart-item-tag">📐 ${item.size}</span>` : ''}
-                    ${item.color ? `<span class="cart-item-tag">
-                      ${item.colorHex ? `<span class="cart-item-color-dot" style="background:${item.colorHex}"></span>` : ''}
-                      ${item.color}
-                    </span>` : ''}
+                    ${item.color ? `<span class="cart-item-tag">${item.colorHex ? `<span class="cart-item-color-dot" style="background:${item.colorHex}"></span>` : ''}${item.color}</span>` : ''}
                   </div>
                   <div class="cart-item-bottom">
                     <div class="cart-item-qty">
-                      <button class="cart-qty-btn"
-                        onclick="cart.updateQty('${item.cartId}', ${item.quantity - 1})">−</button>
+                      <button class="cart-qty-btn" onclick="cart.updateQty('${item.cartId}', ${item.quantity - 1})">−</button>
                       <span class="cart-qty-num">${item.quantity}</span>
-                      <button class="cart-qty-btn"
-                        onclick="cart.updateQty('${item.cartId}', ${item.quantity + 1})">+</button>
+                      <button class="cart-qty-btn" onclick="cart.updateQty('${item.cartId}', ${item.quantity + 1})">+</button>
                     </div>
                     <div class="cart-item-price-col">
                       <div class="cart-item-price">${(item.price * item.quantity).toFixed(2)} ₼</div>
                       <div class="cart-item-actions">
                         <button class="cart-item-fav ${item._isFav ? 'active' : ''}"
-                          onclick="toggleFavFromCart(this, '${item.id}', '${item.name}', ${item.price}, '${item.img || ''}', '${item.brand || ''}')"
+                          onclick="toggleFavFromCart(this,'${item.id}','${item.name}',${item.price},'${item.img||''}','${item.brand||''}')"
                           title="İstək siyahısına əlavə et">
-                          <svg viewBox="0 0 24 24"
-                            fill="${item._isFav ? '#e63946' : 'none'}"
-                            stroke="${item._isFav ? '#e63946' : '#aaa'}"
-                            stroke-width="2">
+                          <svg viewBox="0 0 24 24" fill="${item._isFav ? '#e63946' : 'none'}" stroke="${item._isFav ? '#e63946' : '#aaa'}" stroke-width="2">
                             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/>
                           </svg>
                         </button>
-                        <button class="cart-item-remove"
-                          onclick="cart.remove('${item.cartId}')">Sil</button>
+                        <button class="cart-item-remove" onclick="cart.remove('${item.cartId}')">Sil</button>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-            `}).join('')}
+            `).join('')}
           </div>
-
           <div class="cart-suggest-section" id="cartSuggestSection">
             <div class="cart-suggest-title">Bəyənə biləcəkləriniz</div>
             <div class="cart-suggest-row" id="cartSuggestRow">
@@ -825,8 +971,7 @@ async function renderCartModal() {
       <div class="cart-panel-footer">
         ${itemsWithFav.length > 0 ? `
           <div class="cart-coupon-row">
-            <input class="cart-coupon-input" type="text" id="cartCouponInput"
-              placeholder="Kupon kodu əlavə et..." />
+            <input class="cart-coupon-input" type="text" id="cartCouponInput" placeholder="Kupon kodu əlavə et..." />
             <button class="cart-coupon-btn" onclick="applyCoupon()">Tətbiq et</button>
           </div>
           <div class="cart-price-rows">
@@ -855,34 +1000,23 @@ async function renderCartModal() {
           </svg>
         </button>
       </div>
-
     </div>
   `;
 
-  document.getElementById('cartPanelCloseBtn')
-    ?.addEventListener('click', () => modal.close('cartModal'));
-
+  document.getElementById('cartPanelCloseBtn')?.addEventListener('click', () => modal.close('cartModal'));
   overlay.onclick = e => { if (e.target === overlay) modal.close('cartModal'); };
-
   initSuggestScroll();
 
-  // Önərilənləri async yüklə
   if (itemsWithFav.length > 0) {
     getSuggestedProducts(itemsWithFav).then(suggested => {
       const row = document.getElementById('cartSuggestRow');
       if (!row) return;
-      if (!suggested.length) {
-        document.getElementById('cartSuggestSection')?.remove();
-        return;
-      }
+      if (!suggested.length) { document.getElementById('cartSuggestSection')?.remove(); return; }
       row.innerHTML = suggested.map(p => suggestedProductCard(p)).join('');
-    }).catch(() => {
-      document.getElementById('cartSuggestSection')?.remove();
-    });
+    }).catch(() => document.getElementById('cartSuggestSection')?.remove());
   }
 }
 
-/* ── Kupon ── */
 function applyCoupon() {
   const input = document.getElementById('cartCouponInput');
   if (!input) return;
@@ -891,44 +1025,29 @@ function applyCoupon() {
   toast.show(`"${code}" kuponu tətbiq edildi — tezliklə aktiv olacaq`, 'default');
 }
 
-/* ── Cart-dan wishlist-ə əlavə et / çıxar ── */
 async function toggleFavFromCart(btn, productId, name, price, img, brand) {
   const user = fbAuth.currentUser;
-  if (!user) {
-    modal.open('authModal');
-    toast.show('Sevimlilərə əlavə etmək üçün daxil olun', 'default');
-    return;
-  }
-
+  if (!user) { modal.open('authModal'); toast.show('Sevimlilərə əlavə etmək üçün daxil olun', 'default'); return; }
   const isActive = btn.classList.contains('active');
-  const svg      = btn.querySelector('svg');
-  const ref      = fbDb.collection('wishlists').doc(user.uid);
-
-  // Optimistik UI
+  const svg = btn.querySelector('svg');
+  const ref = fbDb.collection('wishlists').doc(user.uid);
   btn.classList.toggle('active');
   svg.setAttribute('fill',   isActive ? 'none'    : '#e63946');
   svg.setAttribute('stroke', isActive ? '#aaa'    : '#e63946');
-
   try {
     const snap  = await ref.get();
     const items = snap.exists ? (snap.data().items || []) : [];
-
     let newItems;
     if (!isActive) {
       if (items.some(i => String(i.id) === String(productId))) return;
-      newItems = [...items, {
-        id: String(productId), name, price: Number(price),
-        image: img, brand
-      }];
+      newItems = [...items, { id: String(productId), name, price: Number(price), image: img, brand }];
       toast.show(`${name} istək siyahısına əlavə edildi ❤️`, 'success');
     } else {
       newItems = items.filter(i => String(i.id) !== String(productId));
       toast.show(`${name} istək siyahısından çıxarıldı`, 'default');
     }
-
     await ref.set({ items: newItems }, { merge: false });
   } catch(err) {
-    // Geri al
     btn.classList.toggle('active');
     svg.setAttribute('fill',   isActive ? '#e63946' : 'none');
     svg.setAttribute('stroke', isActive ? '#e63946' : '#aaa');
@@ -936,14 +1055,11 @@ async function toggleFavFromCart(btn, productId, name, price, img, brand) {
   }
 }
 
-/* ── Önərilənlər drag-scroll ── */
 function initSuggestScroll() {
   const row = document.getElementById('cartSuggestRow');
   if (!row) return;
   let isDown = false, startX = 0, scrollLeft = 0;
-  row.addEventListener('mousedown', e => {
-    isDown = true; startX = e.pageX - row.offsetLeft; scrollLeft = row.scrollLeft;
-  });
+  row.addEventListener('mousedown', e => { isDown = true; startX = e.pageX - row.offsetLeft; scrollLeft = row.scrollLeft; });
   row.addEventListener('mouseleave', () => isDown = false);
   row.addEventListener('mouseup',    () => isDown = false);
   row.addEventListener('mousemove',  e => {
@@ -953,12 +1069,16 @@ function initSuggestScroll() {
   });
 }
 
-/* ══════════════════════════════
-   CHECKOUT — ünvan seçimi
-   ══════════════════════════════ */
-let _checkoutAddress  = null;
-let _checkoutMap      = null;
-let _checkoutMarker   = null;
+/* ══════════════════════════════════════════════════════════
+   CHECKOUT — tam yenilənmiş ünvan sistemi ilə
+   ══════════════════════════════════════════════════════════ */
+
+let _checkoutAddress  = null;   /* seçilmiş ünvan obyekti */
+let _checkoutMap      = null;   /* Leaflet xəritə instance */
+let _checkoutMarker   = null;   /* Leaflet marker */
+let _savedAddresses   = [];     /* Firestore-dan yüklənmiş ünvanlar */
+let _selectedSavedId  = null;   /* Seçilmiş ünvan doc id */
+let _useNewMap        = false;  /* Yeni xəritə rejimi açıq? */
 
 function handleCheckout() {
   if (!auth.isLoggedIn()) {
@@ -971,30 +1091,47 @@ function handleCheckout() {
   openAddressStep();
 }
 
-function openAddressStep() {
+/* ────────────────────────────────────────────
+   ADIM 1 — ÜNVAN
+   ──────────────────────────────────────────── */
+async function openAddressStep() {
+  _destroyCheckoutMap();
   const old = document.getElementById('checkoutOverlay');
   if (old) old.remove();
 
+  /* Saxlanmış ünvanları yüklə */
+  _savedAddresses = [];
+  _selectedSavedId = null;
+  _useNewMap = false;
+  _checkoutAddress = null;
+
+  const user = fbAuth.currentUser;
+  if (user) {
+    try {
+      const snap = await fbDb.collection('addresses')
+        .where('userId', '==', user.uid)
+        .orderBy('createdAt', 'desc')
+        .get();
+      _savedAddresses = snap.docs.map(d => ({ _docId: d.id, ...d.data() }));
+    } catch(e) { console.warn('Ünvanlar yüklənmədi:', e); }
+  }
+
+  /* Əgər saxlanmış ünvan yoxdursa birbaşa xəritəni aç */
+  if (_savedAddresses.length === 0) {
+    _useNewMap = true;
+  }
+
   const overlay = document.createElement('div');
   overlay.id = 'checkoutOverlay';
-  overlay.className = 'overlay';
-  overlay.style.cssText = 'display:flex;align-items:center;justify-content:center;z-index:1000';
-
   overlay.innerHTML = `
-    <div class="modal modal-lg" style="max-width:560px;width:100%">
-      <button class="modal-close" onclick="closeCheckout()">✕</button>
-      <h2 style="font-family:var(--font-display);margin-bottom:6px">Çatdırılma ünvanı</h2>
-      <p style="color:var(--muted);font-size:0.85rem;margin-bottom:20px">Xəritədə pinə klikləyin və ya sürüşdürün</p>
+    <div class="co-modal">
+      <button class="co-close" onclick="closeCheckout()">✕</button>
+      <div class="co-title">Çatdırılma ünvanı</div>
+      <div class="co-sub">Ünvanı seçin və ya yeni əlavə edin</div>
 
-      <div id="checkoutMap" style="width:100%;height:320px;border-radius:12px;border:1px solid var(--border);margin-bottom:16px;background:#e8e0d8;overflow:hidden"></div>
+      <div id="coAddressBody"></div>
 
-      <div id="addressDisplay" style="background:var(--bg-2,#f7f4f0);border-radius:10px;padding:12px 16px;font-size:0.88rem;color:var(--muted);margin-bottom:20px;min-height:42px;display:flex;align-items:center;gap:8px">
-        <span style="font-size:1.1rem">📍</span>
-        <span id="addressText">Xəritəyə klikləyin — ünvan avtomatik doldurulacaq</span>
-      </div>
-
-      <button id="addrNextBtn" class="btn btn-primary btn-full" onclick="openPaymentStep()" disabled
-        style="opacity:0.45;cursor:not-allowed">
+      <button id="addrNextBtn" class="co-next-btn" onclick="goToPayment()" disabled>
         Ödənişə keç →
       </button>
     </div>
@@ -1003,7 +1140,138 @@ function openAddressStep() {
   document.body.appendChild(overlay);
   setTimeout(() => overlay.classList.add('open'), 10);
   overlay.addEventListener('click', e => { if (e.target === overlay) closeCheckout(); });
-  _loadLeaflet(() => _initMap());
+
+  _renderAddressBody();
+}
+
+function _renderAddressBody() {
+  const container = document.getElementById('coAddressBody');
+  if (!container) return;
+
+  let html = '';
+
+  /* Saxlanmış ünvanlar */
+  if (_savedAddresses.length > 0) {
+    html += `<div class="saved-addr-list" id="savedAddrList">`;
+    _savedAddresses.forEach(addr => {
+      const isSelected = _selectedSavedId === addr._docId;
+      const detail = [addr.building ? `Bina: ${addr.building}` : '', addr.apartment ? `Mənzil: ${addr.apartment}` : '', addr.note ? addr.note : ''].filter(Boolean).join(' · ');
+      html += `
+        <div class="saved-addr-card ${isSelected ? 'selected' : ''}"
+          onclick="_selectSavedAddr('${addr._docId}')">
+          <div class="sa-radio"></div>
+          <div class="sa-body">
+            <div class="sa-label">📍 ${addr.label ? addr.label.substring(0, 70) + (addr.label.length > 70 ? '…' : '') : 'Ünvan'}</div>
+            ${detail ? `<div class="sa-detail">${detail}</div>` : ''}
+          </div>
+          ${addr.isDefault ? '<span class="sa-default-tag">Əsas</span>' : ''}
+        </div>`;
+    });
+    html += `</div>`;
+  }
+
+  /* Yeni ünvan toggle düyməsi */
+  html += `
+    <div class="new-addr-toggle ${_useNewMap ? 'active' : ''}" id="newAddrToggle" onclick="_toggleNewMap()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+      </svg>
+      ${_savedAddresses.length > 0 ? 'Yeni ünvan əlavə et' : 'Xəritədən ünvan seç'}
+    </div>`;
+
+  /* Xəritə bölümü (yalnız _useNewMap aktivdirsə) */
+  if (_useNewMap) {
+    html += `
+      <div id="checkoutMap"></div>
+      <div class="addr-display-box">
+        <span>📍</span>
+        <span id="addrText">Xəritəyə klikləyin — ünvan avtomatik doldurulacaq</span>
+      </div>
+      <div class="addr-detail-fields">
+        <div class="adf-group">
+          <label>Bina nömrəsi</label>
+          <input type="text" id="addrBuilding" placeholder="məs. 12A" oninput="_checkNewAddrReady()" />
+        </div>
+        <div class="adf-group">
+          <label>Mənzil nömrəsi</label>
+          <input type="text" id="addrApartment" placeholder="məs. 5" oninput="_checkNewAddrReady()" />
+        </div>
+        <div class="adf-group adf-full">
+          <label>Əlavə açıqlama <span style="font-weight:400;color:var(--muted)">(istəyə bağlı)</span></label>
+          <textarea id="addrNote" placeholder="məs. Giriş arxada, 3-cü mərtəbə..." oninput="_checkNewAddrReady()"></textarea>
+        </div>
+      </div>
+      <label class="save-addr-row">
+        <input type="checkbox" id="saveAddrCheck" checked />
+        Bu ünvanı saxla (növbəti dəfə tez seçim üçün)
+      </label>`;
+  }
+
+  container.innerHTML = html;
+
+  /* Xəritəni yüklə */
+  if (_useNewMap) {
+    _loadLeaflet(() => _initCheckoutMap());
+  }
+
+  _updateNextBtn();
+}
+
+function _selectSavedAddr(docId) {
+  _selectedSavedId = docId;
+  _useNewMap = false;
+  _checkoutAddress = null;
+
+  /* Seçilmiş ünvanı tap */
+  const addr = _savedAddresses.find(a => a._docId === docId);
+  if (addr) {
+    _checkoutAddress = {
+      lat:      addr.lat || null,
+      lng:      addr.lng || null,
+      label:    addr.label || 'Saxlanmış ünvan',
+      building:  addr.building || '',
+      apartment: addr.apartment || '',
+      note:      addr.note || ''
+    };
+  }
+
+  _renderAddressBody();
+}
+
+function _toggleNewMap() {
+  _useNewMap = !_useNewMap;
+  if (_useNewMap) {
+    _selectedSavedId = null;
+    _checkoutAddress = null;
+  }
+  _destroyCheckoutMap();
+  _renderAddressBody();
+}
+
+function _checkNewAddrReady() {
+  const building   = (document.getElementById('addrBuilding')?.value   || '').trim();
+  const apartment  = (document.getElementById('addrApartment')?.value  || '').trim();
+  /* Xəritə seçimi + ən azı bina nömrəsi olsun */
+  const mapOk = _checkoutAddress && _checkoutAddress.lat;
+  const fieldsOk = building.length > 0;
+  const btn = document.getElementById('addrNextBtn');
+  if (btn) {
+    const ok = mapOk && fieldsOk;
+    btn.disabled = !ok;
+  }
+}
+
+function _updateNextBtn() {
+  const btn = document.getElementById('addrNextBtn');
+  if (!btn) return;
+  let ok = false;
+  if (_selectedSavedId && _checkoutAddress) {
+    ok = true;
+  } else if (_useNewMap && _checkoutAddress && _checkoutAddress.lat) {
+    const building = (document.getElementById('addrBuilding')?.value || '').trim();
+    ok = building.length > 0;
+  }
+  btn.disabled = !ok;
 }
 
 function _loadLeaflet(cb) {
@@ -1018,9 +1286,9 @@ function _loadLeaflet(cb) {
   document.head.appendChild(script);
 }
 
-function _initMap() {
+function _initCheckoutMap() {
   const mapEl = document.getElementById('checkoutMap');
-  if (!mapEl || !window.L) return;
+  if (!mapEl || !window.L || _checkoutMap) return;
 
   _checkoutMap = L.map('checkoutMap').setView([40.4093, 49.8671], 13);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -1043,7 +1311,7 @@ function _initMap() {
 }
 
 async function _reverseGeocode(lat, lng) {
-  const textEl = document.getElementById('addressText');
+  const textEl = document.getElementById('addrText');
   if (textEl) textEl.textContent = 'Ünvan axtarılır...';
   try {
     const res  = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=az`);
@@ -1051,103 +1319,140 @@ async function _reverseGeocode(lat, lng) {
     const addr = data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
     _checkoutAddress = { lat, lng, label: addr };
     if (textEl) textEl.textContent = addr;
-    const btn = document.getElementById('addrNextBtn');
-    if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer'; }
   } catch {
     _checkoutAddress = { lat, lng, label: `${lat.toFixed(5)}, ${lng.toFixed(5)}` };
     if (textEl) textEl.textContent = _checkoutAddress.label;
-    const btn = document.getElementById('addrNextBtn');
-    if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer'; }
   }
+  _checkNewAddrReady();
 }
 
-/* ══════════════════════════════
-   CHECKOUT — ödəniş seçimi
-   ══════════════════════════════ */
+function _destroyCheckoutMap() {
+  if (_checkoutMap) { _checkoutMap.remove(); _checkoutMap = null; }
+  _checkoutMarker = null;
+}
+
+async function goToPayment() {
+  /* Yeni ünvan yazılıbsa — detail-ları checkout address-ə əlavə et */
+  if (_useNewMap && _checkoutAddress) {
+    _checkoutAddress.building  = (document.getElementById('addrBuilding')?.value  || '').trim();
+    _checkoutAddress.apartment = (document.getElementById('addrApartment')?.value || '').trim();
+    _checkoutAddress.note      = (document.getElementById('addrNote')?.value       || '').trim();
+
+    /* Saxla seçimi aktifdirsə Firestore-a yaz */
+    const shouldSave = document.getElementById('saveAddrCheck')?.checked;
+    if (shouldSave) {
+      const user = fbAuth.currentUser;
+      if (user) {
+        try {
+          await fbDb.collection('addresses').add({
+            userId:    user.uid,
+            label:     _checkoutAddress.label,
+            lat:       _checkoutAddress.lat,
+            lng:       _checkoutAddress.lng,
+            building:  _checkoutAddress.building,
+            apartment: _checkoutAddress.apartment,
+            note:      _checkoutAddress.note,
+            isDefault: _savedAddresses.length === 0,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        } catch(e) { console.warn('Ünvan saxlanmadı:', e); }
+      }
+    }
+  }
+
+  _destroyCheckoutMap();
+  openPaymentStep();
+}
+
+/* ────────────────────────────────────────────
+   ADIM 2 — ÖDƏNIŞ
+   ──────────────────────────────────────────── */
 const DEMO_WALLET_BALANCE = 10000;
 
 function openPaymentStep() {
   const overlay = document.getElementById('checkoutOverlay');
   if (!overlay) return;
   const total = cart.getTotal();
+  const addrLabel = _checkoutAddress ? _checkoutAddress.label.substring(0, 80) + (_checkoutAddress.label.length > 80 ? '…' : '') : '—';
+  const addrDetail = [
+    _checkoutAddress?.building  ? `Bina: ${_checkoutAddress.building}` : '',
+    _checkoutAddress?.apartment ? `Mənzil: ${_checkoutAddress.apartment}` : '',
+    _checkoutAddress?.note      ? _checkoutAddress.note : ''
+  ].filter(Boolean).join(' · ');
 
-  overlay.querySelector('.modal').innerHTML = `
-    <button class="modal-close" onclick="closeCheckout()">✕</button>
-    <button onclick="openAddressStep()" style="background:none;border:none;color:var(--muted);font-size:0.82rem;cursor:pointer;margin-bottom:16px;display:flex;align-items:center;gap:4px">
-      ← Ünvana qayıt
-    </button>
-    <h2 style="font-family:var(--font-display);margin-bottom:6px">Ödəniş</h2>
-    <p style="color:var(--muted);font-size:0.85rem;margin-bottom:20px">Ödəniş üsulunu seçin</p>
+  overlay.querySelector('.co-modal').innerHTML = `
+    <button class="co-close" onclick="closeCheckout()">✕</button>
+    <button class="co-back-btn" onclick="openAddressStep()">← Ünvana qayıt</button>
+    <div class="co-title">Ödəniş</div>
+    <div class="co-sub">Ödəniş üsulunu seçin</div>
 
-    <div style="background:var(--bg-2,#f7f4f0);border-radius:10px;padding:10px 14px;font-size:0.82rem;color:var(--muted);margin-bottom:20px;display:flex;gap:8px;align-items:flex-start">
-      <span>📍</span>
-      <span>${_checkoutAddress ? _checkoutAddress.label : '—'}</span>
+    <div style="background:#f7f4f0;border-radius:10px;padding:11px 14px;margin-bottom:20px;font-size:0.82rem;color:var(--muted,#7a7a7a);display:flex;gap:8px;align-items:flex-start">
+      <span style="flex-shrink:0">📍</span>
+      <div>
+        <div style="color:#1a1a1a;font-weight:500">${addrLabel}</div>
+        ${addrDetail ? `<div style="margin-top:2px">${addrDetail}</div>` : ''}
+      </div>
     </div>
 
-    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px">
-      <label id="walletOption" style="display:flex;align-items:center;gap:14px;padding:16px;border:2px solid var(--border);border-radius:12px;cursor:pointer;transition:border-color 0.2s">
-        <input type="radio" name="payMethod" value="wallet" style="display:none" onchange="selectPayMethod('wallet')"/>
-        <div style="width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,#f0c040,#e0a020);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0">💰</div>
-        <div style="flex:1">
-          <div style="font-weight:600;margin-bottom:2px">Pul qabı</div>
-          <div style="font-size:0.8rem;color:var(--muted)">Balans: <strong style="color:#2d7a47">${DEMO_WALLET_BALANCE.toFixed(2)} ₼</strong></div>
-        </div>
-        <div id="walletCheck" style="width:20px;height:20px;border-radius:50%;border:2px solid var(--border);flex-shrink:0"></div>
-      </label>
-
-      <label id="cardOption" style="display:flex;align-items:center;gap:14px;padding:16px;border:2px solid var(--border);border-radius:12px;cursor:not-allowed;opacity:0.6;position:relative">
-        <input type="radio" name="payMethod" value="card" disabled style="display:none"/>
-        <div style="width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,#3a6fd8,#1a4fb8);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0">💳</div>
-        <div style="flex:1">
-          <div style="font-weight:600;margin-bottom:2px">Bank kartı</div>
-          <div style="font-size:0.8rem;color:var(--muted)">Tezliklə əlavə ediləcək</div>
-        </div>
-        <div style="background:#fdf8f0;color:#b07820;font-size:0.7rem;font-weight:600;padding:3px 8px;border-radius:20px;border:1px solid #e8c870;flex-shrink:0">Tezliklə</div>
-      </label>
+    <div onclick="selectPayMethod('wallet')" class="pay-method-option selected" id="walletOption">
+      <div class="pay-method-icon" style="background:linear-gradient(135deg,#f0c040,#e0a020)">💰</div>
+      <div style="flex:1">
+        <div style="font-weight:600;margin-bottom:2px">Pul qabı</div>
+        <div style="font-size:0.8rem;color:var(--muted)">Balans: <strong style="color:#2d7a47">${DEMO_WALLET_BALANCE.toFixed(2)} ₼</strong></div>
+      </div>
+      <div class="pay-method-radio" id="walletRadio"></div>
     </div>
 
-    <div style="background:var(--bg-2,#f7f4f0);border-radius:10px;padding:14px 16px;font-size:0.78rem;color:var(--muted);line-height:1.6;margin-bottom:16px">
-      <strong style="color:var(--text);display:block;margin-bottom:6px">Satış şərtləri</strong>
+    <div class="pay-method-option" style="opacity:0.55;cursor:not-allowed">
+      <div class="pay-method-icon" style="background:linear-gradient(135deg,#3a6fd8,#1a4fb8)">💳</div>
+      <div style="flex:1">
+        <div style="font-weight:600;margin-bottom:2px">Bank kartı</div>
+        <div style="font-size:0.8rem;color:var(--muted)">Tezliklə əlavə ediləcək</div>
+      </div>
+      <div style="background:#fdf8f0;color:#b07820;font-size:0.7rem;font-weight:600;padding:3px 8px;border-radius:20px;border:1px solid #e8c870">Tezliklə</div>
+    </div>
+
+    <div class="terms-box" style="margin-top:14px">
+      <strong style="color:#1a1a1a;display:block;margin-bottom:6px">Satış şərtləri</strong>
       Sifarişiniz təsdiqləndikdən sonra satıcı 24 saat ərzində göndərişi hazırlamalıdır.
       Məhsul çatdırıldıqdan sonra <strong>3 iş günü</strong> ərzində iade tələb edə bilərsiniz.
       İade üçün məhsul istifadə olunmamış və orijinal qablaşdırmada olmalıdır.
-      Ödənilmiş məbləğ 5–7 iş günü ərzində geri qaytarılır.
-      Rəqəmsal məhsullar, istifadə edilmiş geyimlər və xüsusi sifarişlər iade edilmir.
+      Rəqəmsal məhsullar, istifadə edilmiş geyimlər iade edilmir.
     </div>
 
-    <label style="display:flex;align-items:flex-start;gap:10px;font-size:0.83rem;color:var(--muted);cursor:pointer;margin-bottom:20px">
-      <input type="checkbox" id="termsCheck" onchange="updatePlaceBtn()" style="margin-top:2px;accent-color:var(--accent)"/>
+    <label class="terms-check-row">
+      <input type="checkbox" id="termsCheck" onchange="updatePlaceBtn()" />
       Şərtləri oxudum və qəbul edirəm
     </label>
 
-    <div style="border-top:1px solid var(--border);padding-top:16px">
-      <div style="display:flex;justify-content:space-between;font-size:1rem;margin-bottom:16px">
-        <span>Cəmi:</span>
-        <strong>${total.toFixed(2)} ₼</strong>
-      </div>
-      <button id="placeOrderBtn" class="btn btn-primary btn-full" onclick="placeOrder()" disabled
-        style="opacity:0.4;cursor:not-allowed">
-        Sifarişi Təsdiqlə →
-      </button>
+    <div class="price-summary">
+      <div class="price-summary-row"><span>Məhsullar</span><span>${total.toFixed(2)} ₼</span></div>
+      <div class="price-summary-row"><span>Çatdırılma</span><span>${total >= 50 ? '<span style="color:#2d7a47">Pulsuz</span>' : '5.00 ₼'}</span></div>
+      <div class="price-summary-row total"><span>Cəmi</span><strong>${(total >= 50 ? total : total + 5).toFixed(2)} ₼</strong></div>
     </div>
+
+    <button id="placeOrderBtn" class="co-next-btn" onclick="placeOrder()" disabled>
+      Sifarişi Təsdiqlə →
+    </button>
   `;
 
-  setTimeout(() => { selectPayMethod('wallet'); }, 50);
+  /* wallet seçimini başlanğıcda aktiv et */
+  _selectedPayMethod = 'wallet';
+  const wr = document.getElementById('walletRadio');
+  if (wr) { wr.style.background = '#1a1a1a'; wr.style.borderColor = '#1a1a1a'; wr.innerHTML = '<span style="width:7px;height:7px;background:#fff;border-radius:50%;display:block"></span>'; }
 }
 
 let _selectedPayMethod = null;
 
 function selectPayMethod(method) {
   _selectedPayMethod = method;
-  const walletOpt = document.getElementById('walletOption');
-  const walletChk = document.getElementById('walletCheck');
-  if (walletOpt) walletOpt.style.borderColor = method === 'wallet' ? 'var(--accent)' : 'var(--border)';
-  if (walletChk) {
-    walletChk.style.background  = method === 'wallet' ? 'var(--accent)' : 'transparent';
-    walletChk.style.borderColor = method === 'wallet' ? 'var(--accent)' : 'var(--border)';
-    walletChk.innerHTML = method === 'wallet'
-      ? '<svg viewBox="0 0 10 10" width="10" height="10"><polyline points="1.5,5 4,7.5 8.5,2.5" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>'
-      : '';
+  const wo = document.getElementById('walletOption');
+  const wr = document.getElementById('walletRadio');
+  if (wo) wo.className = `pay-method-option${method === 'wallet' ? ' selected' : ''}`;
+  if (wr) {
+    wr.style.background  = method === 'wallet' ? '#1a1a1a' : '';
+    wr.style.borderColor = method === 'wallet' ? '#1a1a1a' : 'var(--border,#e8e2da)';
+    wr.innerHTML = method === 'wallet' ? '<span style="width:7px;height:7px;background:#fff;border-radius:50%;display:block"></span>' : '';
   }
   updatePlaceBtn();
 }
@@ -1157,14 +1462,12 @@ function updatePlaceBtn() {
   const btn   = document.getElementById('placeOrderBtn');
   if (!btn) return;
   const ok = _selectedPayMethod && terms && terms.checked;
-  btn.disabled      = !ok;
-  btn.style.opacity = ok ? '1' : '0.4';
-  btn.style.cursor  = ok ? 'pointer' : 'not-allowed';
+  btn.disabled = !ok;
 }
 
-/* ══════════════════════════════
-   SİFARİŞ VER — Firestore
-   ══════════════════════════════ */
+/* ────────────────────────────────────────────
+   SİFARİŞ VER
+   ──────────────────────────────────────────── */
 async function placeOrder() {
   const user = fbAuth.currentUser;
   if (!user || !_checkoutAddress || !_selectedPayMethod) return;
@@ -1176,7 +1479,7 @@ async function placeOrder() {
     const items = cart.getItems();
     const total = cart.getTotal();
 
-    let buyerName  = user.displayName || '';
+    let buyerName = user.displayName || '';
     let buyerPhone = '';
     try {
       const uSnap = await fbDb.collection('users').doc(user.uid).get();
@@ -1185,7 +1488,7 @@ async function placeOrder() {
         buyerName  = ((ud.firstName || '') + ' ' + (ud.lastName || '')).trim() || user.displayName || '';
         buyerPhone = ud.phone || ud.phoneNumber || '';
       }
-    } catch(e) { /* skip */ }
+    } catch(e) {}
 
     const vendorGroups = {};
     items.forEach(item => {
@@ -1203,8 +1506,17 @@ async function placeOrder() {
         return next;
       });
 
-      const orderNum    = String(orderNumber).padStart(6, '0');
       const vendorTotal = vendorItems.reduce((s, i) => s + i.price * (i.quantity || 1), 0);
+
+      /* Ünvan — tam strukturla saxla */
+      const addressData = {
+        label:     _checkoutAddress.label || '',
+        building:  _checkoutAddress.building  || '',
+        apartment: _checkoutAddress.apartment || '',
+        note:      _checkoutAddress.note      || '',
+        lat:       _checkoutAddress.lat || null,
+        lng:       _checkoutAddress.lng || null,
+      };
 
       await fbDb.collection('orders').add({
         orderNumber,
@@ -1225,7 +1537,7 @@ async function placeOrder() {
           selectedColor: i.color ? { name: i.color, hex: i.colorHex || '' } : null,
         })),
         total:         vendorTotal,
-        address:       _checkoutAddress,
+        address:       addressData,
         paymentMethod: _selectedPayMethod,
         status:        'pending',
         createdAt:     firebase.firestore.FieldValue.serverTimestamp(),
@@ -1250,30 +1562,32 @@ function showOrderSuccess() {
 
   const overlay = document.createElement('div');
   overlay.id = 'orderSuccessOverlay';
-  overlay.className = 'overlay';
-  overlay.style.cssText = 'display:flex;align-items:center;justify-content:center;z-index:1000';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:1200;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;padding:1rem;opacity:0;transition:opacity 0.25s';
 
   overlay.innerHTML = `
-    <div class="modal" style="max-width:420px;text-align:center;padding:40px 32px">
+    <div style="background:#faf7f4;border-radius:18px;max-width:420px;width:100%;text-align:center;padding:40px 32px;transform:scale(0.95);transition:transform 0.3s">
       <div style="font-size:3rem;margin-bottom:16px">🎉</div>
-      <h2 style="font-family:var(--font-display);margin-bottom:10px">Sifariş qəbul edildi!</h2>
-      <p style="color:var(--muted);font-size:0.9rem;line-height:1.6;margin-bottom:28px">
+      <h2 style="font-family:'Playfair Display',serif;margin-bottom:10px">Sifariş qəbul edildi!</h2>
+      <p style="color:#7a7a7a;font-size:0.9rem;line-height:1.6;margin-bottom:28px">
         Sifarişiniz satıcıya göndərildi.<br>
         Status yeniləmələrini profil səhifənizdən izləyə bilərsiniz.
       </p>
-      <button class="btn btn-primary btn-full"
+      <button style="width:100%;height:46px;background:#1a1a1a;color:#fff;border:none;border-radius:10px;font-size:0.93rem;font-weight:700;font-family:inherit;cursor:pointer"
         onclick="document.getElementById('orderSuccessOverlay').remove();window.location.href='profile.html'">
         Sifarişlərə bax
       </button>
       <button onclick="document.getElementById('orderSuccessOverlay').remove()"
-        style="background:none;border:none;color:var(--muted);font-size:0.85rem;margin-top:12px;cursor:pointer;text-decoration:underline;display:block;width:100%">
+        style="background:none;border:none;color:#7a7a7a;font-size:0.85rem;margin-top:12px;cursor:pointer;text-decoration:underline;display:block;width:100%">
         Alış-verişə davam et
       </button>
     </div>
   `;
 
   document.body.appendChild(overlay);
-  setTimeout(() => overlay.classList.add('open'), 10);
+  requestAnimationFrame(() => {
+    overlay.style.opacity = '1';
+    overlay.querySelector('div').style.transform = 'scale(1)';
+  });
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
 }
 
@@ -1283,10 +1597,12 @@ function closeCheckout() {
     overlay.classList.remove('open');
     setTimeout(() => overlay.remove(), 300);
   }
-  if (_checkoutMap) { _checkoutMap.remove(); _checkoutMap = null; }
-  _checkoutMarker    = null;
+  _destroyCheckoutMap();
   _checkoutAddress   = null;
   _selectedPayMethod = null;
+  _savedAddresses    = [];
+  _selectedSavedId   = null;
+  _useNewMap         = false;
 }
 
 document.addEventListener('DOMContentLoaded', initCartModal);
