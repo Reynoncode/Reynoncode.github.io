@@ -11,68 +11,102 @@
     main { padding: var(--page-y) var(--page-x); }
 
     /* ══════════════════════════════
-       KATEQORİYA BAR
+       KATEQORİYA SUB-HEADER
     ══════════════════════════════ */
-    .category-bar {
+    .cat-subheader {
       background: var(--surface);
       border-bottom: 1px solid var(--border);
       position: sticky;
       top: 64px;
       z-index: 90;
-      overflow: hidden;
+      padding: 0;
     }
-    .category-bar-inner {
+
+    .cat-subheader-inner {
       display: flex;
-      align-items: center;
-      gap: 0;
+      align-items: stretch;
       overflow-x: auto;
       scroll-behavior: smooth;
-      padding: 0 var(--page-x);
       scrollbar-width: none;
       -ms-overflow-style: none;
+      padding: 0 var(--page-x);
+      gap: 0;
     }
-    .category-bar-inner::-webkit-scrollbar { display: none; }
+    .cat-subheader-inner::-webkit-scrollbar { display: none; }
 
-    .cat-btn {
+    .cat-item {
       display: inline-flex;
+      flex-direction: column;
       align-items: center;
-      gap: 0.5rem;
-      padding: 0 1.1rem;
-      height: 48px;
+      justify-content: center;
+      gap: 0.28rem;
+      padding: 0.7rem 1.05rem 0.6rem;
+      min-width: 76px;
       border: none;
       background: none;
       font-family: var(--font-body);
-      font-size: 0.82rem;
-      font-weight: 500;
-      color: var(--muted);
       cursor: pointer;
       white-space: nowrap;
-      position: relative;
-      transition: color 0.2s;
-      border-bottom: 2px solid transparent;
       flex-shrink: 0;
+      position: relative;
+      transition: background 0.18s;
+      border-bottom: 2px solid transparent;
     }
-    .cat-btn::after {
+    .cat-item::after {
       content: '';
       position: absolute;
       bottom: -1px;
-      left: 0; right: 0;
+      left: 10%; right: 10%;
       height: 2px;
       background: var(--accent);
+      border-radius: 2px 2px 0 0;
       transform: scaleX(0);
       transition: transform 0.22s cubic-bezier(.4,0,.2,1);
     }
-    .cat-btn:hover { color: var(--text); }
-    .cat-btn:hover::after { transform: scaleX(1); }
-    .cat-btn.active {
-      color: var(--text);
-      font-weight: 600;
-    }
-    .cat-btn.active::after { transform: scaleX(1); }
+    .cat-item:hover { background: rgba(0,0,0,0.03); }
+    .cat-item:hover::after { transform: scaleX(1); }
+    .cat-item.active::after { transform: scaleX(1); }
 
-    .cat-btn .cat-icon {
-      font-size: 1rem;
+    .cat-item-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
       line-height: 1;
+      transition: background 0.18s, border-color 0.18s, transform 0.18s;
+    }
+    .cat-item:hover .cat-item-icon {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+    .cat-item.active .cat-item-icon {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .cat-item.active .cat-item-icon span {
+      filter: brightness(0) invert(1);
+    }
+
+    .cat-item-label {
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.2;
+      max-width: 72px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: color 0.18s;
+    }
+    .cat-item:hover .cat-item-label { color: var(--text); }
+    .cat-item.active .cat-item-label {
+      color: var(--accent);
+      font-weight: 600;
     }
 
     /* Scroll arrows */
@@ -152,13 +186,13 @@
   <p>🚚 <span>50 AZN</span> üzərindəki sifarişlərə pulsuz çatdırılma &nbsp;|&nbsp; Yeni kolleksiya gəldi ✨</p>
 </div>
 
-<!-- KATEQORİYA BAR -->
-<nav class="category-bar" id="categoryBar">
+<!-- KATEQORİYA SUB-HEADER -->
+<nav class="cat-subheader" id="categoryBar">
   <div style="position:relative;">
     <button class="cat-arrow left hidden" id="catArrowLeft" onclick="scrollCatBar(-200)">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
-    <div class="category-bar-inner" id="catBarInner"></div>
+    <div class="cat-subheader-inner" id="catBarInner"></div>
     <button class="cat-arrow right hidden" id="catArrowRight" onclick="scrollCatBar(200)">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
@@ -252,23 +286,26 @@
      KATEQORİYALAR
   ══════════════════════════════ */
   const CATEGORIES = [
-    { id: 'all',        icon: '🛍️',  label: 'Hamısı' },
-    { id: 'elektronika',icon: '📱',  label: 'Elektronika' },
-    { id: 'geyim',      icon: '👗',  label: 'Geyim və Moda' },
-    { id: 'ev',         icon: '🏠',  label: 'Ev və Yaşam' },
-    { id: 'gozellik',   icon: '💄',  label: 'Gözəllik və Baxım' },
-    { id: 'saglamliq',  icon: '💊',  label: 'Sağlamlıq və Vitaminlər' },
-    { id: 'usaq',       icon: '🧸',  label: 'Uşaq və Oyuncaqlar' },
-    { id: 'avto',       icon: '🚗',  label: 'Avto və Moto' },
-    { id: 'idman',      icon: '⚽',  label: 'İdman və Outdoor' },
-    { id: 'kitab',      icon: '📚',  label: 'Kitablar və Ofis ləvazimatları' },
-    { id: 'hediyye',    icon: '🎁',  label: 'Hədiyyələr və Digər' },
+    { id: 'all',         icon: '🛍️', label: 'Hamısı' },
+    { id: 'elektronika', icon: '📱', label: 'Elektronika' },
+    { id: 'geyim',       icon: '👗', label: 'Geyim və Moda' },
+    { id: 'ev',          icon: '🏠', label: 'Ev və Yaşam' },
+    { id: 'gozellik',    icon: '💄', label: 'Gözəllik və Baxım' },
+    { id: 'saglamliq',   icon: '💊', label: 'Sağlamlıq və Vitaminlər' },
+    { id: 'usaq',        icon: '🧸', label: 'Uşaq və Oyuncaqlar' },
+    { id: 'avto',        icon: '🚗', label: 'Avto və Moto' },
+    { id: 'idman',       icon: '⚽', label: 'İdman və Outdoor' },
+    { id: 'kitab',       icon: '📚', label: 'Kitablar və Ofis' },
+    { id: 'hediyye',     icon: '🎁', label: 'Hədiyyələr və Digər' },
   ];
 
-  /* Firestore-da vendor.category dəyərləri ilə uyğunlaşdırma xəritəsi */
+  /*
+   * CAT_MAP — köhnə məhsul kateqoriyası dəyərləri ilə uyğunlaşdırma
+   * (Köhnə elanlar üçün fallback — yeni sistem vendorCategories array-dən oxuyur)
+   */
   const CAT_MAP = {
     'elektronika': ['elektronika', 'electro', 'phone', 'tech'],
-    'geyim':       ['geyim', 'kisi_geyim', 'qadin_geyim', 'usaq_geyim', 'geyim_moda', 'moda', 'fashion'],
+    'geyim':       ['geyim', 'kisi_geyim', 'qadin_geyim', 'usaq_geyim', 'geyim_moda', 'moda', 'fashion', 'qadin', 'kisi', 'unisex'],
     'ev':          ['ev', 'home', 'mebel', 'dekor', 'ev_yasam'],
     'gozellik':    ['gozellik', 'beauty', 'parfum', 'kosmetika'],
     'saglamliq':   ['saglamliq', 'vitamin', 'saglik', 'health'],
@@ -281,20 +318,23 @@
 
   let activeCategoryId = 'all';
 
+  /* ── Kateqoriya barını qur ── */
   function buildCategoryBar() {
     const inner = document.getElementById('catBarInner');
     if (!inner) return;
+
     inner.innerHTML = CATEGORIES.map(cat => `
       <button
-        class="cat-btn${cat.id === 'all' ? ' active' : ''}"
+        class="cat-item${cat.id === 'all' ? ' active' : ''}"
         data-cat="${cat.id}"
         onclick="selectCategory('${cat.id}', this)">
-        <span class="cat-icon">${cat.icon}</span>
-        <span>${cat.label}</span>
+        <div class="cat-item-icon">
+          <span>${cat.icon}</span>
+        </div>
+        <span class="cat-item-label">${cat.label}</span>
       </button>
     `).join('');
 
-    /* Scroll ox görünürlüyü */
     inner.addEventListener('scroll', updateArrows);
     setTimeout(updateArrows, 100);
   }
@@ -317,20 +357,20 @@
     activeCategoryId = catId;
 
     /* Aktiv stili */
-    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.cat-item').forEach(b => b.classList.remove('active'));
     if (btnEl) btnEl.classList.add('active');
 
-    /* Strip */
-    const strip    = document.getElementById('activeCatStrip');
-    const pill     = document.getElementById('activeCatLabel');
-    const titleEl  = document.getElementById('mainSectionTitle');
-    const cat      = CATEGORIES.find(c => c.id === catId);
+    /* Strip + başlıq */
+    const strip   = document.getElementById('activeCatStrip');
+    const pill    = document.getElementById('activeCatLabel');
+    const titleEl = document.getElementById('mainSectionTitle');
+    const cat     = CATEGORIES.find(c => c.id === catId);
 
     if (catId === 'all') {
       strip?.classList.remove('show');
       if (titleEl) titleEl.textContent = 'Yeni Kolleksiya';
     } else {
-      if (pill)  pill.textContent  = `${cat.icon} ${cat.label}`;
+      if (pill)  pill.textContent = `${cat.icon} ${cat.label}`;
       strip?.classList.add('show');
       if (titleEl) titleEl.textContent = `${cat.icon} ${cat.label}`;
     }
@@ -339,44 +379,49 @@
   }
 
   function clearCategoryFilter() {
-    const allBtn = document.querySelector('.cat-btn[data-cat="all"]');
+    const allBtn = document.querySelector('.cat-item[data-cat="all"]');
     selectCategory('all', allBtn);
   }
 
+  /* ══════════════════════════════
+     FİLTR — vendor kateqoriyasına görə
+  ══════════════════════════════ */
   function applyFilter() {
-    const grid   = document.getElementById('productGrid');
-    const countEl = document.getElementById('productCount');
+    const grid            = document.getElementById('productGrid');
+    const countEl         = document.getElementById('productCount');
     const filteredCountEl = document.getElementById('filteredCount');
     if (!grid) return;
 
     if (activeCategoryId === 'all') {
-      /* Hamısını göstər */
-      grid.querySelectorAll('.product-card, [class*="product"]').forEach(card => {
+      grid.querySelectorAll('[data-product-id], .card').forEach(card => {
         card.style.display = '';
       });
       if (countEl) countEl.textContent = `${PRODUCTS.length} məhsul`;
       if (filteredCountEl) filteredCountEl.textContent = '';
+      grid.querySelector('.cat-empty')?.remove();
       return;
     }
 
-    const keywords = CAT_MAP[activeCategoryId] || [activeCategoryId];
-
-    /* PRODUCTS massivi products.js-dən gəlir */
+    /* ── Filtrlə ── */
     const filtered = PRODUCTS.filter(p => {
+      /* 1. Yeni sistem: vendor categories array */
+      const vendorCats = p.vendorCategories || [];
+      if (vendorCats.includes(activeCategoryId)) return true;
+
+      /* 2. Köhnə sistem fallback: məhsul category string → CAT_MAP */
+      const keywords = CAT_MAP[activeCategoryId] || [activeCategoryId];
       const cat = (p.category || '').toLowerCase();
       return keywords.some(kw => cat.includes(kw));
     });
 
-    /* DOM kartlarını göstər/gizlət */
+    /* ── DOM kartlarını göstər/gizlət ── */
     const cards = grid.querySelectorAll('[data-product-id]');
     if (cards.length > 0) {
-      /* Kartlar data-product-id ilə render olunursa */
       const filteredIds = new Set(filtered.map(p => String(p.id)));
       cards.forEach(card => {
         card.style.display = filteredIds.has(card.dataset.productId) ? '' : 'none';
       });
     } else {
-      /* products.js renderProducts() funksiyası varsa yenidən render et */
       if (typeof renderProducts === 'function') {
         renderProducts(filtered, 'productGrid');
       }
@@ -386,9 +431,8 @@
     if (countEl) countEl.textContent = `${shown} məhsul`;
     if (filteredCountEl) filteredCountEl.textContent = `${shown} nəticə`;
 
-    /* Boş vəziyyət */
-    const existing = grid.querySelector('.cat-empty');
-    if (existing) existing.remove();
+    /* ── Boş vəziyyət ── */
+    grid.querySelector('.cat-empty')?.remove();
     if (shown === 0) {
       const cat = CATEGORIES.find(c => c.id === activeCategoryId);
       grid.insertAdjacentHTML('afterbegin', `
@@ -408,9 +452,6 @@
     loadListings();
     listing.renderPreviews();
   });
-
-  /* products.js loadListings() bitəndən sonra filtri tətbiq et */
-  const _origRenderProducts = typeof renderProducts !== 'undefined' ? renderProducts : null;
 </script>
 </body>
 </html>
