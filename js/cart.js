@@ -960,6 +960,26 @@ let _checkoutAddress  = null;
 let _checkoutMap      = null;
 let _checkoutMarker   = null;
 
+/* ═══════════════════════════════════════════════════════════
+   cart.js — CHECKOUT ÜNVAN ADDIMI — tam əvəzetmə bloku
+   
+   cart.js-dəki handleCheckout()-dan closeCheckout()-a qədər
+   olan BƏŞ funksiyasını (openAddressStep, _loadLeaflet,
+   _initMap, _reverseGeocode, openPaymentStep, placeOrder,
+   showOrderSuccess, closeCheckout) AŞAĞIDAKİLƏRLƏ ƏVƏZLƏYİN
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Checkout state ── */
+let _checkoutAddress       = null;   // { lat, lng, label, mapLabel, buildingNo, apartmentNo, description }
+let _checkoutMap           = null;
+let _checkoutMarker        = null;
+let _selectedSavedAddrId   = null;   // Seçilmiş saxlanmış ünvan doc ID-si
+
+const DEMO_WALLET_BALANCE  = 10000;
+
+/* ══════════════════════════════
+   handleCheckout
+══════════════════════════════ */
 function handleCheckout() {
   if (!auth.isLoggedIn()) {
     modal.close('cartModal');
@@ -971,7 +991,10 @@ function handleCheckout() {
   openAddressStep();
 }
 
-function openAddressStep() {
+/* ══════════════════════════════
+   ÜNVAN ADDIMI
+══════════════════════════════ */
+async function openAddressStep() {
   const old = document.getElementById('checkoutOverlay');
   if (old) old.remove();
 
@@ -980,39 +1003,226 @@ function openAddressStep() {
   overlay.className = 'overlay';
   overlay.style.cssText = 'display:flex;align-items:center;justify-content:center;z-index:1000';
 
+  /* Saxlanmış ünvanları yüklə */
+  let savedAddresses = [];
+  const user = fbAuth.currentUser;
+  if (user) {
+    try {
+      const snap = await fbDb.collection('addresses')
+        .where('userId', '==', user.uid)
+        .orderBy('createdAt', 'desc')
+        .get();
+      savedAddresses = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch(e) { console.warn('Ünvanlar yüklənmədi', e); }
+  }
+
+  const hasSaved = savedAddresses.length > 0;
+
+  /* Əgər əvvəlcə seçilmiş saxlanmış ünvan varsa qoru */
+  if (_selectedSavedAddrId) {
+    const stillExists = savedAddresses.find(a => a.id === _selectedSavedAddrId);
+    if (!stillExists) { _selectedSavedAddrId = null; _checkoutAddress = null; }
+  }
+
   overlay.innerHTML = `
-    <div class="modal modal-lg" style="max-width:560px;width:100%">
-      <button class="modal-close" onclick="closeCheckout()">✕</button>
-      <h2 style="font-family:var(--font-display);margin-bottom:6px">Çatdırılma ünvanı</h2>
-      <p style="color:var(--muted);font-size:0.85rem;margin-bottom:20px">Xəritədə pinə klikləyin və ya sürüşdürün</p>
+    <div class="modal modal-lg" style="max-width:580px;width:100%;max-height:90vh;overflow-y:auto;padding:0;scrollbar-width:thin;">
 
-      <div id="checkoutMap" style="width:100%;height:320px;border-radius:12px;border:1px solid var(--border);margin-bottom:16px;background:#e8e0d8;overflow:hidden"></div>
-
-      <div id="addressDisplay" style="background:var(--bg-2,#f7f4f0);border-radius:10px;padding:12px 16px;font-size:0.88rem;color:var(--muted);margin-bottom:20px;min-height:42px;display:flex;align-items:center;gap:8px">
-        <span style="font-size:1.1rem">📍</span>
-        <span id="addressText">Xəritəyə klikləyin — ünvan avtomatik doldurulacaq</span>
+      <!-- Header -->
+      <div style="padding:1.5rem 1.75rem 1.1rem;border-bottom:1.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface,#fff);z-index:2;border-radius:var(--radius-lg) var(--radius-lg) 0 0;">
+        <div>
+          <h2 style="font-family:var(--font-display);font-size:1.15rem;margin-bottom:3px;">Çatdırılma ünvanı</h2>
+          <p style="color:var(--muted);font-size:0.8rem;">Ünvan seçin və ya xəritədən yenisini əlavə edin</p>
+        </div>
+        <button class="modal-close" onclick="closeCheckout()" style="position:static;">✕</button>
       </div>
 
-      <button id="addrNextBtn" class="btn btn-primary btn-full" onclick="openPaymentStep()" disabled
-        style="opacity:0.45;cursor:not-allowed">
-        Ödənişə keç →
-      </button>
+      <div style="padding:1.25rem 1.75rem;">
+
+        ${hasSaved ? `
+        <!-- ── Saxlanmış ünvanlar ── -->
+        <div style="margin-bottom:1.25rem;">
+          <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:0.75rem;">
+            Saxlanmış ünvanlarım
+          </div>
+          <div id="savedAddrList" style="display:flex;flex-direction:column;gap:0.6rem;">
+            ${savedAddresses.map(a => `
+              <div class="saved-addr-card ${_selectedSavedAddrId === a.id ? 'selected' : ''}"
+                   data-addr-id="${a.id}"
+                   onclick="selectSavedAddress('${a.id}', ${JSON.stringify(a).replace(/"/g,'&quot;')})"
+                   style="
+                     display:flex;align-items:flex-start;gap:12px;
+                     padding:12px 14px;border:2px solid ${_selectedSavedAddrId === a.id ? 'var(--accent)' : 'var(--border)'};
+                     border-radius:12px;cursor:pointer;transition:border-color .18s,background .18s;
+                     background:${_selectedSavedAddrId === a.id ? 'rgba(201,168,108,0.06)' : 'transparent'};
+                   "
+                   onmouseover="if(this.dataset.addrId!='${_selectedSavedAddrId}') this.style.borderColor='var(--accent-light,#e0c88a)'"
+                   onmouseout="if(this.dataset.addrId!='${_selectedSavedAddrId}') this.style.borderColor='var(--border)'">
+                <!-- Seçim dairəsi -->
+                <div style="
+                  width:20px;height:20px;border-radius:50%;flex-shrink:0;margin-top:2px;
+                  border:2px solid ${_selectedSavedAddrId === a.id ? 'var(--accent)' : 'var(--border)'};
+                  background:${_selectedSavedAddrId === a.id ? 'var(--accent)' : 'transparent'};
+                  display:flex;align-items:center;justify-content:center;transition:all .18s;
+                " id="addrRadio_${a.id}">
+                  ${_selectedSavedAddrId === a.id ? '<svg viewBox="0 0 10 10" width="10" height="10"><polyline points="1.5,5 4,7.5 8.5,2.5" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>' : ''}
+                </div>
+                <!-- Məlumat -->
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:0.82rem;font-weight:500;line-height:1.4;color:var(--text);">${a.mapLabel || a.label || ''}</div>
+                  ${a.buildingNo || a.apartmentNo ? `
+                  <div style="font-size:0.76rem;color:var(--muted);margin-top:3px;">
+                    ${a.buildingNo  ? `🏢 Bina ${a.buildingNo}` : ''}
+                    ${a.apartmentNo ? ` · 🚪 Mənzil ${a.apartmentNo}` : ''}
+                  </div>` : ''}
+                  ${a.description ? `<div style="font-size:0.74rem;color:var(--muted);font-style:italic;margin-top:2px;">"${a.description}"</div>` : ''}
+                </div>
+                ${a.isDefault ? '<span style="font-size:0.65rem;background:var(--accent);color:#fff;padding:2px 8px;border-radius:20px;flex-shrink:0;align-self:flex-start;">Əsas</span>' : ''}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Ayırıcı -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.1rem;">
+          <div style="flex:1;height:1px;background:var(--border);"></div>
+          <span style="font-size:0.75rem;color:var(--muted);white-space:nowrap;">və ya yeni ünvan seçin</span>
+          <div style="flex:1;height:1px;background:var(--border);"></div>
+        </div>
+        ` : ''}
+
+        <!-- ── Xəritə ── -->
+        <div style="margin-bottom:1rem;">
+          <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:0.75rem;">
+            Xəritədən seçin
+          </div>
+          <div id="checkoutMap" style="
+            width:100%;height:280px;border-radius:12px;
+            border:1.5px solid var(--border);overflow:hidden;
+            background:#e8e4de;position:relative;transition:border-color .2s;
+          "></div>
+          <div id="addressDisplay" style="
+            margin-top:10px;background:var(--bg-2,#f7f4f0);
+            border-radius:10px;padding:10px 14px;font-size:0.82rem;
+            color:var(--muted);display:flex;align-items:flex-start;gap:8px;min-height:42px;
+          ">
+            <span style="font-size:1rem;flex-shrink:0;">📍</span>
+            <span id="addressText">Xəritəyə klikləyin — ünvan avtomatik doldurulacaq</span>
+          </div>
+        </div>
+
+        <!-- ── Xəritədən seçim üçün bina/mənzil sahələri ── -->
+        <div id="mapAddrFields" style="display:none;margin-bottom:1rem;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.6rem;">
+            <div>
+              <label style="font-size:0.75rem;color:var(--muted);display:block;margin-bottom:4px;">Bina nömrəsi</label>
+              <input type="text" id="checkoutBuilding" placeholder="Məs: 12A"
+                style="width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:0.85rem;font-family:inherit;outline:none;transition:border-color .18s;background:var(--surface,#fff);"
+                onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
+            </div>
+            <div>
+              <label style="font-size:0.75rem;color:var(--muted);display:block;margin-bottom:4px;">Mənzil nömrəsi</label>
+              <input type="text" id="checkoutApartment" placeholder="Məs: 45"
+                style="width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:0.85rem;font-family:inherit;outline:none;transition:border-color .18s;background:var(--surface,#fff);"
+                onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
+            </div>
+          </div>
+          <div>
+            <label style="font-size:0.75rem;color:var(--muted);display:block;margin-bottom:4px;">Əlavə açıqlama <span style="font-weight:400;">(istəyə bağlı)</span></label>
+            <input type="text" id="checkoutDesc" placeholder="Məs: Sarı bina, 3-cü giriş..."
+              style="width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:0.85rem;font-family:inherit;outline:none;transition:border-color .18s;background:var(--surface,#fff);"
+              onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Footer düyməsi -->
+      <div style="padding:0 1.75rem 1.5rem;">
+        <button id="addrNextBtn" class="btn btn-primary btn-full" onclick="confirmAddressStep()"
+          ${(_checkoutAddress || _selectedSavedAddrId) ? '' : 'disabled style="opacity:0.45;cursor:not-allowed;"'}>
+          Ödənişə keç →
+        </button>
+      </div>
     </div>
   `;
 
   document.body.appendChild(overlay);
   setTimeout(() => overlay.classList.add('open'), 10);
   overlay.addEventListener('click', e => { if (e.target === overlay) closeCheckout(); });
+
   _loadLeaflet(() => _initMap());
 }
 
+/* ── Saxlanmış ünvanı seç ── */
+function selectSavedAddress(addrId, addrData) {
+  /* Bütün kartları deselect et */
+  document.querySelectorAll('.saved-addr-card').forEach(card => {
+    card.style.borderColor = 'var(--border)';
+    card.style.background  = 'transparent';
+    const radio = document.getElementById('addrRadio_' + card.dataset.addrId);
+    if (radio) { radio.style.background = 'transparent'; radio.style.borderColor = 'var(--border)'; radio.innerHTML = ''; }
+  });
+
+  /* Seçilmişi aktiv et */
+  const selectedCard = document.querySelector(`[data-addr-id="${addrId}"]`);
+  if (selectedCard) {
+    selectedCard.style.borderColor = 'var(--accent)';
+    selectedCard.style.background  = 'rgba(201,168,108,0.06)';
+    const radio = document.getElementById('addrRadio_' + addrId);
+    if (radio) {
+      radio.style.background  = 'var(--accent)';
+      radio.style.borderColor = 'var(--accent)';
+      radio.innerHTML = '<svg viewBox="0 0 10 10" width="10" height="10"><polyline points="1.5,5 4,7.5 8.5,2.5" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>';
+    }
+  }
+
+  _selectedSavedAddrId = addrId;
+  _checkoutAddress     = addrData;
+
+  /* "Ödənişə keç" düyməsini aktiv et */
+  const btn = document.getElementById('addrNextBtn');
+  if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer'; }
+}
+
+/* ── Ünvan addımını tamamla ── */
+function confirmAddressStep() {
+  if (!_checkoutAddress && !_selectedSavedAddrId) {
+    toast.show('Zəhmət olmasa ünvan seçin', 'default');
+    return;
+  }
+
+  /* Əgər xəritədən seçilibsə bina/mənzil məlumatlarını əlavə et */
+  if (!_selectedSavedAddrId && _checkoutAddress) {
+    const buildingNo  = document.getElementById('checkoutBuilding')?.value.trim()  || '';
+    const apartmentNo = document.getElementById('checkoutApartment')?.value.trim() || '';
+    const description = document.getElementById('checkoutDesc')?.value.trim()      || '';
+
+    let label = _checkoutAddress.mapLabel || _checkoutAddress.label || '';
+    if (buildingNo)   label += `, bina ${buildingNo}`;
+    if (apartmentNo)  label += `, mənzil ${apartmentNo}`;
+    if (description)  label += ` (${description})`;
+
+    _checkoutAddress = { ..._checkoutAddress, buildingNo, apartmentNo, description, label };
+  }
+
+  openPaymentStep();
+}
+
+/* ══════════════════════════════
+   LEAFLET & XƏRİTƏ
+══════════════════════════════ */
 function _loadLeaflet(cb) {
   if (window.L) { cb(); return; }
-  const link = document.createElement('link');
-  link.rel = 'stylesheet';
-  link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-  document.head.appendChild(link);
+  if (!document.getElementById('leafletCSS')) {
+    const link = document.createElement('link');
+    link.id = 'leafletCSS'; link.rel = 'stylesheet';
+    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(link);
+  }
+  const existing = document.getElementById('leafletJS');
+  if (existing) { existing.addEventListener('load', cb); return; }
   const script = document.createElement('script');
+  script.id = 'leafletJS';
   script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
   script.onload = cb;
   document.head.appendChild(script);
@@ -1022,66 +1232,102 @@ function _initMap() {
   const mapEl = document.getElementById('checkoutMap');
   if (!mapEl || !window.L) return;
 
-  _checkoutMap = L.map('checkoutMap').setView([40.4093, 49.8671], 13);
+  _checkoutMap = L.map('checkoutMap', { zoomControl: true }).setView([40.4093, 49.8671], 13);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap'
+    attribution: '© OpenStreetMap', maxZoom: 19
   }).addTo(_checkoutMap);
 
+  /* Əgər artıq saxlanmış ünvan seçilibsə xəritədə göstər */
+  if (_checkoutAddress?.lat) {
+    _checkoutMarker = L.marker([_checkoutAddress.lat, _checkoutAddress.lng], { draggable: true }).addTo(_checkoutMap);
+    _checkoutMap.setView([_checkoutAddress.lat, _checkoutAddress.lng], 15);
+    _checkoutMarker.on('dragend', async () => {
+      const p = _checkoutMarker.getLatLng();
+      await _reverseGeocode(p.lat, p.lng);
+    });
+  }
+
   _checkoutMap.on('click', async (e) => {
+    /* Xəritəyə klikləndikdə saxlanmış seçimi sıfırla */
+    _selectedSavedAddrId = null;
+    document.querySelectorAll('.saved-addr-card').forEach(card => {
+      card.style.borderColor = 'var(--border)';
+      card.style.background  = 'transparent';
+      const radio = document.getElementById('addrRadio_' + card.dataset.addrId);
+      if (radio) { radio.style.background = 'transparent'; radio.style.borderColor = 'var(--border)'; radio.innerHTML = ''; }
+    });
+
     const { lat, lng } = e.latlng;
     if (_checkoutMarker) {
       _checkoutMarker.setLatLng([lat, lng]);
     } else {
       _checkoutMarker = L.marker([lat, lng], { draggable: true }).addTo(_checkoutMap);
       _checkoutMarker.on('dragend', async () => {
-        const pos = _checkoutMarker.getLatLng();
-        await _reverseGeocode(pos.lat, pos.lng);
+        const p = _checkoutMarker.getLatLng();
+        await _reverseGeocode(p.lat, p.lng);
       });
     }
     await _reverseGeocode(lat, lng);
   });
+
+  setTimeout(() => { _checkoutMap && _checkoutMap.invalidateSize(); }, 200);
 }
 
 async function _reverseGeocode(lat, lng) {
   const textEl = document.getElementById('addressText');
   if (textEl) textEl.textContent = 'Ünvan axtarılır...';
+
   try {
     const res  = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=az`);
     const data = await res.json();
-    const addr = data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-    _checkoutAddress = { lat, lng, label: addr };
-    if (textEl) textEl.textContent = addr;
+    const mapLabel = data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    _checkoutAddress = { lat, lng, mapLabel, label: mapLabel };
+
+    if (textEl) textEl.textContent = mapLabel;
+
+    /* Bina/mənzil sahələrini göstər */
+    const fields = document.getElementById('mapAddrFields');
+    if (fields) fields.style.display = '';
+
+    /* Xəritə çərçivəsini vurğula */
+    const mapEl = document.getElementById('checkoutMap');
+    if (mapEl) { mapEl.style.borderColor = 'var(--accent)'; setTimeout(() => { mapEl.style.borderColor = 'var(--border)'; }, 800); }
+
+    /* Düyməni aktiv et */
     const btn = document.getElementById('addrNextBtn');
     if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer'; }
+
   } catch {
-    _checkoutAddress = { lat, lng, label: `${lat.toFixed(5)}, ${lng.toFixed(5)}` };
-    if (textEl) textEl.textContent = _checkoutAddress.label;
+    const mapLabel = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    _checkoutAddress = { lat, lng, mapLabel, label: mapLabel };
+    if (textEl) textEl.textContent = mapLabel;
     const btn = document.getElementById('addrNextBtn');
     if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer'; }
   }
 }
 
 /* ══════════════════════════════
-   CHECKOUT — ödəniş seçimi
-   ══════════════════════════════ */
-const DEMO_WALLET_BALANCE = 10000;
-
+   ÖDƏNİŞ ADDIMI
+══════════════════════════════ */
 function openPaymentStep() {
   const overlay = document.getElementById('checkoutOverlay');
   if (!overlay) return;
   const total = cart.getTotal();
 
+  const addrLabel = _checkoutAddress?.label || _checkoutAddress?.mapLabel || '—';
+
   overlay.querySelector('.modal').innerHTML = `
     <button class="modal-close" onclick="closeCheckout()">✕</button>
-    <button onclick="openAddressStep()" style="background:none;border:none;color:var(--muted);font-size:0.82rem;cursor:pointer;margin-bottom:16px;display:flex;align-items:center;gap:4px">
+    <button onclick="openAddressStep()" style="background:none;border:none;color:var(--muted);font-size:0.82rem;cursor:pointer;margin-bottom:16px;display:flex;align-items:center;gap:4px;padding:0;">
       ← Ünvana qayıt
     </button>
     <h2 style="font-family:var(--font-display);margin-bottom:6px">Ödəniş</h2>
     <p style="color:var(--muted);font-size:0.85rem;margin-bottom:20px">Ödəniş üsulunu seçin</p>
 
-    <div style="background:var(--bg-2,#f7f4f0);border-radius:10px;padding:10px 14px;font-size:0.82rem;color:var(--muted);margin-bottom:20px;display:flex;gap:8px;align-items:flex-start">
+    <!-- Seçilmiş ünvan xülasəsi -->
+    <div style="background:var(--bg-2,#f7f4f0);border-radius:10px;padding:10px 14px;font-size:0.82rem;color:var(--muted);margin-bottom:20px;display:flex;gap:8px;align-items:flex-start;">
       <span>📍</span>
-      <span>${_checkoutAddress ? _checkoutAddress.label : '—'}</span>
+      <span>${addrLabel}</span>
     </div>
 
     <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px">
@@ -1163,8 +1409,8 @@ function updatePlaceBtn() {
 }
 
 /* ══════════════════════════════
-   SİFARİŞ VER — Firestore
-   ══════════════════════════════ */
+   SİFARİŞ VER
+══════════════════════════════ */
 async function placeOrder() {
   const user = fbAuth.currentUser;
   if (!user || !_checkoutAddress || !_selectedPayMethod) return;
@@ -1194,6 +1440,17 @@ async function placeOrder() {
       vendorGroups[vid].push(item);
     });
 
+    /* Sifarişə tam ünvan məlumatı əlavə edilir — vendor paneli üçün */
+    const addressForOrder = {
+      lat:          _checkoutAddress.lat          || null,
+      lng:          _checkoutAddress.lng          || null,
+      mapLabel:     _checkoutAddress.mapLabel     || _checkoutAddress.label || '',
+      buildingNo:   _checkoutAddress.buildingNo   || '',
+      apartmentNo:  _checkoutAddress.apartmentNo  || '',
+      description:  _checkoutAddress.description  || '',
+      label:        _checkoutAddress.label        || _checkoutAddress.mapLabel || ''
+    };
+
     const orderPromises = Object.entries(vendorGroups).map(async ([vendorId, vendorItems]) => {
       const counterRef = fbDb.collection('orderCounters').doc(vendorId);
       const orderNumber = await fbDb.runTransaction(async (tx) => {
@@ -1203,7 +1460,6 @@ async function placeOrder() {
         return next;
       });
 
-      const orderNum    = String(orderNumber).padStart(6, '0');
       const vendorTotal = vendorItems.reduce((s, i) => s + i.price * (i.quantity || 1), 0);
 
       await fbDb.collection('orders').add({
@@ -1225,7 +1481,7 @@ async function placeOrder() {
           selectedColor: i.color ? { name: i.color, hex: i.colorHex || '' } : null,
         })),
         total:         vendorTotal,
-        address:       _checkoutAddress,
+        address:       addressForOrder,   /* Tam ünvan — bina/mənzil daxil */
         paymentMethod: _selectedPayMethod,
         status:        'pending',
         createdAt:     firebase.firestore.FieldValue.serverTimestamp(),
@@ -1244,6 +1500,9 @@ async function placeOrder() {
   }
 }
 
+/* ══════════════════════════════
+   SİFARİŞ UĞURLU
+══════════════════════════════ */
 function showOrderSuccess() {
   const old = document.getElementById('orderSuccessOverlay');
   if (old) old.remove();
@@ -1277,6 +1536,9 @@ function showOrderSuccess() {
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
 }
 
+/* ══════════════════════════════
+   CHECKOUT BAĞLA
+══════════════════════════════ */
 function closeCheckout() {
   const overlay = document.getElementById('checkoutOverlay');
   if (overlay) {
@@ -1284,9 +1546,10 @@ function closeCheckout() {
     setTimeout(() => overlay.remove(), 300);
   }
   if (_checkoutMap) { _checkoutMap.remove(); _checkoutMap = null; }
-  _checkoutMarker    = null;
-  _checkoutAddress   = null;
-  _selectedPayMethod = null;
+  _checkoutMarker      = null;
+  _checkoutAddress     = null;
+  _selectedSavedAddrId = null;
+  _selectedPayMethod   = null;
 }
 
 document.addEventListener('DOMContentLoaded', initCartModal);
