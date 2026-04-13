@@ -275,28 +275,38 @@ async function renderVendorDashboard(container, data, uid) {
   collapseSidebarForVendor();
 
   container.innerHTML = `
-    <div class="section-card vd-header-card">
-      <div class="vd-store-header">
-        <div class="vd-store-avatar" id="vdStoreAvatar">
-          ${data.photoURL
-            ? `<img src="${data.photoURL}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
-            : (data.storeName||'M')[0].toUpperCase()
-          }
-        </div>
-        <div class="vd-store-info">
-          <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
-            <h2 class="vd-store-name" id="vdStoreName">${data.storeName}</h2>
-            <div class="vendor-status-badge approved"><span>●</span> Aktiv</div>
-          </div>
-          <p class="vd-store-meta" id="vdStoreMeta">${data.category} · ${data.city}</p>
-        </div>
-        <button class="btn btn-outline vd-settings-btn" onclick="openVendorSettings()">
+    <div class="section-card vd-header-card" style="padding:0;overflow:hidden;border-radius:12px;">
+      <div style="
+        position:relative;
+        height:140px;
+        background:${data.coverURL
+          ? `url('${data.coverURL}') center/cover no-repeat`
+          : 'linear-gradient(135deg,#1a1a1a 0%,#2c2c2c 55%,#1a1a1a 100%)'
+        };
+      ">
+        ${data.coverURL ? `<div style="position:absolute;inset:0;background:rgba(0,0,0,.35);border-radius:12px 12px 0 0;"></div>` : ''}
+        <button class="btn btn-outline vd-settings-btn" onclick="openVendorSettings()" style="position:absolute;top:12px;right:12px;background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.4);color:#fff;backdrop-filter:blur(4px);">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="3"/>
             <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
           </svg>
           Parametrlər
         </button>
+      </div>
+      <div class="vd-store-header" style="padding:0 1.5rem 1.25rem;margin-top:-36px;position:relative;z-index:1;">
+        <div class="vd-store-avatar" id="vdStoreAvatar" style="border:3px solid #fff;box-shadow:0 2px 12px rgba(0,0,0,.15);">
+          ${data.photoURL
+            ? `<img src="${data.photoURL}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
+            : (data.storeName||'M')[0].toUpperCase()
+          }
+        </div>
+        <div class="vd-store-info" style="padding-top:0.5rem;">
+          <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+            <h2 class="vd-store-name" id="vdStoreName">${data.storeName}</h2>
+            <div class="vendor-status-badge approved"><span>●</span> Aktiv</div>
+          </div>
+          <p class="vd-store-meta" id="vdStoreMeta">${data.category} · ${data.city}</p>
+        </div>
       </div>
     </div>
 
