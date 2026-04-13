@@ -360,9 +360,10 @@
       .vd-stats-grid { grid-template-columns: repeat(2, 1fr); }
     }
     @media (max-width: 768px) {
-      .page { grid-template-columns: 1fr; }
+      .page { grid-template-columns: 1fr; padding: 0; margin: 0; gap: 0; }
       .page.vendor-mode { grid-template-columns: 1fr; }
       .sidebar.collapsed { display: none; }
+      .sidebar.mobile-hidden { display: none !important; }
       .form-grid { grid-template-columns: 1fr; }
       .stats { grid-template-columns: 1fr 1fr; }
       .addr-grid { grid-template-columns: 1fr; }
@@ -370,7 +371,41 @@
       header { padding: 0 1rem; }
       .three-col-row { grid-template-columns: 1fr; }
       .addr-fields-grid { grid-template-columns: 1fr; }
-      .sidebar { position: static; top: auto; }
+      .sidebar { position: static; top: auto; border-radius: 0; border-left: none; border-right: none; border-top: none; }
+      .main { padding: 1rem; }
+      #mobileMenuBar {
+        display: flex;
+        overflow-x: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        background: var(--card);
+        border-bottom: 1px solid var(--border);
+        position: sticky;
+        top: var(--header-h);
+        z-index: 90;
+      }
+      #mobileMenuBar::-webkit-scrollbar { display: none; }
+      #mobileMenuBar .mob-item {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        width: calc(100vw / 5.5);
+        padding: 0.7rem 0;
+        border: none;
+        background: none;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        color: var(--muted);
+        text-decoration: none;
+        transition: all 0.2s;
+      }
+      #mobileMenuBar .mob-item svg { width: 20px; height: 20px; }
+      #mobileMenuBar .mob-item.active { color: var(--accent); border-bottom-color: var(--accent); }
+      #mobileMenuBar .mob-item.logout-mob svg { stroke: #c0392b; }
+    }
+    @media (min-width: 769px) {
+      #mobileMenuBar { display: none; }
     }
   </style>
 </head>
@@ -397,6 +432,34 @@
   </nav>
 </header>
 
+<!-- MOBİL ICON MENU BAR -->
+<div id="mobileMenuBar" style="display:none;">
+  <a class="mob-item active" data-tab="overview" onclick="switchTab('overview',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+  </a>
+  <a class="mob-item" data-tab="profile" onclick="switchTab('profile',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+  </a>
+  <a class="mob-item" data-tab="orders" onclick="switchTab('orders',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+  </a>
+  <a class="mob-item" data-tab="wishlist" onclick="switchTab('wishlist',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+  </a>
+  <a class="mob-item" data-tab="addresses" onclick="switchTab('addresses',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+  </a>
+  <a class="mob-item" data-tab="vendor" onclick="switchTab('vendor',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+  </a>
+  <a class="mob-item" data-tab="listings" onclick="switchTab('listings',this)" id="mobListingsItem" style="display:none;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+  </a>
+  <a class="mob-item logout-mob" onclick="logout()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+  </a>
+</div>
+  
 <div class="page">
 
   <!-- SIDEBAR -->
@@ -1219,15 +1282,6 @@ async function logout() {
    TAB KEÇİDİ
    ══════════════════════════════ */
 function switchTab(name, el) {
-  document.querySelectorAll('[id^="tab-"]').forEach(t => t.style.display = 'none');
-  document.getElementById('tab-' + name).style.display = '';
-  document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
-  if (el) el.classList.add('active');
-  if (name === 'vendor'   && currentUser) loadVendorTab(currentUser.uid);
-  if (name === 'listings' && currentUser) loadListingsTab(currentUser.uid);
-  if (name === 'profile')  { initAvatarUpload(); applyLang(); }
-  applyLang();
-}
 
 /* ══════════════════════════════
    TOAST
