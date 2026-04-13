@@ -966,6 +966,8 @@ async function updateVendorMenuBadge(uid) {
     badge.textContent = t('vendor.active'); badge.className = 'vendor-menu-badge approved';
     const listingsItem = document.getElementById('listingsMenuItem');
     if (listingsItem) listingsItem.style.display = '';
+    const mobListingsItem = document.getElementById('mobListingsItem');
+    if (mobListingsItem) mobListingsItem.style.display = '';
   } else if (data.status === 'rejected') {
     badge.textContent = t('vendor.rejected'); badge.className = 'vendor-menu-badge pending';
   }
