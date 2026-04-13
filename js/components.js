@@ -7,13 +7,29 @@
 /* ══════════════════════════════
    HEADER — dinamik render
    ══════════════════════════════ */
-function renderHeader() {
-  const user = auth.getUser();
+async function renderHeader() {
+  const u = fbAuth.currentUser;
+  let photoURL = null;
+  let displayName = '';
 
-  const avatarHTML = user?.photoURL
-    ? `<img src="${user.photoURL}" alt="${user.name}"
-         style="width:26px;height:26px;border-radius:50%;object-fit:cover"/>`
-    : `<span>${user ? user.name.charAt(0).toUpperCase() : ''}</span>`;
+  if (u) {
+    try {
+      const snap = await fbDb.collection('users').doc(u.uid).get();
+      const data = snap.exists ? snap.data() : {};
+      photoURL = data.photoURL || u.photoURL || null;
+      const first = data.firstName || '';
+      const last  = data.lastName  || '';
+      displayName = (first + ' ' + last).trim() || u.displayName || u.email.split('@')[0];
+    } catch(e) {
+      displayName = u.displayName || u.email.split('@')[0];
+    }
+  }
+
+  const user = u ? { name: displayName, photoURL } : null;
+
+  const avatarHTML = photoURL
+    ? `<img src="${photoURL}" alt="${displayName}" style="width:26px;height:26px;border-radius:50%;object-fit:cover"/>`
+    : `<span>${displayName ? displayName.charAt(0).toUpperCase() : ''}</span>`;
 
   const headerHTML = `
     <div class="header-logo-wrap">
