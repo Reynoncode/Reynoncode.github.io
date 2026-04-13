@@ -793,36 +793,411 @@ async function removeFromWishlist(itemId, uid) {
 /* ══════════════════════════════
    ÜNVANLAR
 ══════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════
+   ÜNVAN İDARƏETMƏSİ — profile.html-ə əlavə ediləcək
+   Mövcud <script> blokunun içinə köçürün (loadAddresses-i əvəzləyin)
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Ünvan modal state ── */
+let _addrMap        = null;
+let _addrMarker     = null;
+let _addrGeoResult  = null;   // { lat, lng, mapLabel }
+
+/* ══════════════════════════════
+   ÜNVANLARI YÜKLƏ
+══════════════════════════════ */
 async function loadAddresses(uid) {
   try {
-    const snap = await fbDb.collection('addresses').where('userId', '==', uid).get();
+    const snap = await fbDb.collection('addresses')
+      .where('userId', '==', uid)
+      .orderBy('createdAt', 'desc')
+      .get();
+
     const grid = document.getElementById('addressGrid');
-    const addBtn = grid.querySelector('.add-addr-card');
+    if (!grid) return;
+
     grid.innerHTML = '';
+
     if (!snap.empty) {
       snap.forEach(doc => {
         const a = doc.data();
-        const card = document.createElement('div');
-        card.className = 'addr-card' + (a.isDefault ? ' default' : '');
-        card.innerHTML = `${a.isDefault ? '<span class="addr-tag">Əsas</span>' : ''}
-          <div class="addr-name">${a.fullName || ''}</div>
-          ${a.street || ''}<br>${a.city || ''}, ${a.zip || ''}<br>Azərbaycan<br>${a.phone || ''}
-          <div class="addr-actions">
-            <button class="addr-btn" onclick="showToast('Redaktə tezliklə')">Redaktə et</button>
-            <button class="addr-btn" onclick="deleteAddress('${doc.id}')">${t('p.cancel') === 'Ləğv et' ? 'Sil' : 'Delete'}</button>
-          </div>`;
-        grid.appendChild(card);
+        grid.appendChild(_buildAddressCard(doc.id, a));
       });
     }
-    if (addBtn) grid.appendChild(addBtn);
-  } catch (err) { console.warn('Ünvanlar:', err.message); }
+
+    /* "Yeni ünvan əlavə et" kartı */
+    const addCard = document.createElement('div');
+    addCard.className = 'addr-card add-addr-card';
+    addCard.style.cssText = 'border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;min-height:140px;color:var(--muted);flex-direction:column;gap:0.5rem;transition:border-color .2s,color .2s;';
+    addCard.innerHTML = `
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+      </svg>
+      <span style="font-size:0.85rem;">Yeni ünvan əlavə et</span>`;
+    addCard.addEventListener('mouseenter', () => { addCard.style.borderColor = 'var(--accent)'; addCard.style.color = 'var(--accent)'; });
+    addCard.addEventListener('mouseleave', () => { addCard.style.borderColor = 'var(--border)'; addCard.style.color = 'var(--muted)'; });
+    addCard.addEventListener('click', showAddAddressModal);
+    grid.appendChild(addCard);
+
+  } catch (err) {
+    console.warn('Ünvanlar yüklənmədi:', err.message);
+  }
 }
 
-async function deleteAddress(id) {
+/* ── Ünvan kartı HTML ── */
+function _buildAddressCard(docId, a) {
+  const card = document.createElement('div');
+  card.className = 'addr-card' + (a.isDefault ? ' default' : '');
+  card.dataset.addrId = docId;
+
+  const parts = [a.mapLabel];
+  if (a.buildingNo)   parts.push(`Bina: ${a.buildingNo}`);
+  if (a.apartmentNo)  parts.push(`Mənzil: ${a.apartmentNo}`);
+  if (a.description)  parts.push(a.description);
+
+  card.innerHTML = `
+    ${a.isDefault ? '<span class="addr-tag">Əsas</span>' : ''}
+    <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" style="flex-shrink:0;margin-top:2px;">
+        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+      </svg>
+      <div style="font-size:0.82rem;line-height:1.55;color:var(--accent);">${a.mapLabel || ''}</div>
+    </div>
+    ${a.buildingNo || a.apartmentNo ? `
+      <div style="font-size:0.78rem;color:var(--muted);margin-bottom:2px;">
+        ${a.buildingNo   ? `🏢 Bina ${a.buildingNo}` : ''}
+        ${a.apartmentNo  ? `&nbsp;· 🚪 Mənzil ${a.apartmentNo}` : ''}
+      </div>` : ''}
+    ${a.description ? `<div style="font-size:0.77rem;color:var(--muted);font-style:italic;margin-bottom:4px;">"${a.description}"</div>` : ''}
+    <div class="addr-actions">
+      ${!a.isDefault ? `<button class="addr-btn" onclick="setDefaultAddress('${docId}')">Əsas et</button>` : ''}
+      <button class="addr-btn" onclick="editAddressModal('${docId}')">Redaktə et</button>
+      <button class="addr-btn" style="color:var(--danger)" onclick="deleteAddress('${docId}')">Sil</button>
+    </div>`;
+
+  return card;
+}
+
+/* ══════════════════════════════
+   YENİ ÜNVAN MODAL — AÇ
+══════════════════════════════ */
+function showAddAddressModal(existingData = null, docIdToEdit = null) {
+  _addrGeoResult = null;
+
+  const old = document.getElementById('addAddressOverlay');
+  if (old) old.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'addAddressOverlay';
+  overlay.style.cssText = `
+    position:fixed;inset:0;z-index:9000;
+    background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);
+    display:flex;align-items:center;justify-content:center;
+    padding:1rem;
+    opacity:0;transition:opacity .25s;
+  `;
+
+  overlay.innerHTML = `
+    <div id="addrModalBox" style="
+      background:var(--card,#fff);border-radius:16px;
+      width:100%;max-width:580px;max-height:90vh;overflow-y:auto;
+      padding:0;box-shadow:0 24px 80px rgba(0,0,0,0.22);
+      transform:translateY(20px) scale(0.98);
+      transition:transform .3s cubic-bezier(.22,.68,0,1.2);
+      scrollbar-width:thin;scrollbar-color:var(--border) transparent;
+    ">
+
+      <!-- Header -->
+      <div style="padding:1.5rem 1.75rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--card,#fff);z-index:2;border-radius:16px 16px 0 0;">
+        <div>
+          <div style="font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:600;">
+            ${docIdToEdit ? 'Ünvanı redaktə et' : 'Yeni ünvan əlavə et'}
+          </div>
+          <div style="font-size:0.78rem;color:var(--muted);margin-top:2px;">Xəritədə nöqtəni seçin</div>
+        </div>
+        <button onclick="closeAddAddressModal()" style="
+          width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border);
+          background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;
+          font-size:0.9rem;color:var(--muted);transition:all .18s;
+        " onmouseover="this.style.background='var(--accent)';this.style.color='#fff';this.style.borderColor='var(--accent)'"
+           onmouseout="this.style.background='none';this.style.color='var(--muted)';this.style.borderColor='var(--border)'">✕</button>
+      </div>
+
+      <!-- Xəritə -->
+      <div style="padding:1.25rem 1.75rem 0;">
+        <div id="addrModalMap" style="
+          width:100%;height:280px;border-radius:12px;
+          border:1.5px solid var(--border);overflow:hidden;
+          background:#e8e4de;position:relative;
+        ">
+          <div id="addrMapPlaceholder" style="
+            position:absolute;inset:0;display:flex;flex-direction:column;
+            align-items:center;justify-content:center;gap:8px;
+            color:var(--muted);font-size:0.82rem;pointer-events:none;
+          ">
+            <div style="font-size:2rem;">🗺️</div>
+            <div>Xəritə yüklənir...</div>
+          </div>
+        </div>
+
+        <!-- Seçilmiş ünvan göstərici -->
+        <div id="addrSelectedLabel" style="
+          margin-top:10px;padding:10px 14px;
+          background:var(--tag-bg,#f2ede8);border-radius:10px;
+          font-size:0.82rem;color:var(--muted);
+          display:flex;align-items:flex-start;gap:8px;min-height:42px;
+          transition:background .2s;
+        ">
+          <span style="font-size:1rem;flex-shrink:0;">📍</span>
+          <span id="addrLabelText">Xəritəyə klikləyin — ünvan avtomatik doldurulacaq</span>
+        </div>
+      </div>
+
+      <!-- Form sahələri -->
+      <div style="padding:1.25rem 1.75rem;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+          <div class="form-group">
+            <label>Bina nömrəsi</label>
+            <input type="text" id="addrBuilding" placeholder="Məs: 12A" value="${existingData?.buildingNo || ''}" />
+          </div>
+          <div class="form-group">
+            <label>Mənzil nömrəsi</label>
+            <input type="text" id="addrApartment" placeholder="Məs: 45" value="${existingData?.apartmentNo || ''}" />
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:1.25rem;">
+          <label>Əlavə açıqlama <span style="color:var(--muted);font-weight:400;">(istəyə bağlı)</span></label>
+          <textarea id="addrDesc" placeholder="Məs: Sarı bina, 3-cü giriş, zəng vurun..." style="min-height:70px;resize:vertical;">${existingData?.description || ''}</textarea>
+        </div>
+
+        <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
+          <button onclick="closeAddAddressModal()" class="btn btn-outline">Ləğv et</button>
+          <button id="addrSaveBtn" onclick="_saveAddress('${docIdToEdit || ''}')" class="btn btn-dark">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+              <polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+            </svg>
+            ${docIdToEdit ? 'Yadda saxla' : 'Əlavə et'}
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  /* Əgər mövcud data varsa xəritəyə seçimi göstər */
+  if (existingData?.lat && existingData?.lng) {
+    _addrGeoResult = { lat: existingData.lat, lng: existingData.lng, mapLabel: existingData.mapLabel || '' };
+    const labelEl = document.getElementById('addrLabelText');
+    if (labelEl) labelEl.textContent = existingData.mapLabel || '';
+  }
+
+  /* Animasiya */
+  requestAnimationFrame(() => {
+    overlay.style.opacity = '1';
+    document.getElementById('addrModalBox').style.transform = 'translateY(0) scale(1)';
+  });
+
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeAddAddressModal(); });
+
+  /* Leaflet yüklə */
+  _loadLeafletForAddr(() => _initAddrMap(existingData));
+}
+
+/* ── Leaflet yüklə (cart.js ilə eyni yanaşma) ── */
+function _loadLeafletForAddr(cb) {
+  if (window.L) { cb(); return; }
+  if (!document.getElementById('leafletCSS')) {
+    const link = document.createElement('link');
+    link.id = 'leafletCSS'; link.rel = 'stylesheet';
+    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(link);
+  }
+  if (document.getElementById('leafletJS')) {
+    document.getElementById('leafletJS').addEventListener('load', cb);
+    return;
+  }
+  const script = document.createElement('script');
+  script.id = 'leafletJS';
+  script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+  script.onload = cb;
+  document.head.appendChild(script);
+}
+
+/* ── Xəritəni başlat ── */
+function _initAddrMap(existingData = null) {
+  const mapEl = document.getElementById('addrModalMap');
+  if (!mapEl || !window.L) return;
+
+  const placeholder = document.getElementById('addrMapPlaceholder');
+  if (placeholder) placeholder.remove();
+
+  const startLat = existingData?.lat || 40.4093;
+  const startLng = existingData?.lng || 49.8671;
+  const startZoom = existingData?.lat ? 16 : 13;
+
+  _addrMap = L.map('addrModalMap', { zoomControl: true }).setView([startLat, startLng], startZoom);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap', maxZoom: 19
+  }).addTo(_addrMap);
+
+  /* Əgər mövcud koordinat varsa marker göstər */
+  if (existingData?.lat) {
+    _addrMarker = L.marker([existingData.lat, existingData.lng], { draggable: true }).addTo(_addrMap);
+    _addrMarker.on('dragend', async () => {
+      const p = _addrMarker.getLatLng();
+      await _reverseGeocodeAddr(p.lat, p.lng);
+    });
+  }
+
+  _addrMap.on('click', async (e) => {
+    const { lat, lng } = e.latlng;
+    if (_addrMarker) {
+      _addrMarker.setLatLng([lat, lng]);
+    } else {
+      _addrMarker = L.marker([lat, lng], { draggable: true }).addTo(_addrMap);
+      _addrMarker.on('dragend', async () => {
+        const p = _addrMarker.getLatLng();
+        await _reverseGeocodeAddr(p.lat, p.lng);
+      });
+    }
+    await _reverseGeocodeAddr(lat, lng);
+  });
+
+  /* Xəritənin ölçüsü düzgün hesablansın */
+  setTimeout(() => { _addrMap && _addrMap.invalidateSize(); }, 200);
+}
+
+/* ── Reverse geocode ── */
+async function _reverseGeocodeAddr(lat, lng) {
+  const labelEl = document.getElementById('addrLabelText');
+  if (labelEl) labelEl.textContent = 'Ünvan axtarılır...';
+
+  try {
+    const res  = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=az`);
+    const data = await res.json();
+    const mapLabel = data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    _addrGeoResult = { lat, lng, mapLabel };
+    if (labelEl) {
+      labelEl.textContent = mapLabel;
+      labelEl.parentElement.style.background = '#eafaf1';
+      setTimeout(() => { if (labelEl.parentElement) labelEl.parentElement.style.background = ''; }, 1200);
+    }
+  } catch {
+    const mapLabel = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    _addrGeoResult = { lat, lng, mapLabel };
+    if (labelEl) labelEl.textContent = mapLabel;
+  }
+}
+
+/* ══════════════════════════════
+   ÜNVAN SAXLA / YENİLƏ
+══════════════════════════════ */
+async function _saveAddress(docIdToEdit = '') {
+  if (!currentUser) return;
+
+  if (!_addrGeoResult) {
+    showToast('Zəhmət olmasa xəritədə ünvanı seçin');
+    return;
+  }
+
+  const buildingNo  = document.getElementById('addrBuilding')?.value.trim()  || '';
+  const apartmentNo = document.getElementById('addrApartment')?.value.trim() || '';
+  const description = document.getElementById('addrDesc')?.value.trim()      || '';
+
+  /* Tam label: vendor panelindəki sifarişlərə gedəcək */
+  let label = _addrGeoResult.mapLabel;
+  if (buildingNo)   label += `, bina ${buildingNo}`;
+  if (apartmentNo)  label += `, mənzil ${apartmentNo}`;
+  if (description)  label += ` (${description})`;
+
+  const btn = document.getElementById('addrSaveBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saxlanır...'; }
+
+  try {
+    /* İlk ünvandırsa default et */
+    const existingSnap = await fbDb.collection('addresses')
+      .where('userId', '==', currentUser.uid).limit(1).get();
+    const isFirst = existingSnap.empty && !docIdToEdit;
+
+    const addrData = {
+      userId:      currentUser.uid,
+      lat:         _addrGeoResult.lat,
+      lng:         _addrGeoResult.lng,
+      mapLabel:    _addrGeoResult.mapLabel,
+      buildingNo,
+      apartmentNo,
+      description,
+      label,                    /* Satıcı panelindəki tam ünvan */
+      isDefault:   isFirst,
+      updatedAt:   firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    if (docIdToEdit) {
+      await fbDb.collection('addresses').doc(docIdToEdit).update(addrData);
+    } else {
+      addrData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      await fbDb.collection('addresses').add(addrData);
+    }
+
+    closeAddAddressModal();
+    await loadAddresses(currentUser.uid);
+    showToast(docIdToEdit ? 'Ünvan yeniləndi ✓' : 'Ünvan əlavə edildi ✓');
+
+  } catch (err) {
+    showToast('Xəta: ' + err.message);
+    if (btn) { btn.disabled = false; btn.textContent = docIdToEdit ? 'Yadda saxla' : 'Əlavə et'; }
+  }
+}
+
+/* ── Modal bağla ── */
+function closeAddAddressModal() {
+  const overlay = document.getElementById('addAddressOverlay');
+  if (!overlay) return;
+  overlay.style.opacity = '0';
+  document.getElementById('addrModalBox').style.transform = 'translateY(20px) scale(0.98)';
+  setTimeout(() => overlay.remove(), 250);
+
+  if (_addrMap) { _addrMap.remove(); _addrMap = null; }
+  _addrMarker   = null;
+  _addrGeoResult = null;
+}
+
+/* ── Redaktə et ── */
+async function editAddressModal(docId) {
+  try {
+    const snap = await fbDb.collection('addresses').doc(docId).get();
+    if (!snap.exists) return;
+    showAddAddressModal(snap.data(), docId);
+  } catch (err) { showToast('Xəta: ' + err.message); }
+}
+
+/* ── Sil ── */
+async function deleteAddress(docId) {
   if (!confirm('Bu ünvanı silmək istəyirsiniz?')) return;
-  await fbDb.collection('addresses').doc(id).delete();
-  await loadAddresses(currentUser.uid);
-  showToast(t('toast.addrDel'));
+  try {
+    await fbDb.collection('addresses').doc(docId).delete();
+    await loadAddresses(currentUser.uid);
+    showToast('Ünvan silindi');
+  } catch (err) { showToast('Xəta: ' + err.message); }
+}
+
+/* ── Əsas ünvan et ── */
+async function setDefaultAddress(docId) {
+  if (!currentUser) return;
+  try {
+    /* Əvvəlki əsas ünvanı sıfırla */
+    const snap = await fbDb.collection('addresses')
+      .where('userId', '==', currentUser.uid)
+      .where('isDefault', '==', true).get();
+    const batch = fbDb.batch();
+    snap.forEach(d => batch.update(d.ref, { isDefault: false }));
+    batch.update(fbDb.collection('addresses').doc(docId), { isDefault: true });
+    await batch.commit();
+    await loadAddresses(currentUser.uid);
+    showToast('Əsas ünvan təyin edildi ✓');
+  } catch (err) { showToast('Xəta: ' + err.message); }
 }
 
 /* ══════════════════════════════
