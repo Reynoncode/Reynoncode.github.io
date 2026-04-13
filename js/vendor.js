@@ -2,6 +2,57 @@
    vendor.js — Satıcı Paneli
    ═══════════════════════════════════════════ */
 
+/* ══════════════════════════════
+   MAĞAZA KATEQORİYALARI
+══════════════════════════════ */
+const STORE_CATEGORIES = [
+  { id: 'elektronika', icon: '📱', label: 'Elektronika' },
+  { id: 'geyim',       icon: '👗', label: 'Geyim və Moda' },
+  { id: 'ev',          icon: '🏠', label: 'Ev və Yaşam' },
+  { id: 'gozellik',    icon: '💄', label: 'Gözəllik və Baxım' },
+  { id: 'saglamliq',   icon: '💊', label: 'Sağlamlıq və Vitaminlər' },
+  { id: 'usaq',        icon: '🧸', label: 'Uşaq və Oyuncaqlar' },
+  { id: 'avto',        icon: '🚗', label: 'Avto və Moto' },
+  { id: 'idman',       icon: '⚽', label: 'İdman və Outdoor' },
+  { id: 'kitab',       icon: '📚', label: 'Kitablar və Ofis' },
+  { id: 'hediyye',     icon: '🎁', label: 'Hədiyyələr və Digər' },
+];
+
+function vsCatCheckboxHTML(selectedCats = []) {
+  return STORE_CATEGORIES.map(c => {
+    const sel = selectedCats.includes(c.id);
+    return `
+      <label class="cat-check-lbl${sel ? ' cat-check-sel' : ''}" data-id="${c.id}"
+        style="display:flex;align-items:center;gap:.55rem;padding:.52rem .75rem;border:1.5px solid ${sel ? 'var(--accent)' : 'var(--border)'};border-radius:8px;cursor:pointer;transition:all .18s;background:${sel ? 'rgba(0,0,0,.03)' : 'transparent'};">
+        <input type="checkbox" name="vsCategory" value="${c.id}" style="width:auto;accent-color:var(--accent);"
+          onchange="vsCatToggle(this)" ${sel ? 'checked' : ''}>
+        <span style="font-size:.82rem;">${c.icon} ${c.label}</span>
+      </label>`;
+  }).join('');
+}
+
+function vsCatToggle(checkbox) {
+  const all     = document.querySelectorAll('input[name="vsCategory"]');
+  const checked = document.querySelectorAll('input[name="vsCategory"]:checked');
+  if (checked.length > 2) {
+    checkbox.checked = false;
+    if (typeof showToast === 'function') showToast('Maksimum 2 kateqoriya seçə bilərsiniz');
+  }
+  all.forEach(inp => {
+    const lbl = inp.closest('.cat-check-lbl');
+    if (!lbl) return;
+    lbl.style.borderColor = inp.checked ? 'var(--accent)' : 'var(--border)';
+    lbl.style.background  = inp.checked ? 'rgba(0,0,0,.03)' : 'transparent';
+  });
+}
+
+/* ── Seçilmiş kateqoriyaları oxu (istənilən konteyner üçün) ── */
+function getSelectedCategories(wrapId) {
+  return Array.from(
+    document.querySelectorAll(`#${wrapId} input[name="vsCategory"]:checked`)
+  ).map(el => el.value);
+}
+
 const vendor = {
 
   async getStatus(uid) {
@@ -153,16 +204,6 @@ function renderVendorRegisterForm(container) {
           <input type="text" id="v_storeName" placeholder="Məs: Elegance Boutique" maxlength="60" />
         </div>
         <div class="form-group">
-          <label>Kateqoriya <span style="color:var(--danger)">*</span></label>
-          <select id="v_category">
-            <option value="">— Seçin —</option>
-            <option>Qadın geyimi</option><option>Kişi geyimi</option>
-            <option>Uşaq geyimi</option><option>Ayaqqabı</option>
-            <option>Aksesuar</option><option>Çanta</option>
-            <option>İdman geyimi</option><option>Digər</option>
-          </select>
-        </div>
-        <div class="form-group">
           <label>Əlaqə nömrəsi <span style="color:var(--danger)">*</span></label>
           <input type="tel" id="v_phone" placeholder="+994 XX XXX XX XX" />
         </div>
@@ -182,6 +223,14 @@ function renderVendorRegisterForm(container) {
             <option>Gəncə</option><option>Lənkəran</option>
             <option>Mingəçevir</option><option>Digər</option>
           </select>
+        </div>
+        <div class="form-group full">
+          <label>Kateqoriya <span style="color:var(--danger)">*</span>
+            <span style="font-weight:400;color:var(--muted);font-size:.78rem;"> — maksimum 2 seçin</span>
+          </label>
+          <div id="v_category_wrap" style="display:grid;grid-template-columns:1fr 1fr;gap:.45rem;margin-top:.35rem;">
+            ${vsCatCheckboxHTML([])}
+          </div>
         </div>
         <div class="form-group full">
           <label>Mağaza haqqında qısa məlumat <span style="color:var(--danger)">*</span></label>
@@ -210,6 +259,12 @@ function renderVendorPending(container, data) {
   const date = data.createdAt?.toDate
     ? data.createdAt.toDate().toLocaleDateString('az-AZ', { day:'numeric', month:'long', year:'numeric' })
     : '';
+  const catLabels = (data.categories || (data.category ? [data.category] : []))
+    .map(id => {
+      const found = STORE_CATEGORIES.find(c => c.id === id);
+      return found ? `${found.icon} ${found.label}` : id;
+    }).join(', ') || '—';
+
   container.innerHTML = `
     <div class="section-card" style="text-align:center;padding:3rem 2rem;">
       <div style="font-size:3rem;margin-bottom:1rem;">⏳</div>
@@ -226,7 +281,7 @@ function renderVendorPending(container, data) {
       <div class="section-title">Göndərdiyiniz məlumatlar</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
         ${vendorInfoRow('Mağaza adı', data.storeName)}
-        ${vendorInfoRow('Kateqoriya', data.category)}
+        ${vendorInfoRow('Kateqoriya', catLabels)}
         ${vendorInfoRow('Telefon', data.phone)}
         ${vendorInfoRow('Şirkət', data.company)}
         ${vendorInfoRow('VÖEN', data.voen || '—')}
@@ -273,6 +328,14 @@ async function renderVendorDashboard(container, data, uid) {
   _vdUid = uid;
   collapseSidebarForVendor();
 
+  /* Kateqoriya etiketlərini hazırla */
+  const catArr = data.categories || (data.category ? [data.category] : []);
+  const catLabels = catArr
+    .map(id => {
+      const found = STORE_CATEGORIES.find(c => c.id === id);
+      return found ? `${found.icon} ${found.label}` : id;
+    }).join(' · ') || data.category || '';
+
   /* Cover arxa plan stili */
   const coverStyle = data.coverURL
     ? `background: url('${data.coverURL}') center/cover no-repeat;`
@@ -306,7 +369,7 @@ async function renderVendorDashboard(container, data, uid) {
 
       <!-- Mağaza məlumatları bölməsi -->
       <div style="padding:0 1.5rem 1.25rem;display:flex;align-items:flex-end;gap:1rem;margin-top:-32px;position:relative;z-index:2;">
-        <!-- Avatar — cover-dən aşağı sallanır -->
+        <!-- Avatar -->
         <div id="vdStoreAvatar"
           style="width:64px;height:64px;min-width:64px;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,#2c2c2c,#1a1a1a);border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
           ${logoHTML}
@@ -322,7 +385,7 @@ async function renderVendorDashboard(container, data, uid) {
           </div>
           <p id="vdStoreMeta"
             style="font-size:0.8rem;color:var(--muted);margin:0.2rem 0 0;">
-            ${data.category} · ${data.city}
+            ${catLabels} · ${data.city}
           </p>
         </div>
       </div>
@@ -799,6 +862,9 @@ async function openVendorSettings() {
   const v = vSnap.exists ? vSnap.data() : {};
   const u = uSnap.exists ? uSnap.data() : {};
 
+  /* Mövcud kateqoriyaları oxu — köhnə string və ya yeni array */
+  const savedCats = v.categories || (v.category ? [v.category] : []);
+
   const overlay = document.createElement('div');
   overlay.id    = 'vendorSettingsModal';
   overlay.style.cssText = `position:fixed;inset:0;z-index:3000;background:rgba(15,10,5,.6);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:1rem;opacity:0;transition:opacity .3s;`;
@@ -851,13 +917,16 @@ async function openVendorSettings() {
                 <label style="${vsLabelStyle()}">Mağaza adı <span style="color:var(--danger)">*</span></label>
                 <input type="text" id="vsStoreName" value="${v.storeName||u.storeName||''}" placeholder="Mağazanızın adı" style="${vsInputStyle()}">
               </div>
-              <div>
-                <label style="${vsLabelStyle()}">Kateqoriya</label>
-                <select id="vsCategory" style="${vsInputStyle()}">
-                  ${[['','Seçin...'],['kisi_geyim','👔 Kişi geyimi'],['qadin_geyim','👗 Qadın geyimi'],['usaq_geyim','👶 Uşaq geyimi'],['idman','🏃 İdman'],['aksesuarlar','🎒 Aksesuarlar'],['ayaqqabi','👟 Ayaqqabı'],['diger','📦 Digər']]
-                    .map(([val,lbl]) => `<option value="${val}" ${(v.category||'')=== val?'selected':''}>${lbl}</option>`).join('')}
-                </select>
-              </div>
+            </div>
+          </div>
+
+          <!-- KATEQORİYA — checkbox grid -->
+          <div style="margin-bottom:1rem;">
+            <label style="${vsLabelStyle()}">Kateqoriya
+              <span style="font-weight:400;color:var(--muted);"> — maksimum 2 seçin</span>
+            </label>
+            <div id="vsCategoryWrap" style="display:grid;grid-template-columns:1fr 1fr;gap:.45rem;margin-top:.4rem;">
+              ${vsCatCheckboxHTML(savedCats)}
             </div>
           </div>
 
@@ -1010,9 +1079,13 @@ async function saveVendorSettings() {
   if (!uid) return;
 
   try {
+    /* Seçilmiş kateqoriyaları oxu */
+    const categories = getSelectedCategories('vsCategoryWrap');
+
     const payload = {
       storeName:             document.getElementById('vsStoreName')?.value.trim()    ||'',
-      category:              document.getElementById('vsCategory')?.value            ||'',
+      categories,
+      category:              categories[0] || '',
       desc:                  document.getElementById('vsDesc')?.value.trim()         ||'',
       phone:                 document.getElementById('vsPhone')?.value.trim()        ||'',
       publicEmail:           document.getElementById('vsPublicEmail')?.value.trim()  ||'',
@@ -1050,7 +1123,14 @@ async function saveVendorSettings() {
     const metaEl   = document.getElementById('vdStoreMeta');
     const avatarEl = document.getElementById('vdStoreAvatar');
     if (nameEl) nameEl.textContent = payload.storeName;
-    if (metaEl) metaEl.textContent = `${payload.category} · ${payload.city}`;
+    if (metaEl) {
+      const catLabels = categories
+        .map(id => {
+          const found = STORE_CATEGORIES.find(c => c.id === id);
+          return found ? `${found.icon} ${found.label}` : id;
+        }).join(' · ') || '';
+      metaEl.textContent = `${catLabels} · ${payload.city}`;
+    }
     if (avatarEl && window._vsLogoBase64) {
       avatarEl.innerHTML = `<img src="${window._vsLogoBase64}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
     }
@@ -1119,7 +1199,7 @@ async function submitVendorForm() {
   const errorEl = document.getElementById('vendorFormError');
 
   const storeName   = document.getElementById('v_storeName').value.trim();
-  const category    = document.getElementById('v_category').value;
+  const categories  = getSelectedCategories('v_category_wrap');
   const phone       = document.getElementById('v_phone').value.trim();
   const company     = document.getElementById('v_company').value.trim();
   const voen        = document.getElementById('v_voen').value.trim();
@@ -1128,19 +1208,27 @@ async function submitVendorForm() {
   const agree       = document.getElementById('v_agree').checked;
 
   errorEl.style.display = 'none';
-  if (!storeName)   { showVendorError('Mağaza adı daxil edin.');             return; }
-  if (!category)    { showVendorError('Kateqoriya seçin.');                   return; }
-  if (!phone)       { showVendorError('Telefon nömrəsi daxil edin.');         return; }
-  if (!company)     { showVendorError('Şirkət / sahibkar adını daxil edin.'); return; }
-  if (!city)        { showVendorError('Şəhər seçin.');                        return; }
-  if (!description) { showVendorError('Mağaza haqqında məlumat yazın.');      return; }
-  if (!agree)       { showVendorError('Satıcı şərtlərini qəbul edin.');       return; }
+  if (!storeName)        { showVendorError('Mağaza adı daxil edin.');             return; }
+  if (!categories.length){ showVendorError('Ən azı 1 kateqoriya seçin.');         return; }
+  if (!phone)            { showVendorError('Telefon nömrəsi daxil edin.');         return; }
+  if (!company)          { showVendorError('Şirkət / sahibkar adını daxil edin.'); return; }
+  if (!city)             { showVendorError('Şəhər seçin.');                        return; }
+  if (!description)      { showVendorError('Mağaza haqqında məlumat yazın.');      return; }
+  if (!agree)            { showVendorError('Satıcı şərtlərini qəbul edin.');       return; }
 
   btn.disabled = true; btn.textContent = 'Göndərilir...';
 
   const result = await vendor.register(currentUser.uid, {
-    storeName, category, phone, company, voen, city, description,
-    ownerEmail: currentUser.email, ownerName: currentUser.displayName||''
+    storeName,
+    categories,
+    category:   categories[0] || '',
+    phone,
+    company,
+    voen,
+    city,
+    description,
+    ownerEmail: currentUser.email,
+    ownerName:  currentUser.displayName || ''
   });
 
   if (result.success) {
