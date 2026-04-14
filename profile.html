@@ -1430,10 +1430,10 @@ function showToast(msg) {
   setTimeout(() => toastEl.classList.remove('show'), 2800);
 }
 
-document.querySelectorAll('.menu-item').forEach(el => {
+document.querySelectorAll('.menu-item[data-tab]').forEach(el => {
   el.addEventListener('click', e => e.preventDefault());
 });
-
+  
 /* ══════════════════════════════
    PROFİL ŞƏKLİ YÜKLƏMƏ (Sidebar avatar)
    ══════════════════════════════ */
