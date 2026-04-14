@@ -407,6 +407,26 @@
     @media (min-width: 769px) {
       #mobileMenuBar { display: none; }
     }
+    <style-snippet>
+/* ── Admin menyu elementi ── */
+.menu-item--admin {
+  color: var(--accent) !important;
+  font-weight: 500;
+}
+.menu-item--admin svg {
+  stroke: var(--accent);
+}
+.admin-menu-badge {
+  margin-left: auto;
+  font-size: 0.65rem;
+  font-weight: 600;
+  background: var(--accent);
+  color: #fff;
+  padding: 0.18rem 0.55rem;
+  border-radius: 20px;
+  letter-spacing: 0.04em;
+}
+</style-snippet>
   </style>
 </head>
 <body>
@@ -490,7 +510,22 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
         <span class="menu-label" data-i18n="nav.addresses">Ünvanlarım</span>
       </a>
-
+      <html-snippet>
+      <!-- Super Admin — yalnız role==='admin' olanlara görünür -->
+      <div id="adminMenuSection" style="display:none">
+        <a class="menu-item menu-item--admin" href="admin.html" data-tooltip="Super Admin">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M12 2L3 7l9 5 9-5-9-5z"/>
+            <path d="M3 12l9 5 9-5"/>
+            <path d="M3 17l9 5 9-5"/>
+          </svg>
+          <span class="menu-label">Super Admin</span>
+          <span class="admin-menu-badge">Admin</span>
+        </a>
+        <div class="menu-divider"></div>
+      </div>
+</html-snippet>
+      
       <div class="menu-divider"></div>
 
       <a class="menu-item" data-tab="vendor" data-tooltip="Satıcı paneli" onclick="switchTab('vendor', this)" id="vendorMenuItem">
@@ -949,6 +984,14 @@ fbAuth.onAuthStateChanged(async (user) => {
     await loadWishlist(user.uid);
     await loadAddresses(user.uid);
     await updateVendorMenuBadge(user.uid);
+    <js-snippet>
+    // ── Admin menyusunu göstər ──
+    const userDoc = await fbDb.collection('users').doc(user.uid).get();
+    if (userDoc.exists && userDoc.data().role === 'admin') {
+      const adminSection = document.getElementById('adminMenuSection');
+      if (adminSection) adminSection.style.display = '';
+    }
+</js-snippet>
   } catch (err) {
     console.warn('Profil yüklənmə xətası:', err.message);
   }
