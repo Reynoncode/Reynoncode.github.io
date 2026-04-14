@@ -287,7 +287,13 @@
   /* ══════════════════════════════
      KATEQORİYALAR
   ══════════════════════════════ */
-  const CATEGORIES = [
+  /* ══════════════════════════════
+     KATEQORİYALAR — Firebase-dən dinamik yüklənir
+     (Bu blok index.html-dəki köhnə CATEGORIES const-u əvəz edir)
+  ══════════════════════════════ */
+
+  /* Default kateqoriyalar — Firebase yükləndikdən əvvəl göstərilir */
+  const DEFAULT_CATEGORIES = [
     { id: 'all',         icon: '🛍️', label: 'Hamısı' },
     { id: 'elektronika', icon: '📱', label: 'Elektronika' },
     { id: 'geyim',       icon: '👗', label: 'Geyim və Moda' },
@@ -301,33 +307,62 @@
     { id: 'hediyye',     icon: '🎁', label: 'Hədiyyələr və Digər' },
   ];
 
-  /*
-   * CAT_MAP — köhnə məhsul kateqoriyası dəyərləri ilə uyğunlaşdırma
-   * (Köhnə elanlar üçün fallback — yeni sistem vendorCategories array-dən oxuyur)
-   */
+  let CATEGORIES = [...DEFAULT_CATEGORIES];
+
+  /* CAT_MAP — köhnə elanlar üçün fallback */
   const CAT_MAP = {
-    'elektronika': ['elektronika', 'electro', 'phone', 'tech'],
-    'geyim':       ['geyim', 'kisi_geyim', 'qadin_geyim', 'usaq_geyim', 'geyim_moda', 'moda', 'fashion', 'qadin', 'kisi', 'unisex'],
-    'ev':          ['ev', 'home', 'mebel', 'dekor', 'ev_yasam'],
-    'gozellik':    ['gozellik', 'beauty', 'parfum', 'kosmetika'],
-    'saglamliq':   ['saglamliq', 'vitamin', 'saglik', 'health'],
-    'usaq':        ['usaq', 'oyuncaq', 'kids', 'toy'],
-    'avto':        ['avto', 'moto', 'auto'],
-    'idman':       ['idman', 'sport', 'outdoor', 'fitness'],
-    'kitab':       ['kitab', 'book', 'ofis', 'office'],
-    'hediyye':     ['hediyye', 'gift', 'diger', 'other'],
+    'elektronika': ['elektronika','electro','phone','tech'],
+    'geyim':       ['geyim','kisi_geyim','qadin_geyim','usaq_geyim','geyim_moda','moda','fashion','qadin','kisi','unisex'],
+    'ev':          ['ev','home','mebel','dekor','ev_yasam'],
+    'gozellik':    ['gozellik','beauty','parfum','kosmetika'],
+    'saglamliq':   ['saglamliq','vitamin','saglik','health'],
+    'usaq':        ['usaq','oyuncaq','kids','toy'],
+    'avto':        ['avto','moto','auto'],
+    'idman':       ['idman','sport','outdoor','fitness'],
+    'kitab':       ['kitab','book','ofis','office'],
+    'hediyye':     ['hediyye','gift','diger','other'],
   };
 
   let activeCategoryId = 'all';
 
-  /* ── Kateqoriya barını qur ── */
+  /* ════════════════════════════════════════
+     Firebase-dən kateqoriyaları yüklə
+  ════════════════════════════════════════ */
+  async function loadCategoriesFromFirebase() {
+    try {
+      const snap = await fbDb.collection('admin').doc('platformSettings').get();
+      if (snap.exists) {
+        const d = snap.data();
+        const cats = d.mainCategories || d.categories || null;
+        if (Array.isArray(cats) && cats.length) {
+          /* Firebase-dən gələn kateqoriyaları CATEGORIES array-inə yaz */
+          CATEGORIES = [
+            { id: 'all', icon: '🛍️', label: 'Hamısı' },
+            ...cats.map(c => ({
+              id:    c.id    || c.label?.toLowerCase().replace(/\s+/g,'-') || String(Date.now()),
+              icon:  c.icon  || '📁',
+              label: c.label || c.name || 'Kateqoriya',
+            }))
+          ];
+          buildCategoryBar();
+          if (typeof applyFilter === 'function') applyFilter();
+        }
+      }
+    } catch(e) {
+      console.warn('Kateqoriyalar yüklənmədi, default istifadə olunur:', e.message);
+    }
+  }
+
+  /* ════════════════════════════════════════
+     Kateqoriya barını qur
+  ════════════════════════════════════════ */
   function buildCategoryBar() {
     const inner = document.getElementById('catBarInner');
     if (!inner) return;
 
     inner.innerHTML = CATEGORIES.map(cat => `
       <button
-        class="cat-item${cat.id === 'all' ? ' active' : ''}"
+        class="cat-item${cat.id === activeCategoryId ? ' active' : ''}"
         data-cat="${cat.id}"
         onclick="selectCategory('${cat.id}', this)">
         <div class="cat-item-icon">
@@ -357,12 +392,9 @@
 
   function selectCategory(catId, btnEl) {
     activeCategoryId = catId;
-
-    /* Aktiv stili */
     document.querySelectorAll('.cat-item').forEach(b => b.classList.remove('active'));
     if (btnEl) btnEl.classList.add('active');
 
-    /* Strip + başlıq */
     const strip   = document.getElementById('activeCatStrip');
     const pill    = document.getElementById('activeCatLabel');
     const titleEl = document.getElementById('mainSectionTitle');
@@ -372,11 +404,10 @@
       strip?.classList.remove('show');
       if (titleEl) titleEl.textContent = 'Yeni Kolleksiya';
     } else {
-      if (pill)  pill.textContent = `${cat.icon} ${cat.label}`;
+      if (pill)  pill.textContent = `${cat?.icon || ''} ${cat?.label || catId}`;
       strip?.classList.add('show');
-      if (titleEl) titleEl.textContent = `${cat.icon} ${cat.label}`;
+      if (titleEl) titleEl.textContent = `${cat?.icon || ''} ${cat?.label || catId}`;
     }
-
     applyFilter();
   }
 
@@ -384,6 +415,69 @@
     const allBtn = document.querySelector('.cat-item[data-cat="all"]');
     selectCategory('all', allBtn);
   }
+
+  /* ════════════════════════════════════════
+     FİLTR
+  ════════════════════════════════════════ */
+  function applyFilter() {
+    const grid            = document.getElementById('productGrid');
+    const countEl         = document.getElementById('productCount');
+    const filteredCountEl = document.getElementById('filteredCount');
+    if (!grid) return;
+
+    if (activeCategoryId === 'all') {
+      grid.querySelectorAll('[data-product-id], .card').forEach(card => { card.style.display = ''; });
+      if (countEl) countEl.textContent = `${PRODUCTS.length} məhsul`;
+      if (filteredCountEl) filteredCountEl.textContent = '';
+      grid.querySelector('.cat-empty')?.remove();
+      return;
+    }
+
+    const filtered = PRODUCTS.filter(p => {
+      /* 1. Vendor categories array */
+      const vendorCats = p.vendorCategories || [];
+      if (vendorCats.includes(activeCategoryId)) return true;
+      /* 2. Köhnə fallback */
+      const keywords = CAT_MAP[activeCategoryId] || [activeCategoryId];
+      const cat = (p.category || '').toLowerCase();
+      return keywords.some(kw => cat.includes(kw));
+    });
+
+    const cards = grid.querySelectorAll('[data-product-id]');
+    if (cards.length > 0) {
+      const filteredIds = new Set(filtered.map(p => String(p.id)));
+      cards.forEach(card => {
+        card.style.display = filteredIds.has(card.dataset.productId) ? '' : 'none';
+      });
+    } else {
+      if (typeof renderProducts === 'function') renderProducts(filtered, 'productGrid');
+    }
+
+    const shown = filtered.length;
+    if (countEl) countEl.textContent = `${shown} məhsul`;
+    if (filteredCountEl) filteredCountEl.textContent = `${shown} nəticə`;
+
+    grid.querySelector('.cat-empty')?.remove();
+    if (shown === 0) {
+      const cat = CATEGORIES.find(c => c.id === activeCategoryId);
+      grid.insertAdjacentHTML('afterbegin', `
+        <div class="cat-empty" style="grid-column:1/-1;">
+          <div class="cat-empty-icon">${cat?.icon || '🔍'}</div>
+          <p><strong>${cat?.label}</strong> kateqoriyasında<br>hələ məhsul yoxdur.</p>
+        </div>
+      `);
+    }
+  }
+
+  /* ════════════════════════════════════════
+     SƏHIFƏ YÜKLƏNMƏ
+  ════════════════════════════════════════ */
+  document.addEventListener('DOMContentLoaded', () => {
+    buildCategoryBar();           // əvvəl default kateqoriyaları göstər
+    loadCategoriesFromFirebase(); // sonra Firebase-dən yenilə
+    loadListings();
+    listing.renderPreviews();
+  });
 
   /* ══════════════════════════════
      FİLTR — vendor kateqoriyasına görə
