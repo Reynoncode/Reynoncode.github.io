@@ -156,22 +156,26 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--a
 .role-select:focus { border-color: var(--accent); }
 
 /* ── Listing cards ── */
-.listing-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(195px, 1fr)); gap: 1rem; }
+.listing-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 1rem; }
 .listing-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; transition: box-shadow .18s, transform .18s; }
 .listing-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.07); transform: translateY(-2px); }
-.listing-img { width: 100%; height: 155px; background: var(--tag-bg); overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 2rem; }
+.listing-img { width: 100%; aspect-ratio: 3/4; background: var(--tag-bg); overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 2rem; }
 .listing-img img { width: 100%; height: 100%; object-fit: cover; }
 .listing-body { padding: 1rem; }
-.listing-vendor { font-size: 0.68rem; color: var(--gold); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.25rem; }
-.listing-title  { font-size: 0.875rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.listing-price  { font-family: 'Playfair Display', serif; font-size: 1.05rem; font-weight: 600; margin: 0.3rem 0 0.2rem; }
-.listing-stock  { font-size: 0.7rem; color: var(--muted); margin-bottom: 0.8rem; }
+.listing-vendor { font-size: 0.68rem; color: var(--gold); font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 0.25rem; }
+.listing-title  { font-size: 0.875rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.35rem; }
+.listing-price  { font-family: 'Playfair Display', serif; font-size: 1.05rem; font-weight: 600; margin-bottom: 0.15rem; }
+.listing-old-price { font-size: 0.75rem; color: var(--muted); text-decoration: line-through; }
+.listing-colors { display: flex; gap: 4px; align-items: center; margin: 0.45rem 0; flex-wrap: wrap; }
+.listing-color-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+.listing-stock  { font-size: 0.7rem; color: var(--muted); margin-bottom: 0.85rem; }
+.listing-stock.out { color: var(--danger); }
 .listing-actions{ display: flex; gap: 0.4rem; flex-wrap: wrap; }
 
 /* ── Modal ── */
 .modal-overlay { position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.42); display: none; align-items: center; justify-content: center; padding: 1rem; opacity: 0; transition: opacity .2s; }
 .modal-overlay.open { display: flex; opacity: 1; }
-.modal-box { background: var(--card); border-radius: 16px; width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto; padding: 1.75rem; position: relative; transform: translateY(10px) scale(0.98); transition: transform .25s cubic-bezier(.22,.68,0,1.2); scrollbar-width: thin; }
+.modal-box { background: var(--card); border-radius: 16px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; padding: 1.75rem; position: relative; transform: translateY(10px) scale(0.98); transition: transform .25s cubic-bezier(.22,.68,0,1.2); scrollbar-width: thin; }
 .modal-overlay.open .modal-box { transform: translateY(0) scale(1); }
 .modal-close { position: absolute; top: 1rem; right: 1rem; width: 30px; height: 30px; border: 1px solid var(--border); border-radius: 50%; background: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.78rem; color: var(--muted); transition: all .18s; }
 .modal-close:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
@@ -182,6 +186,16 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--a
 .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent); }
 .form-group textarea { resize: vertical; min-height: 80px; }
 .modal-actions { display: flex; gap: 0.6rem; justify-content: flex-end; margin-top: 1.25rem; }
+.form-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+
+/* ── Size row (stock modal) ── */
+.admin-size-row { display: flex; align-items: center; gap: 0.75rem; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 0.6rem 1rem; margin-bottom: 0.5rem; }
+.admin-size-label { font-weight: 600; font-size: 0.875rem; min-width: 55px; }
+.admin-size-ctrl { display: flex; align-items: center; gap: 0.35rem; }
+.admin-stock-btn { width: 28px; height: 28px; border-radius: 6px; border: 1.5px solid var(--border); background: #fff; font-size: 1rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: border-color .15s; }
+.admin-stock-btn:hover { border-color: var(--accent); }
+.admin-stock-inp { width: 60px; text-align: center; padding: 0.38rem 0.4rem; border: 1.5px solid var(--border); border-radius: 6px; font-size: 0.875rem; font-weight: 600; outline: none; font-family: 'DM Sans', sans-serif; }
+.admin-stock-inp:focus { border-color: var(--accent); }
 
 /* ── Toast ── */
 .toast { position: fixed; bottom: 1.75rem; right: 1.75rem; z-index: 999; background: var(--accent); color: #fff; padding: 0.72rem 1.2rem; border-radius: 10px; font-size: 0.85rem; font-weight: 500; transform: translateY(60px); opacity: 0; transition: all .28s; pointer-events: none; }
@@ -210,6 +224,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--a
 @media(max-width: 600px) {
   .listing-grid { grid-template-columns: 1fr 1fr; }
   .recent-grid  { grid-template-columns: 1fr; }
+  .form-row2 { grid-template-columns: 1fr; }
 }
 </style>
 </head>
@@ -358,10 +373,13 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--a
     <button class="modal-close" onclick="closeModal('editModal')">✕</button>
     <div class="modal-title">Elanı Redaktə Et</div>
     <input type="hidden" id="editId"/>
-    <div class="form-group"><label>Başlıq</label><input type="text" id="editTitle"/></div>
-    <div class="form-group"><label>Qiymət (₼)</label><input type="number" id="editPrice" step="0.01" min="0"/></div>
-    <div class="form-group"><label>Stok</label><input type="number" id="editStock" min="0"/></div>
-    <div class="form-group"><label>Təsvir</label><textarea id="editDesc"></textarea></div>
+    <div class="form-group"><label>Məhsul adı</label><input type="text" id="editName"/></div>
+    <div class="form-row2">
+      <div class="form-group"><label>Qiymət (₼)</label><input type="number" id="editPrice" step="0.01" min="0"/></div>
+      <div class="form-group"><label>Köhnə qiymət (₼)</label><input type="number" id="editOldPrice" step="0.01" min="0" placeholder="Endirimsə"/></div>
+    </div>
+    <div class="form-group"><label>Marka / Brend</label><input type="text" id="editBrand"/></div>
+    <div class="form-group"><label>Açıqlama</label><textarea id="editDesc"></textarea></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('editModal')">Ləğv et</button>
       <button class="btn btn-dark" onclick="saveListing()">Yadda saxla</button>
@@ -371,11 +389,12 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--a
 
 <!-- ══ STOCK MODAL ══ -->
 <div class="modal-overlay" id="stockModal">
-  <div class="modal-box" style="max-width:320px;">
+  <div class="modal-box" style="max-width:380px;">
     <button class="modal-close" onclick="closeModal('stockModal')">✕</button>
     <div class="modal-title">Stoku Dəyiş</div>
+    <p id="stockModalProductName" style="font-size:0.8rem;color:var(--muted);margin-bottom:1.25rem;margin-top:-0.75rem;"></p>
     <input type="hidden" id="stockId"/>
-    <div class="form-group"><label>Yeni stok miqdarı</label><input type="number" id="newStock" min="0"/></div>
+    <div id="stockModalBody"></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('stockModal')">Ləğv et</button>
       <button class="btn btn-dark" onclick="saveStock()">Yenilə</button>
@@ -387,6 +406,8 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--a
 
 <script>
 let currentAdmin = null;
+let adminEditCurrentData = null;  // full listing data for edit
+let adminStockCurrentData = null; // full listing data for stock
 
 /* ── Admin yoxlaması ── */
 fbAuth.onAuthStateChanged(async (user) => {
@@ -470,26 +491,30 @@ async function searchUsers() {
   }
   el.innerHTML = '<div style="text-align:center;padding:2rem;"><div class="spinner-sm" style="margin:0 auto;"></div></div>';
 
-  const allSnap = await fbDb.collection('users').get();
-  const results = allSnap.docs.map(d => ({ id: d.id, ...d.data() })).filter(u =>
-    (u.email||'').toLowerCase().includes(term) ||
-    (u.firstName||'').toLowerCase().includes(term) ||
-    (u.lastName||'').toLowerCase().includes(term) ||
-    (u.displayName||'').toLowerCase().includes(term)
-  );
+  try {
+    const allSnap = await fbDb.collection('users').get();
+    const results = allSnap.docs.map(d => ({ id: d.id, ...d.data() })).filter(u =>
+      (u.email||'').toLowerCase().includes(term) ||
+      (u.firstName||'').toLowerCase().includes(term) ||
+      (u.lastName||'').toLowerCase().includes(term) ||
+      (u.displayName||'').toLowerCase().includes(term)
+    );
 
-  if (!results.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">😶</div><p>Heç bir nəticə tapılmadı</p></div>';
-    return;
+    if (!results.length) {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">😶</div><p>Heç bir nəticə tapılmadı</p></div>';
+      return;
+    }
+
+    el.innerHTML = `<div style="overflow-x:auto;">
+      <table class="data-table">
+        <thead><tr>
+          <th>İstifadəçi</th><th>Email</th><th>Rol</th><th>Status</th><th>Əməliyyatlar</th>
+        </tr></thead>
+        <tbody>${results.map(u => userRow(u)).join('')}</tbody>
+      </table></div>`;
+  } catch(e) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div><p>Xəta: ${e.message}</p></div>`;
   }
-
-  el.innerHTML = `<div style="overflow-x:auto;">
-    <table class="data-table">
-      <thead><tr>
-        <th>İstifadəçi</th><th>Email</th><th>Rol</th><th>Status</th><th>Əməliyyatlar</th>
-      </tr></thead>
-      <tbody>${results.map(u => userRow(u)).join('')}</tbody>
-    </table></div>`;
 }
 
 function userRow(u) {
@@ -498,7 +523,10 @@ function userRow(u) {
   const initial  = (first[0] || u.email?.[0] || '?').toUpperCase();
   const blocked  = u.blocked;
   const role     = u.role || 'customer';
-  const avatarHtml = u.photoURL ? `<img src="${u.photoURL}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : initial;
+  const avatarHtml = u.photoURL
+    ? `<img src="${u.photoURL}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
+    : initial;
+  const safeName = fullName.replace(/'/g, "\\'");
   return `<tr>
     <td>
       <div style="display:flex;align-items:center;gap:0.6rem;">
@@ -520,7 +548,7 @@ function userRow(u) {
         <button class="btn btn-outline btn-sm" onclick="toggleBlock('${u.id}',${!blocked})">
           ${blocked ? 'Bloku aç' : 'Blokla'}
         </button>
-        <button class="btn btn-danger btn-sm" onclick="confirmDeleteUser('${u.id}','${fullName.replace(/'/g,"\\'")}')">Sil</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmDeleteUser('${u.id}','${safeName}')">Sil</button>
       </div>
     </td>
   </tr>`;
@@ -529,8 +557,11 @@ function userRow(u) {
 async function changeRole(uid, role) {
   try {
     await fbDb.collection('users').doc(uid).update({ role });
-    showToast('Rol yeniləndi', 'success');
-  } catch(e) { showToast('Xəta baş verdi', 'error'); }
+    showToast('Rol yeniləndi ✓', 'success');
+  } catch(e) {
+    showToast('Xəta: ' + e.message, 'error');
+    console.error('changeRole xətası:', e);
+  }
 }
 
 async function toggleBlock(uid, block) {
@@ -540,26 +571,37 @@ async function toggleBlock(uid, block) {
       blockedAt: block ? firebase.firestore.FieldValue.serverTimestamp() : null
     });
     showToast(block ? 'Hesab bloklandı' : 'Blok açıldı', block ? 'error' : 'success');
-    searchUsers(); loadRecentUsers();
-  } catch(e) { showToast('Xəta baş verdi', 'error'); }
+    searchUsers();
+    loadRecentUsers();
+  } catch(e) {
+    showToast('Xəta: ' + e.message, 'error');
+    console.error('toggleBlock xətası:', e);
+  }
 }
 
 function confirmDeleteUser(uid, name) {
   if (!confirm(`"${name}" hesabını bütün məlumatları ilə birlikdə silmək istəyirsiniz?\n\nBu əməliyyat geri alına bilməz.`)) return;
   (async () => {
     try {
-      const lSnap = await fbDb.collection('listings').where('vendorId','==',uid).get();
+      const lSnap = await fbDb.collection('listings').where('userId','==',uid).get();
       const batch = fbDb.batch();
       lSnap.docs.forEach(d => batch.delete(d.ref));
       batch.delete(fbDb.collection('users').doc(uid));
       await batch.commit();
       showToast('Hesab silindi', 'success');
-      searchUsers(); loadRecentUsers(); loadStats();
-    } catch(e) { showToast('Silmə xətası', 'error'); }
+      searchUsers();
+      loadRecentUsers();
+      loadStats();
+    } catch(e) {
+      showToast('Xəta: ' + e.message, 'error');
+      console.error('deleteUser xətası:', e);
+    }
   })();
 }
 
-/* ── Elan axtarışı ── */
+/* ═══════════════════════════════════════════
+   ELAN AXTARIŞI
+═══════════════════════════════════════════ */
 async function searchListings() {
   const term = document.getElementById('listingSearchInput').value.toLowerCase().trim();
   const el   = document.getElementById('listingResults');
@@ -569,89 +611,228 @@ async function searchListings() {
   }
   el.innerHTML = '<div style="text-align:center;padding:2rem;"><div class="spinner-sm" style="margin:0 auto;"></div></div>';
 
-  const allSnap = await fbDb.collection('listings').get();
-  const results = allSnap.docs.map(d => ({ id: d.id, ...d.data() })).filter(l =>
-    (l.title||'').toLowerCase().includes(term) ||
-    (l.vendorName||'').toLowerCase().includes(term) ||
-    (l.category||'').toLowerCase().includes(term) ||
-    (l.brand||'').toLowerCase().includes(term)
-  );
+  try {
+    const allSnap = await fbDb.collection('listings').get();
+    const results = allSnap.docs.map(d => ({ id: d.id, ...d.data() })).filter(l =>
+      (l.name||l.title||'').toLowerCase().includes(term) ||
+      (l.storeName||l.vendorName||'').toLowerCase().includes(term) ||
+      (l.brand||'').toLowerCase().includes(term) ||
+      (l.category||'').toLowerCase().includes(term)
+    );
 
-  if (!results.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">🙈</div><p>Heç bir elan tapılmadı</p></div>';
-    return;
+    if (!results.length) {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">🙈</div><p>Heç bir elan tapılmadı</p></div>';
+      return;
+    }
+    el.innerHTML = `<div class="listing-grid">${results.map(listingCard).join('')}</div>`;
+  } catch(e) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div><p>Xəta: ${e.message}</p></div>`;
   }
-  el.innerHTML = `<div class="listing-grid">${results.map(listingCard).join('')}</div>`;
 }
 
+/* ── Elan kartı (field adları listings.js ilə uyğun) ── */
 function listingCard(l) {
-  const img    = l.images?.[0] || l.image || '';
-  const imgHtml= img ? `<img src="${img}" alt="" loading="lazy">` : '🛍️';
-  const safeTitle = (l.title||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
-  const safeDesc  = (l.description||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+  // Şəkil: listings.js "imgs" array istifadə edir
+  const img = (l.imgs && l.imgs[0]) || (l.images && l.images[0]) || l.image || '';
+  const imgHtml = img ? `<img src="${img}" alt="" loading="lazy">` : '🛍️';
+
+  // Stok: listings.js sizes array-dən hesablanır
+  const sizes = l.sizes || [];
+  const totalStock = sizes.reduce((s, x) => s + (parseInt(x.stock) || 0), 0) || parseInt(l.stock) || 0;
+
+  // Məhsul adı: listings.js "name" istifadə edir
+  const name = l.name || l.title || '—';
+
+  // Mağaza adı: listings.js "storeName" istifadə edir
+  const storeName = l.storeName || l.vendorName || l.brand || 'Mağaza';
+
+  // Endirim
+  const isSale = l.oldPrice && l.oldPrice > l.price;
+
+  // Rənglər
+  const colors = l.colors || [];
+  const colorsHtml = colors.length
+    ? `<div class="listing-colors">
+        ${colors.slice(0, 6).map(c =>
+          `<span class="listing-color-dot" style="background:${c.hex};${c.hex==='#FFFFFF'?'border:1px solid #ddd;':''}" title="${c.name}"></span>`
+        ).join('')}
+        ${colors.length > 6 ? `<span style="font-size:0.65rem;color:var(--muted);">+${colors.length-6}</span>` : ''}
+       </div>`
+    : '';
+
   return `
     <div class="listing-card">
       <div class="listing-img">${imgHtml}</div>
       <div class="listing-body">
-        <div class="listing-vendor">${l.vendorName||l.brand||'Mağaza'}</div>
-        <div class="listing-title">${l.title||'—'}</div>
-        <div class="listing-price">${l.price != null ? l.price.toFixed(2)+' ₼' : '—'}</div>
-        <div class="listing-stock">Stok: ${l.stock ?? '—'}</div>
+        <div class="listing-vendor">${storeName}</div>
+        <div class="listing-title">${name}</div>
+        <div class="listing-price ${isSale?'':''}">
+          ${l.price != null ? l.price.toFixed(2)+' ₼' : '—'}
+        </div>
+        ${isSale ? `<div class="listing-old-price">${l.oldPrice.toFixed(2)} ₼</div>` : ''}
+        ${colorsHtml}
+        <div class="listing-stock ${totalStock===0?'out':''}">
+          Stok: ${totalStock > 0 ? totalStock + ' ədəd' : 'Yoxdur'}
+        </div>
         <div class="listing-actions">
-          <button class="btn btn-outline btn-sm" onclick="openEditModal('${l.id}','${safeTitle}',${l.price||0},${l.stock||0},'${safeDesc}')">Redaktə</button>
-          <button class="btn btn-warn btn-sm" onclick="openStockModal('${l.id}',${l.stock||0})">Stok</button>
+          <button class="btn btn-outline btn-sm" onclick="adminOpenEdit('${l.id}')">Redaktə</button>
+          <button class="btn btn-warn btn-sm" onclick="adminOpenStock('${l.id}')">Stok</button>
           <button class="btn btn-danger btn-sm" onclick="confirmDeleteListing('${l.id}')">Sil</button>
         </div>
       </div>
     </div>`;
 }
 
-function openEditModal(id, title, price, stock, desc) {
-  document.getElementById('editId').value    = id;
-  document.getElementById('editTitle').value = title;
-  document.getElementById('editPrice').value = price;
-  document.getElementById('editStock').value = stock;
-  document.getElementById('editDesc').value  = desc;
-  document.getElementById('editModal').classList.add('open');
+/* ── Admin Elan Redaktəsi — Firestore-dan yüklə ── */
+async function adminOpenEdit(id) {
+  try {
+    const snap = await fbDb.collection('listings').doc(id).get();
+    if (!snap.exists) { showToast('Elan tapılmadı', 'error'); return; }
+
+    adminEditCurrentData = { id, ...snap.data() };
+    const l = adminEditCurrentData;
+
+    document.getElementById('editId').value       = id;
+    document.getElementById('editName').value     = l.name || l.title || '';
+    document.getElementById('editPrice').value    = l.price || '';
+    document.getElementById('editOldPrice').value = l.oldPrice || '';
+    document.getElementById('editBrand').value    = l.brand || '';
+    document.getElementById('editDesc').value     = l.desc || l.description || '';
+
+    document.getElementById('editModal').classList.add('open');
+  } catch(e) {
+    showToast('Xəta: ' + e.message, 'error');
+  }
 }
 
 async function saveListing() {
   const id = document.getElementById('editId').value;
+  if (!id) return;
+
+  const name     = document.getElementById('editName').value.trim();
+  const price    = parseFloat(document.getElementById('editPrice').value);
+  const oldPrice = parseFloat(document.getElementById('editOldPrice').value) || null;
+  const brand    = document.getElementById('editBrand').value.trim();
+  const desc     = document.getElementById('editDesc').value.trim();
+
+  if (!name)  { showToast('Məhsul adını daxil edin', 'error'); return; }
+  if (!price) { showToast('Qiymət daxil edin', 'error'); return; }
+
   try {
     await fbDb.collection('listings').doc(id).update({
-      title:          document.getElementById('editTitle').value,
-      price:          parseFloat(document.getElementById('editPrice').value),
-      stock:          parseInt(document.getElementById('editStock').value),
-      description:    document.getElementById('editDesc').value,
+      name,
+      // title da saxla — köhnə strukturla uyğunluq üçün
+      title:          name,
+      price,
+      oldPrice:       (oldPrice && oldPrice > price) ? oldPrice : null,
+      brand,
+      desc,
+      // description da saxla — köhnə strukturla uyğunluq üçün
+      description:    desc,
+      badge:          (oldPrice && oldPrice > price) ? 'Endirim' : 'Yeni',
       updatedByAdmin: true,
       updatedAt:      firebase.firestore.FieldValue.serverTimestamp()
     });
-    showToast('Elan yeniləndi', 'success');
-    closeModal('editModal'); searchListings();
-  } catch(e) { showToast('Xəta baş verdi', 'error'); }
+    showToast('Elan yeniləndi ✓', 'success');
+    closeModal('editModal');
+    searchListings();
+  } catch(e) {
+    showToast('Xəta: ' + e.message, 'error');
+    console.error('saveListing xətası:', e);
+  }
 }
 
-function openStockModal(id, stock) {
-  document.getElementById('stockId').value  = id;
-  document.getElementById('newStock').value = stock;
-  document.getElementById('stockModal').classList.add('open');
+/* ── Admin Stok Modalı — sizes array ilə işləyir ── */
+async function adminOpenStock(id) {
+  try {
+    const snap = await fbDb.collection('listings').doc(id).get();
+    if (!snap.exists) { showToast('Elan tapılmadı', 'error'); return; }
+
+    adminStockCurrentData = { id, ...snap.data() };
+    const l = adminStockCurrentData;
+
+    document.getElementById('stockId').value = id;
+    document.getElementById('stockModalProductName').textContent = l.name || l.title || '';
+
+    const body = document.getElementById('stockModalBody');
+    const sizes = l.sizes || [];
+
+    if (sizes.length > 0) {
+      // Ölçü-stok cədvəli
+      body.innerHTML = sizes.map((s, i) => `
+        <div class="admin-size-row">
+          <span class="admin-size-label">${s.label}</span>
+          <div class="admin-size-ctrl">
+            <button type="button" class="admin-stock-btn" onclick="adminStockStep(${i}, -1)">−</button>
+            <input type="number" class="admin-stock-inp" id="adminStock-${i}" value="${s.stock || 0}" min="0">
+            <button type="button" class="admin-stock-btn" onclick="adminStockStep(${i}, 1)">+</button>
+          </div>
+          <span style="font-size:0.72rem;color:var(--muted);">ədəd</span>
+        </div>`).join('');
+    } else {
+      // Ölçüsüz — düz stok sahəsi
+      body.innerHTML = `
+        <div class="form-group">
+          <label>Ümumi stok miqdarı</label>
+          <input type="number" class="admin-stock-inp" id="adminStockFlat"
+            value="${parseInt(l.stock) || 0}" min="0"
+            style="width:100%;font-size:0.875rem;padding:0.62rem 0.85rem;border:1px solid var(--border);border-radius:8px;">
+        </div>
+        <p style="font-size:0.75rem;color:var(--muted);margin-top:0.5rem;">
+          Bu elana ölçü əlavə edilməyib. Satıcı paneldən ölçü əlavə edə bilər.
+        </p>`;
+    }
+
+    document.getElementById('stockModal').classList.add('open');
+  } catch(e) {
+    showToast('Xəta: ' + e.message, 'error');
+  }
+}
+
+function adminStockStep(i, delta) {
+  const inp = document.getElementById(`adminStock-${i}`);
+  if (inp) inp.value = Math.max(0, (parseInt(inp.value) || 0) + delta);
 }
 
 async function saveStock() {
-  const id    = document.getElementById('stockId').value;
-  const stock = parseInt(document.getElementById('newStock').value);
+  const id = document.getElementById('stockId').value;
+  if (!id || !adminStockCurrentData) return;
+
   try {
-    await fbDb.collection('listings').doc(id).update({ stock, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-    showToast('Stok yeniləndi', 'success');
-    closeModal('stockModal'); searchListings();
-  } catch(e) { showToast('Xəta baş verdi', 'error'); }
+    const sizes = adminStockCurrentData.sizes || [];
+    let updateData = {
+      updatedByAdmin: true,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    if (sizes.length > 0) {
+      // Ölçülü məhsul — sizes array yenilə
+      const newSizes = sizes.map((s, i) => ({
+        ...s,
+        stock: parseInt(document.getElementById(`adminStock-${i}`)?.value) || 0
+      }));
+      updateData.sizes = newSizes;
+    } else {
+      // Ölçüsüz — düz stock sahəsi yenilə
+      const flatStock = parseInt(document.getElementById('adminStockFlat')?.value) || 0;
+      updateData.stock = flatStock;
+    }
+
+    await fbDb.collection('listings').doc(id).update(updateData);
+    showToast('Stok yeniləndi ✓', 'success');
+    closeModal('stockModal');
+    searchListings();
+  } catch(e) {
+    showToast('Xəta: ' + e.message, 'error');
+    console.error('saveStock xətası:', e);
+  }
 }
 
 function confirmDeleteListing(id) {
   if (!confirm('Bu elanı silmək istəyirsiniz?\n\nBu əməliyyat geri alına bilməz.')) return;
   fbDb.collection('listings').doc(id).delete()
     .then(() => { showToast('Elan silindi', 'success'); searchListings(); })
-    .catch(() => showToast('Silmə xətası', 'error'));
+    .catch(e => { showToast('Xəta: ' + e.message, 'error'); console.error('deleteListing xətası:', e); });
 }
 
 /* ── Modal ── */
@@ -684,7 +865,7 @@ document.getElementById('userSearchInput').addEventListener('keydown', e => { if
 document.getElementById('listingSearchInput').addEventListener('keydown', e => { if (e.key === 'Enter') searchListings(); });
 
 /* ── Toast ── */
-function showToast(msg, type='success') {
+function showToast(msg, type = 'success') {
   const el = document.getElementById('toast');
   el.textContent = msg;
   el.className = `toast show t-${type}`;
