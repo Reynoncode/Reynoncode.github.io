@@ -132,6 +132,25 @@
     .vendor-menu-badge.approved { background: #eafaf1; color: var(--success); }
     .vendor-menu-badge.new      { background: #f0ece6; color: var(--accent); }
 
+    /* ── Admin menyu elementi ── */
+    .menu-item--admin {
+      color: var(--accent) !important;
+      font-weight: 500;
+    }
+    .menu-item--admin svg {
+      stroke: var(--accent);
+    }
+    .admin-menu-badge {
+      margin-left: auto;
+      font-size: 0.65rem;
+      font-weight: 600;
+      background: var(--accent);
+      color: #fff;
+      padding: 0.18rem 0.55rem;
+      border-radius: 20px;
+      letter-spacing: 0.04em;
+    }
+
     .main { display: flex; flex-direction: column; gap: 1.5rem; }
 
     .section-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.75rem; }
@@ -201,7 +220,6 @@
     .addr-btn:hover { color: var(--accent); }
     .addr-btn.danger:hover { color: var(--danger); }
 
-    /* Yeni ünvan kartı */
     .add-addr-card {
       border: 1.5px dashed var(--border);
       border-radius: 12px;
@@ -407,26 +425,6 @@
     @media (min-width: 769px) {
       #mobileMenuBar { display: none; }
     }
-    <style-snippet>
-/* ── Admin menyu elementi ── */
-.menu-item--admin {
-  color: var(--accent) !important;
-  font-weight: 500;
-}
-.menu-item--admin svg {
-  stroke: var(--accent);
-}
-.admin-menu-badge {
-  margin-left: auto;
-  font-size: 0.65rem;
-  font-weight: 600;
-  background: var(--accent);
-  color: #fff;
-  padding: 0.18rem 0.55rem;
-  border-radius: 20px;
-  letter-spacing: 0.04em;
-}
-</style-snippet>
   </style>
 </head>
 <body>
@@ -479,7 +477,7 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
   </a>
 </div>
-  
+
 <div class="page">
 
   <!-- SIDEBAR -->
@@ -510,7 +508,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
         <span class="menu-label" data-i18n="nav.addresses">Ünvanlarım</span>
       </a>
-      <html-snippet>
+
       <!-- Super Admin — yalnız role==='admin' olanlara görünür -->
       <div id="adminMenuSection" style="display:none">
         <a class="menu-item menu-item--admin" href="admin.html" data-tooltip="Super Admin">
@@ -524,8 +522,7 @@
         </a>
         <div class="menu-divider"></div>
       </div>
-</html-snippet>
-      
+
       <div class="menu-divider"></div>
 
       <a class="menu-item" data-tab="vendor" data-tooltip="Satıcı paneli" onclick="switchTab('vendor', this)" id="vendorMenuItem">
@@ -764,20 +761,20 @@
    ══════════════════════════════════════════ */
 let _addrMap        = null;
 let _addrMarker     = null;
-let _addrGeoResult  = null;   /* { lat, lng, label } */
-let _editingDocId   = null;   /* null = yeni, string = redaktə */
+let _addrGeoResult  = null;
+let _editingDocId   = null;
 
 function openAddrModal(editDocId = null) {
   _editingDocId  = editDocId;
   _addrGeoResult = null;
 
-  const modal    = document.getElementById('addrModal');
-  const titleEl  = document.getElementById('addrModalTitle');
-  const saveBtn  = document.getElementById('addrSaveBtn');
+  const modal   = document.getElementById('addrModal');
+  const titleEl = document.getElementById('addrModalTitle');
+  const saveBtn = document.getElementById('addrSaveBtn');
 
-  document.getElementById('addrBuilding').value  = '';
-  document.getElementById('addrApartment').value = '';
-  document.getElementById('addrNote').value      = '';
+  document.getElementById('addrBuilding').value    = '';
+  document.getElementById('addrApartment').value   = '';
+  document.getElementById('addrNote').value        = '';
   document.getElementById('addrIsDefault').checked = false;
   document.getElementById('addrPickerText').textContent = 'Xəritəyə klikləyin — ünvan avtomatik doldurulacaq';
   saveBtn.disabled = true;
@@ -803,7 +800,6 @@ function openAddrModal(editDocId = null) {
   modal.classList.add('open');
   modal.onclick = e => { if (e.target === modal) closeAddrModal(); };
 
-  /* Xəritəni yüklə */
   _loadAddrLeaflet(() => {
     setTimeout(() => _initAddrMap(editDocId), 100);
   });
@@ -820,11 +816,11 @@ function closeAddrModal() {
 function _loadAddrLeaflet(cb) {
   if (window.L) { cb(); return; }
   const link = document.createElement('link');
-  link.rel = 'stylesheet';
+  link.rel  = 'stylesheet';
   link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
   document.head.appendChild(link);
   const script = document.createElement('script');
-  script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+  script.src    = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
   script.onload = cb;
   document.head.appendChild(script);
 }
@@ -850,7 +846,6 @@ function _initAddrMap(editDocId) {
     attribution: '© OpenStreetMap'
   }).addTo(_addrMap);
 
-  /* Redaktə olunarkən markeri göstər */
   if (editDocId) {
     const existing = _profileAddresses.find(a => a._docId === editDocId);
     if (existing && existing.lat && existing.lng) {
@@ -876,7 +871,6 @@ function _initAddrMap(editDocId) {
     await _addrReverseGeocode(lat, lng);
   });
 
-  /* Xəritənin düzgün render olması üçün */
   setTimeout(() => _addrMap.invalidateSize(), 200);
 }
 
@@ -897,21 +891,19 @@ async function _addrReverseGeocode(lat, lng) {
 }
 
 function _checkAddrSaveReady() {
-  const building   = (document.getElementById('addrBuilding')?.value   || '').trim();
-  const apartment  = (document.getElementById('addrApartment')?.value  || '').trim();
-  const hasMap     = _addrGeoResult && (_addrGeoResult.lat || _editingDocId);
-  const btn        = document.getElementById('addrSaveBtn');
+  const building  = (document.getElementById('addrBuilding')?.value  || '').trim();
+  const apartment = (document.getElementById('addrApartment')?.value || '').trim();
+  const hasMap    = _addrGeoResult && (_addrGeoResult.lat || _editingDocId);
+  const btn       = document.getElementById('addrSaveBtn');
   if (btn) btn.disabled = !(hasMap && building && apartment);
 }
 
-/* Input dəyişdikdə yoxla */
 document.addEventListener('input', e => {
   if (['addrBuilding','addrApartment','addrNote'].includes(e.target.id)) {
     _checkAddrSaveReady();
   }
 });
 
-/* ── Ünvanı Firestore-a saxla ── */
 async function saveAddress() {
   if (!currentUser) return;
   const btn = document.getElementById('addrSaveBtn');
@@ -923,16 +915,15 @@ async function saveAddress() {
     const note      = document.getElementById('addrNote').value.trim();
     const isDefault = document.getElementById('addrIsDefault').checked;
 
-    /* Əsas ünvan seçilibsə digərlərini sıfırla */
     if (isDefault) {
-  const batch = fbDb.batch();
-  _profileAddresses.forEach(a => {
-    if (a.isDefault && a._docId !== _editingDocId) {
-      batch.update(fbDb.collection('addresses').doc(a._docId), { isDefault: false });
+      const batch = fbDb.batch();
+      _profileAddresses.forEach(a => {
+        if (a.isDefault && a._docId !== _editingDocId) {
+          batch.update(fbDb.collection('addresses').doc(a._docId), { isDefault: false });
+        }
+      });
+      await batch.commit();
     }
-  });
-  await batch.commit();
-}
 
     const addrData = {
       userId:    currentUser.uid,
@@ -973,7 +964,7 @@ let currentUser       = null;
 let _profileAddresses = [];
 
 /* ══════════════════════════════
-   AUTH STATE
+   AUTH STATE — tək, tam versiya
    ══════════════════════════════ */
 fbAuth.onAuthStateChanged(async (user) => {
   if (!user) { window.location.href = 'index.html'; return; }
@@ -1000,23 +991,6 @@ fbAuth.onAuthStateChanged(async (user) => {
   applyLang();
 });
 
- fbAuth.onAuthStateChanged(async (user) => {
-  if (!user) { window.location.href = 'index.html'; return; }
-  currentUser = user;
-
-  // ── Admin menyusunu göstər ──
-  const userDoc = await fbDb.collection('users').doc(user.uid).get();
-  if (userDoc.exists && userDoc.data().role === 'admin') {
-    const adminSection = document.getElementById('adminMenuSection');
-    if (adminSection) adminSection.style.display = '';
-  }
-
-  try {
-    await loadUserData(user);
-    // ... qalanı eyni
-  }
-});
-  
 /* ══════════════════════════════
    DİL
    ══════════════════════════════ */
@@ -1078,8 +1052,8 @@ async function loadUserData(user) {
   document.getElementById('firstName').value  = first;
   document.getElementById('lastName').value   = last;
   document.getElementById('emailField').value = user.email || '';
-  document.getElementById('phoneField').value = data.phone  || '';
-  document.getElementById('dobField').value   = data.dob    || '';
+  document.getElementById('phoneField').value = data.phone || '';
+  document.getElementById('dobField').value   = data.dob   || '';
 
   const gSel = document.getElementById('genderField');
   [...gSel.options].forEach(o => { o.selected = o.value === (data.gender || 'Qadın'); });
@@ -1106,8 +1080,8 @@ async function saveProfile() {
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
     const full = (first + ' ' + last).trim();
-    document.getElementById('sidebarName').textContent   = full || 'İstifadəçi';
-    document.getElementById('welcomeName').textContent   = first || full;
+    document.getElementById('sidebarName').textContent    = full || 'İstifadəçi';
+    document.getElementById('welcomeName').textContent    = first || full;
     document.getElementById('avatarInitials').textContent = ((first[0]||'') + (last[0]||'')).toUpperCase() || '?';
     setLang(lang);
     showToast(t('p.saved'));
@@ -1182,12 +1156,11 @@ async function loadOrders(uid) {
       const firstImg  = (o.items || [])[0]?.img || '';
       const imgHTML   = firstImg ? `<img src="${firstImg}" alt="${shortName}" style="width:100%;height:100%;object-fit:cover;">` : '🛍️';
       const orderNum  = o.orderNumber ? `#${o.orderNumber}` : `#${doc.id.slice(-5).toUpperCase()}`;
-      /* Ünvan: yeni strukturu dəstəklə */
       const addr = o.address;
       let addrLabel = '';
       if (addr) {
         const parts = [];
-        if (addr.label) parts.push(addr.label.substring(0, 50) + (addr.label.length > 50 ? '…' : ''));
+        if (addr.label)     parts.push(addr.label.substring(0, 50) + (addr.label.length > 50 ? '…' : ''));
         if (addr.building)  parts.push(`Bina: ${addr.building}`);
         if (addr.apartment) parts.push(`Mənzil: ${addr.apartment}`);
         addrLabel = parts.join(' · ');
@@ -1224,7 +1197,7 @@ async function loadOrders(uid) {
    ══════════════════════════════ */
 async function loadWishlist(uid) {
   try {
-    const snap = await fbDb.collection('wishlists').doc(uid).get();
+    const snap       = await fbDb.collection('wishlists').doc(uid).get();
     const container  = document.getElementById('wishlistItems');
     const statWishEl = document.getElementById('statWishlist');
     const items = snap.exists ? (snap.data().items || []) : [];
@@ -1278,7 +1251,6 @@ async function loadAddresses(uid) {
     const snap = await fbDb.collection('addresses')
       .where('userId', '==', uid)
       .get();
-
     _profileAddresses = snap.docs.map(d => ({ _docId: d.id, ...d.data() }));
     _renderAddressGrid();
   } catch (err) {
@@ -1314,7 +1286,6 @@ function _renderAddressGrid() {
     grid.appendChild(card);
   });
 
-  /* Yeni ünvan əlavə et kartı */
   const addCard = document.createElement('div');
   addCard.className = 'add-addr-card';
   addCard.innerHTML = `
@@ -1386,14 +1357,15 @@ function switchTab(name, el) {
 
   if (name === 'vendor'   && currentUser) loadVendorTab(currentUser.uid);
   if (name === 'listings' && currentUser) loadListingsTab(currentUser.uid);
-  if (name === 'profile')  { initAvatarUpload(); syncProfileTabAvatar(); applyLang(); }
+  if (name === 'profile') { initAvatarUpload(); syncProfileTabAvatar(); applyLang(); }
   applyLang();
 }
+
 /* ══════════════════════════════
    PROFİL TAB FOTO YÜKLƏMƏ
    ══════════════════════════════ */
 function syncProfileTabAvatar() {
-  const tabAvatar = document.getElementById('profileTabAvatar');
+  const tabAvatar  = document.getElementById('profileTabAvatar');
   const sideAvatar = document.getElementById('avatarInitials');
   if (!tabAvatar || !sideAvatar) return;
   tabAvatar.innerHTML = sideAvatar.innerHTML || sideAvatar.textContent;
@@ -1401,41 +1373,31 @@ function syncProfileTabAvatar() {
 
 async function uploadProfileTabPhoto(file) {
   if (!file || !currentUser) return;
-  
-  // Ölçü yoxlaması — 5MB
   if (file.size > 5 * 1024 * 1024) {
     showToast('Şəkil 5MB-dan böyük ola bilməz');
     return;
   }
-
   const tabAvatar = document.getElementById('profileTabAvatar');
   if (tabAvatar) tabAvatar.style.opacity = '0.5';
-  
   try {
-    // Şəkli compress edib base64-ə çevir
     const base64 = await compressImage(file, 300, 0.75);
-    
-    // Birbaşa Firestore-a saxla
     await fbDb.collection('users').doc(currentUser.uid).set(
-      { photoURL: base64 }, 
+      { photoURL: base64 },
       { merge: true }
     );
-    
     const imgHTML = `<img src="${base64}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
     if (tabAvatar) tabAvatar.innerHTML = imgHTML;
     const sideAvatar = document.getElementById('avatarInitials');
     if (sideAvatar) sideAvatar.innerHTML = imgHTML;
-    
     showToast('Profil şəkli yeniləndi ✓');
-  } catch (err) { 
-    showToast('Xəta: ' + err.message); 
-  } finally { 
-    if (tabAvatar) tabAvatar.style.opacity = '1'; 
-    document.getElementById('profileTabFileInput').value = ''; 
+  } catch (err) {
+    showToast('Xəta: ' + err.message);
+  } finally {
+    if (tabAvatar) tabAvatar.style.opacity = '1';
+    document.getElementById('profileTabFileInput').value = '';
   }
 }
 
-// Şəkli kiçilt — Canvas ilə
 function compressImage(file, maxSize, quality) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -1473,7 +1435,7 @@ document.querySelectorAll('.menu-item').forEach(el => {
 });
 
 /* ══════════════════════════════
-   PROFİL ŞƏKLİ YÜKLƏMƏ
+   PROFİL ŞƏKLİ YÜKLƏMƏ (Sidebar avatar)
    ══════════════════════════════ */
 function initAvatarUpload() {
   const avatarEl = document.getElementById('avatarInitials');
