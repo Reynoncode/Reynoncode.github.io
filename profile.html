@@ -984,14 +984,6 @@ fbAuth.onAuthStateChanged(async (user) => {
     await loadWishlist(user.uid);
     await loadAddresses(user.uid);
     await updateVendorMenuBadge(user.uid);
-    <js-snippet>
-    // ── Admin menyusunu göstər ──
-    const userDoc = await fbDb.collection('users').doc(user.uid).get();
-    if (userDoc.exists && userDoc.data().role === 'admin') {
-      const adminSection = document.getElementById('adminMenuSection');
-      if (adminSection) adminSection.style.display = '';
-    }
-</js-snippet>
   } catch (err) {
     console.warn('Profil yüklənmə xətası:', err.message);
   }
@@ -999,6 +991,15 @@ fbAuth.onAuthStateChanged(async (user) => {
   applyLang();
 });
 
+  <js-snippet>
+    // ── Admin menyusunu göstər ──
+    const userDoc = await fbDb.collection('users').doc(user.uid).get();
+    if (userDoc.exists && userDoc.data().role === 'admin') {
+      const adminSection = document.getElementById('adminMenuSection');
+      if (adminSection) adminSection.style.display = '';
+    }
+</js-snippet>
+  
 /* ══════════════════════════════
    DİL
    ══════════════════════════════ */
