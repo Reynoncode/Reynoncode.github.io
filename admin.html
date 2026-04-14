@@ -6,6 +6,260 @@
 <title>Super Admin — MODA</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="css/admin.css"/>
+<style>
+/* ══════════════════════════════════════════
+   KATEQORİYA İDARƏETMƏSİ — əlavə stillər
+   ══════════════════════════════════════════ */
+
+/* Ana kateqoriya item */
+.mcat-item {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+  transition: border-color .18s;
+}
+.mcat-item:hover { border-color: var(--accent); }
+
+.mcat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 0.85rem;
+  background: var(--bg);
+  cursor: default;
+}
+
+.mcat-left {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.mcat-icon-badge {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  width: 28px;
+  text-align: center;
+}
+
+.mcat-name-text {
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mcat-sub-count {
+  font-size: 0.68rem;
+  color: var(--muted);
+  background: var(--tag-bg);
+  padding: 2px 7px;
+  border-radius: 20px;
+  flex-shrink: 0;
+}
+
+.mcat-btns {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+.mcat-expand-btn {
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .15s;
+}
+.mcat-expand-btn:hover { border-color: var(--accent); }
+.mcat-expand-btn svg { transition: transform .2s; }
+
+/* Alt kateqoriya panel */
+.mcat-subs-panel {
+  padding: 0.75rem 0.85rem 0.85rem;
+  border-top: 1px solid var(--border);
+  background: var(--card);
+}
+
+.sub-chip-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.sub-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 0.22rem 0.6rem 0.22rem 0.7rem;
+  font-size: 0.78rem;
+  transition: border-color .15s;
+}
+.sub-chip:hover { border-color: var(--accent); }
+
+.sub-chip-rm {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.65rem;
+  padding: 0;
+  line-height: 1;
+  transition: color .15s;
+  display: flex;
+  align-items: center;
+}
+.sub-chip-rm:hover { color: var(--danger); }
+
+.add-sub-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.add-sub-input {
+  flex: 1;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.82rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 0.45rem 0.75rem;
+  outline: none;
+  transition: border-color .18s;
+  color: var(--accent);
+}
+.add-sub-input:focus { border-color: var(--accent); }
+
+/* Ana kateqoriya üst bar */
+.mcat-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.85rem;
+}
+.mcat-topbar-title {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* ── Icon Seçim Modalı ── */
+.mcat-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 600;
+  background: rgba(0,0,0,0.4);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.mcat-modal-overlay.open { display: flex; }
+.mcat-modal-box {
+  background: var(--card);
+  border-radius: 14px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 1.5rem;
+  position: relative;
+}
+.mcat-modal-box-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-bottom: 1.1rem;
+  padding-right: 2rem;
+}
+
+/* İcon seçim grid */
+.icon-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 4px;
+  margin-bottom: 0.85rem;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 0.5rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.icon-opt {
+  font-size: 1.2rem;
+  padding: 5px;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+  text-align: center;
+  transition: all .15s;
+  line-height: 1;
+}
+.icon-opt:hover { background: var(--tag-bg); border-color: var(--border); }
+.icon-opt-selected { background: var(--gold-bg) !important; border-color: var(--gold) !important; }
+
+/* Seçilmiş icon preview */
+.icon-preview-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 0.85rem;
+}
+.icon-preview-big {
+  font-size: 2rem;
+  width: 44px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.icon-preview-info {
+  flex: 1;
+  min-width: 0;
+}
+.icon-preview-info small {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+/* Custom icon input */
+.custom-icon-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+.custom-icon-inp {
+  flex: 1;
+  font-size: 1rem;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  outline: none;
+  font-family: 'DM Sans', sans-serif;
+  transition: border-color .18s;
+}
+.custom-icon-inp:focus { border-color: var(--accent); }
+</style>
 </head>
 <body>
 
@@ -21,7 +275,6 @@
     <div class="brand-sub">Admin İdarəetməsi</div>
     <span class="brand-badge">Super Admin</span>
   </div>
-
   <div class="nav-section">
     <div class="nav-label">Əsas</div>
     <button class="nav-btn active" data-sec="users">
@@ -33,7 +286,6 @@
       <span>Məhsul Moderasiyası</span>
     </button>
   </div>
-
   <div class="nav-section">
     <div class="nav-label">İdarəetmə</div>
     <button class="nav-btn" data-sec="platform">
@@ -45,7 +297,6 @@
       <span>Analitika</span>
     </button>
   </div>
-
   <div class="sidebar-footer">
     <a href="profile.html" class="back-link">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
@@ -78,19 +329,11 @@
         <div class="stat-card"><div class="stat-label">Sifarişlər</div><div class="stat-value" id="s-orders">—</div><div class="stat-trend">Cəmi sifariş</div></div>
       </div>
       <div class="panel-card">
-        <div class="panel-card-header">
-          <div><div class="panel-card-title">Son Qeydiyyatdan Keçənlər</div><div class="panel-card-sub">Ən son 5 yeni hesab</div></div>
-        </div>
-        <div class="panel-card-body">
-          <div id="recentUsers" class="recent-grid">
-            <div style="grid-column:1/-1;text-align:center;padding:1.5rem;"><div class="spinner-sm" style="margin:0 auto;"></div></div>
-          </div>
-        </div>
+        <div class="panel-card-header"><div><div class="panel-card-title">Son Qeydiyyatdan Keçənlər</div><div class="panel-card-sub">Ən son 5 yeni hesab</div></div></div>
+        <div class="panel-card-body"><div id="recentUsers" class="recent-grid"><div style="grid-column:1/-1;text-align:center;padding:1.5rem;"><div class="spinner-sm" style="margin:0 auto;"></div></div></div></div>
       </div>
       <div class="panel-card">
-        <div class="panel-card-header">
-          <div><div class="panel-card-title">İstifadəçi Axtarışı</div><div class="panel-card-sub">Email və ya ad ilə axtarın</div></div>
-        </div>
+        <div class="panel-card-header"><div><div class="panel-card-title">İstifadəçi Axtarışı</div><div class="panel-card-sub">Email və ya ad ilə axtarın</div></div></div>
         <div class="panel-card-body">
           <div class="search-row" style="margin-bottom:1.25rem;">
             <div class="search-wrap">
@@ -99,9 +342,7 @@
             </div>
             <button class="btn btn-dark" onclick="searchUsers()">Axtar</button>
           </div>
-          <div id="userResults">
-            <div class="empty"><div class="empty-icon">🔍</div><p>Axtarış üçün bir şey daxil edin</p></div>
-          </div>
+          <div id="userResults"><div class="empty"><div class="empty-icon">🔍</div><p>Axtarış üçün bir şey daxil edin</p></div></div>
         </div>
       </div>
     </div>
@@ -109,9 +350,7 @@
     <!-- ══ 2. MƏHSUL MODERASİYASI ══ -->
     <div id="sec-listings" class="section">
       <div class="panel-card">
-        <div class="panel-card-header">
-          <div><div class="panel-card-title">Elan Axtarışı</div><div class="panel-card-sub">Məhsul adı, kateqoriya və ya mağaza adı ilə</div></div>
-        </div>
+        <div class="panel-card-header"><div><div class="panel-card-title">Elan Axtarışı</div><div class="panel-card-sub">Məhsul adı, kateqoriya və ya mağaza adı ilə</div></div></div>
         <div class="panel-card-body">
           <div class="search-row" style="margin-bottom:1.25rem;">
             <div class="search-wrap">
@@ -120,9 +359,7 @@
             </div>
             <button class="btn btn-dark" onclick="searchListings()">Axtar</button>
           </div>
-          <div id="listingResults">
-            <div class="empty"><div class="empty-icon">📦</div><p>Axtarış üçün bir şey daxil edin</p></div>
-          </div>
+          <div id="listingResults"><div class="empty"><div class="empty-icon">📦</div><p>Axtarış üçün bir şey daxil edin</p></div></div>
         </div>
       </div>
     </div>
@@ -148,38 +385,20 @@
                 <input type="text" class="setting-input setting-input-full" id="cfg-siteName" value="MODA"/>
               </div>
               <div class="setting-row">
-                <div class="setting-row-info">
-                  <div class="setting-row-label">Texniki xidmət rejimi</div>
-                  <div class="setting-row-sub">Saytı müvəqqəti bağla</div>
-                </div>
+                <div class="setting-row-info"><div class="setting-row-label">Texniki xidmət rejimi</div><div class="setting-row-sub">Saytı müvəqqəti bağla</div></div>
                 <label class="toggle"><input type="checkbox" id="cfg-maintenance"><span class="toggle-slider"></span></label>
               </div>
               <div class="setting-row">
-                <div class="setting-row-info">
-                  <div class="setting-row-label">Yeni qeydiyyat</div>
-                  <div class="setting-row-sub">İstifadəçi qeydiyyatına icazə ver</div>
-                </div>
+                <div class="setting-row-info"><div class="setting-row-label">Yeni qeydiyyat</div><div class="setting-row-sub">İstifadəçi qeydiyyatına icazə ver</div></div>
                 <label class="toggle"><input type="checkbox" id="cfg-allowReg" checked><span class="toggle-slider"></span></label>
               </div>
               <div class="setting-row">
-                <div class="setting-row-info">
-                  <div class="setting-row-label">Pulsuz çatdırılma həddi</div>
-                  <div class="setting-row-sub">Bu məbləğdən yuxarı sifarişlər</div>
-                </div>
-                <div style="display:flex;align-items:center;gap:0.3rem;">
-                  <input type="number" class="setting-input" id="cfg-freeShipping" value="50" min="0" step="5"/>
-                  <span style="font-size:0.82rem;color:var(--muted);">₼</span>
-                </div>
+                <div class="setting-row-info"><div class="setting-row-label">Pulsuz çatdırılma həddi</div><div class="setting-row-sub">Bu məbləğdən yuxarı sifarişlər</div></div>
+                <div style="display:flex;align-items:center;gap:0.3rem;"><input type="number" class="setting-input" id="cfg-freeShipping" value="50" min="0" step="5"/><span style="font-size:0.82rem;color:var(--muted);">₼</span></div>
               </div>
               <div class="setting-row">
-                <div class="setting-row-info">
-                  <div class="setting-row-label">Minimum sifariş məbləği</div>
-                  <div class="setting-row-sub">Minimal ödəniş hədd</div>
-                </div>
-                <div style="display:flex;align-items:center;gap:0.3rem;">
-                  <input type="number" class="setting-input" id="cfg-minOrder" value="5" min="0"/>
-                  <span style="font-size:0.82rem;color:var(--muted);">₼</span>
-                </div>
+                <div class="setting-row-info"><div class="setting-row-label">Minimum sifariş məbləği</div><div class="setting-row-sub">Minimal ödəniş hədd</div></div>
+                <div style="display:flex;align-items:center;gap:0.3rem;"><input type="number" class="setting-input" id="cfg-minOrder" value="5" min="0"/><span style="font-size:0.82rem;color:var(--muted);">₼</span></div>
               </div>
             </div>
           </div>
@@ -192,14 +411,7 @@
             </div>
             <div class="setting-group-body" style="padding:0;">
               <table class="commission-table">
-                <thead>
-                  <tr>
-                    <th>Kateqoriya</th>
-                    <th style="text-align:center;">Komissiya %</th>
-                    <th style="text-align:center;">Aktiv</th>
-                    <th style="text-align:center;">Sil</th>
-                  </tr>
-                </thead>
+                <thead><tr><th>Kateqoriya</th><th style="text-align:center;">Komissiya %</th><th style="text-align:center;">Aktiv</th><th style="text-align:center;">Sil</th></tr></thead>
                 <tbody id="commissionTableBody"></tbody>
               </table>
               <div style="padding:0.85rem 1rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;">
@@ -211,67 +423,60 @@
             </div>
           </div>
 
-          <!-- Kateqoriyalar -->
-          <div class="setting-group">
-            <div class="setting-group-header">
-              <div class="setting-group-icon success">🗂️</div>
-              <div class="setting-group-title">Kateqoriya İdarəetməsi</div>
-            </div>
-            <div class="setting-group-body">
-              <div class="cat-list" id="catList"></div>
-              <div class="add-cat-row">
-                <input type="text" id="newCatInput" placeholder="Yeni kateqoriya adı..." maxlength="40"/>
-                <button class="btn btn-dark btn-sm" onclick="addCategory()">Əlavə et</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Xüsusiyyətlər -->
-          <div class="setting-group">
-            <div class="setting-group-header">
-              <div class="setting-group-icon danger">🔔</div>
-              <div class="setting-group-title">Bildiriş & Xüsusiyyətlər</div>
-            </div>
-            <div class="setting-group-body">
-              <div class="setting-row">
-                <div class="setting-row-info">
-                  <div class="setting-row-label">Şərh moderasiyası</div>
-                  <div class="setting-row-sub">Şərhlər admin təsdiqi tələb etsin</div>
-                </div>
-                <label class="toggle"><input type="checkbox" id="cfg-reviewMod"><span class="toggle-slider"></span></label>
-              </div>
-              <div class="setting-row">
-                <div class="setting-row-info">
-                  <div class="setting-row-label">Avtomatik satıcı təsdiqi</div>
-                  <div class="setting-row-sub">Satıcı müraciəti avtomatik qəbul</div>
-                </div>
-                <label class="toggle"><input type="checkbox" id="cfg-autoVendor"><span class="toggle-slider"></span></label>
-              </div>
-              <div class="setting-row">
-                <div class="setting-row-info">
-                  <div class="setting-row-label">İstək siyahısı</div>
-                  <div class="setting-row-sub">İstifadəçilər istək siyahısı yaratsın</div>
-                </div>
-                <label class="toggle"><input type="checkbox" id="cfg-wishlist" checked><span class="toggle-slider"></span></label>
-              </div>
-              <div class="setting-row">
-                <div class="setting-row-info">
-                  <div class="setting-row-label">Mağaza rəyləri</div>
-                  <div class="setting-row-sub">Alıcılar mağazaya rəy yaza bilsin</div>
-                </div>
-                <label class="toggle"><input type="checkbox" id="cfg-reviews" checked><span class="toggle-slider"></span></label>
-              </div>
-              <div class="setting-row">
-                <div class="setting-row-info">
-                  <div class="setting-row-label">Maksimum şəkil sayı</div>
-                  <div class="setting-row-sub">Hər elana maksimum şəkil</div>
-                </div>
-                <input type="number" class="setting-input" id="cfg-maxImages" value="8" min="1" max="20"/>
-              </div>
-            </div>
-          </div>
-
         </div><!-- /platform-grid -->
+
+        <!-- ══ KATEQORİYA İDARƏETMƏSİ — TAM GENİŞLƏNDİRİLMİŞ ══ -->
+        <div class="setting-group" style="margin-bottom:1.25rem;">
+          <div class="setting-group-header">
+            <div style="display:flex;align-items:center;gap:0.6rem;flex:1;">
+              <div class="setting-group-icon success">🗂️</div>
+              <div>
+                <div class="setting-group-title">Kateqoriya İdarəetməsi</div>
+                <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">Ana kateqoriyalar həm header filtrdə, həm mağaza seçimində, həm elan formunda eyni görünür</div>
+              </div>
+            </div>
+            <button class="btn btn-dark btn-sm" onclick="openAddMcat()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Yeni kateqoriya
+            </button>
+          </div>
+          <div class="setting-group-body">
+            <div class="mcat-topbar">
+              <span class="mcat-topbar-title">Hər kateqoriyanın yanındakı oxu klikləyin — alt kateqoriyaları görün/əlavə edin</span>
+            </div>
+            <div id="mainCatContainer"></div>
+          </div>
+        </div>
+
+        <!-- Xüsusiyyətlər -->
+        <div class="setting-group" style="margin-bottom:1.25rem;">
+          <div class="setting-group-header">
+            <div class="setting-group-icon danger">🔔</div>
+            <div class="setting-group-title">Bildiriş & Xüsusiyyətlər</div>
+          </div>
+          <div class="setting-group-body">
+            <div class="setting-row">
+              <div class="setting-row-info"><div class="setting-row-label">Şərh moderasiyası</div><div class="setting-row-sub">Şərhlər admin təsdiqi tələb etsin</div></div>
+              <label class="toggle"><input type="checkbox" id="cfg-reviewMod"><span class="toggle-slider"></span></label>
+            </div>
+            <div class="setting-row">
+              <div class="setting-row-info"><div class="setting-row-label">Avtomatik satıcı təsdiqi</div><div class="setting-row-sub">Satıcı müraciəti avtomatik qəbul</div></div>
+              <label class="toggle"><input type="checkbox" id="cfg-autoVendor"><span class="toggle-slider"></span></label>
+            </div>
+            <div class="setting-row">
+              <div class="setting-row-info"><div class="setting-row-label">İstək siyahısı</div><div class="setting-row-sub">İstifadəçilər istək siyahısı yaratsın</div></div>
+              <label class="toggle"><input type="checkbox" id="cfg-wishlist" checked><span class="toggle-slider"></span></label>
+            </div>
+            <div class="setting-row">
+              <div class="setting-row-info"><div class="setting-row-label">Mağaza rəyləri</div><div class="setting-row-sub">Alıcılar mağazaya rəy yaza bilsin</div></div>
+              <label class="toggle"><input type="checkbox" id="cfg-reviews" checked><span class="toggle-slider"></span></label>
+            </div>
+            <div class="setting-row">
+              <div class="setting-row-info"><div class="setting-row-label">Maksimum şəkil sayı</div><div class="setting-row-sub">Hər elana maksimum şəkil</div></div>
+              <input type="number" class="setting-input" id="cfg-maxImages" value="8" min="1" max="20"/>
+            </div>
+          </div>
+        </div>
 
         <div class="platform-save-bar">
           <div class="platform-save-info">Son saxlama: <strong id="platformLastSaved">—</strong></div>
@@ -288,7 +493,6 @@
 
     <!-- ══ 4. ANALİTİKA ══ -->
     <div id="sec-analytics" class="section">
-
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;">
         <div style="font-size:0.78rem;color:var(--muted);" id="analyticsDateRange"></div>
         <div class="period-tabs">
@@ -297,107 +501,32 @@
           <button class="period-tab"        data-period="90" onclick="switchPeriod(90,this)">3 ay</button>
         </div>
       </div>
-
-      <!-- KPI kartları -->
       <div class="analytics-stats">
-        <div class="analytics-stat">
-          <div class="analytics-stat-icon" style="background:var(--success-bg);">💰</div>
-          <div class="analytics-stat-value" id="an-revenue">—</div>
-          <div class="analytics-stat-label">Ümumi Gəlir</div>
-          <div class="analytics-stat-change neutral" id="an-revenue-change">—</div>
-        </div>
-        <div class="analytics-stat">
-          <div class="analytics-stat-icon" style="background:#eaf4fb;">📦</div>
-          <div class="analytics-stat-value" id="an-orders">—</div>
-          <div class="analytics-stat-label">Sifarişlər</div>
-          <div class="analytics-stat-change neutral" id="an-orders-change">—</div>
-        </div>
-        <div class="analytics-stat">
-          <div class="analytics-stat-icon" style="background:var(--tag-bg);">👤</div>
-          <div class="analytics-stat-value" id="an-newusers">—</div>
-          <div class="analytics-stat-label">Yeni İstifadəçi</div>
-          <div class="analytics-stat-change neutral" id="an-users-change">—</div>
-        </div>
-        <div class="analytics-stat">
-          <div class="analytics-stat-icon" style="background:var(--gold-bg);">🛍️</div>
-          <div class="analytics-stat-value" id="an-avgorder">—</div>
-          <div class="analytics-stat-label">Orta Sifariş</div>
-          <div class="analytics-stat-change neutral" id="an-avg-change">—</div>
-        </div>
+        <div class="analytics-stat"><div class="analytics-stat-icon" style="background:var(--success-bg);">💰</div><div class="analytics-stat-value" id="an-revenue">—</div><div class="analytics-stat-label">Ümumi Gəlir</div><div class="analytics-stat-change neutral" id="an-revenue-change">—</div></div>
+        <div class="analytics-stat"><div class="analytics-stat-icon" style="background:#eaf4fb;">📦</div><div class="analytics-stat-value" id="an-orders">—</div><div class="analytics-stat-label">Sifarişlər</div><div class="analytics-stat-change neutral" id="an-orders-change">—</div></div>
+        <div class="analytics-stat"><div class="analytics-stat-icon" style="background:var(--tag-bg);">👤</div><div class="analytics-stat-value" id="an-newusers">—</div><div class="analytics-stat-label">Yeni İstifadəçi</div><div class="analytics-stat-change neutral" id="an-users-change">—</div></div>
+        <div class="analytics-stat"><div class="analytics-stat-icon" style="background:var(--gold-bg);">🛍️</div><div class="analytics-stat-value" id="an-avgorder">—</div><div class="analytics-stat-label">Orta Sifariş</div><div class="analytics-stat-change neutral" id="an-avg-change">—</div></div>
       </div>
-
-      <!-- Satış qrafiki + Kateqoriya donut -->
       <div class="analytics-grid-2">
-        <div class="panel-card" style="margin-bottom:0;">
-          <div class="panel-card-header">
-            <div><div class="panel-card-title">Satış Dinamikası</div><div class="panel-card-sub">Seçilmiş dövrün gəlir trendi</div></div>
-          </div>
-          <div class="panel-card-body">
-            <div class="chart-wrap"><canvas id="salesChart"></canvas></div>
-          </div>
-        </div>
-        <div class="panel-card" style="margin-bottom:0;">
-          <div class="panel-card-header">
-            <div><div class="panel-card-title">Kateqoriya Paylanması</div><div class="panel-card-sub">Elanların kateqoriya üzrə payı</div></div>
-          </div>
-          <div class="panel-card-body" style="display:flex;flex-direction:column;align-items:center;">
-            <div class="chart-wrap" style="max-width:200px;width:100%;"><canvas id="catChart"></canvas></div>
-            <div id="catLegend" style="margin-top:0.85rem;width:100%;display:flex;flex-direction:column;gap:0.4rem;"></div>
-          </div>
-        </div>
+        <div class="panel-card" style="margin-bottom:0;"><div class="panel-card-header"><div><div class="panel-card-title">Satış Dinamikası</div><div class="panel-card-sub">Seçilmiş dövrün gəlir trendi</div></div></div><div class="panel-card-body"><div class="chart-wrap"><canvas id="salesChart"></canvas></div></div></div>
+        <div class="panel-card" style="margin-bottom:0;"><div class="panel-card-header"><div><div class="panel-card-title">Kateqoriya Paylanması</div><div class="panel-card-sub">Elanların kateqoriya üzrə payı</div></div></div><div class="panel-card-body" style="display:flex;flex-direction:column;align-items:center;"><div class="chart-wrap" style="max-width:200px;width:100%;"><canvas id="catChart"></canvas></div><div id="catLegend" style="margin-top:0.85rem;width:100%;display:flex;flex-direction:column;gap:0.4rem;"></div></div></div>
       </div>
-
       <div style="margin-bottom:1.25rem;"></div>
-
-      <!-- Top məhsullar + Aktivlik -->
       <div class="analytics-grid-2">
-        <div class="panel-card" style="margin-bottom:0;">
-          <div class="panel-card-header">
-            <div><div class="panel-card-title">Ən Çox Satan Məhsullar</div><div class="panel-card-sub">Gəlirə görə top 8</div></div>
-          </div>
-          <div class="panel-card-body" style="padding-top:0.5rem;padding-bottom:0.5rem;">
-            <div id="topProductsList"><div style="text-align:center;padding:2rem;"><div class="spinner-sm" style="margin:0 auto;"></div></div></div>
-          </div>
-        </div>
-        <div class="panel-card" style="margin-bottom:0;">
-          <div class="panel-card-header">
-            <div><div class="panel-card-title">Son Aktivlik</div><div class="panel-card-sub">Platforma üzərindəki son hərəkətlər</div></div>
-          </div>
-          <div class="panel-card-body" style="padding-top:0.5rem;padding-bottom:0.5rem;">
-            <div id="activityFeed"><div style="text-align:center;padding:2rem;"><div class="spinner-sm" style="margin:0 auto;"></div></div></div>
-          </div>
-        </div>
+        <div class="panel-card" style="margin-bottom:0;"><div class="panel-card-header"><div><div class="panel-card-title">Ən Çox Satan Məhsullar</div><div class="panel-card-sub">Gəlirə görə top 8</div></div></div><div class="panel-card-body" style="padding-top:0.5rem;padding-bottom:0.5rem;"><div id="topProductsList"><div style="text-align:center;padding:2rem;"><div class="spinner-sm" style="margin:0 auto;"></div></div></div></div></div>
+        <div class="panel-card" style="margin-bottom:0;"><div class="panel-card-header"><div><div class="panel-card-title">Son Aktivlik</div><div class="panel-card-sub">Platforma üzərindəki son hərəkətlər</div></div></div><div class="panel-card-body" style="padding-top:0.5rem;padding-bottom:0.5rem;"><div id="activityFeed"><div style="text-align:center;padding:2rem;"><div class="spinner-sm" style="margin:0 auto;"></div></div></div></div></div>
       </div>
-
       <div style="margin-bottom:1.25rem;"></div>
-
-      <!-- Mağaza performansı + İstifadəçi rol donut -->
       <div class="analytics-grid-2">
-        <div class="panel-card" style="margin-bottom:0;">
-          <div class="panel-card-header">
-            <div><div class="panel-card-title">Mağaza Performansı</div><div class="panel-card-sub">Satıcıların gəlir payı</div></div>
-          </div>
-          <div class="panel-card-body" style="padding-top:0.5rem;padding-bottom:0.5rem;">
-            <div id="vendorPerformance"><div style="text-align:center;padding:2rem;"><div class="spinner-sm" style="margin:0 auto;"></div></div></div>
-          </div>
-        </div>
-        <div class="panel-card" style="margin-bottom:0;">
-          <div class="panel-card-header">
-            <div><div class="panel-card-title">İstifadəçi Artımı</div><div class="panel-card-sub">Rol üzrə istifadəçi payı</div></div>
-          </div>
-          <div class="panel-card-body" style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
-            <div class="chart-wrap" style="max-width:200px;width:100%;"><canvas id="userRoleChart"></canvas></div>
-            <div id="userRoleLegend" style="margin-top:1rem;display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;"></div>
-          </div>
-        </div>
+        <div class="panel-card" style="margin-bottom:0;"><div class="panel-card-header"><div><div class="panel-card-title">Mağaza Performansı</div><div class="panel-card-sub">Satıcıların gəlir payı</div></div></div><div class="panel-card-body" style="padding-top:0.5rem;padding-bottom:0.5rem;"><div id="vendorPerformance"><div style="text-align:center;padding:2rem;"><div class="spinner-sm" style="margin:0 auto;"></div></div></div></div></div>
+        <div class="panel-card" style="margin-bottom:0;"><div class="panel-card-header"><div><div class="panel-card-title">İstifadəçi Artımı</div><div class="panel-card-sub">Rol üzrə istifadəçi payı</div></div></div><div class="panel-card-body" style="display:flex;flex-direction:column;align-items:center;justify-content:center;"><div class="chart-wrap" style="max-width:200px;width:100%;"><canvas id="userRoleChart"></canvas></div><div id="userRoleLegend" style="margin-top:1rem;display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;"></div></div></div>
       </div>
-
-    </div><!-- /sec-analytics -->
+    </div>
 
   </div><!-- /content -->
 </div><!-- /main -->
 
-<!-- ══ EDIT MODAL ══ -->
+<!-- ══ EDIT LISTING MODAL ══ -->
 <div class="modal-overlay" id="editModal">
   <div class="modal-box">
     <button class="modal-close" onclick="closeModal('editModal')">✕</button>
@@ -437,14 +566,8 @@
   <div class="modal-box" style="max-width:360px;">
     <button class="modal-close" onclick="closeModal('commissionModal')">✕</button>
     <div class="modal-title">Yeni Komissiya Sətri</div>
-    <div class="form-group">
-      <label>Kateqoriya adı</label>
-      <input type="text" id="newCommissionName" placeholder="məs. Bijuteriya" maxlength="50"/>
-    </div>
-    <div class="form-group">
-      <label>Komissiya faizi (%)</label>
-      <input type="number" id="newCommissionRate" value="10" min="0" max="100" step="0.5"/>
-    </div>
+    <div class="form-group"><label>Kateqoriya adı</label><input type="text" id="newCommissionName" placeholder="məs. Bijuteriya" maxlength="50"/></div>
+    <div class="form-group"><label>Komissiya faizi (%)</label><input type="number" id="newCommissionRate" value="10" min="0" max="100" step="0.5"/></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('commissionModal')">Ləğv et</button>
       <button class="btn btn-dark" onclick="confirmAddCommission()">Əlavə et</button>
@@ -452,16 +575,54 @@
   </div>
 </div>
 
+<!-- ══ KATEQORİYA ƏLAVƏ ET / DÜZƏLT MODAL ══ -->
+<div class="mcat-modal-overlay" id="mcatModal">
+  <div class="mcat-modal-box">
+    <button class="modal-close" onclick="closeMcatModal()" style="position:absolute;top:1rem;right:1rem;">✕</button>
+    <div class="mcat-modal-box-title" id="mcatModalTitle">Yeni Ana Kateqoriya</div>
+
+    <!-- Ad -->
+    <div class="form-group">
+      <label>Kateqoriya adı <span style="color:var(--danger)">*</span></label>
+      <input type="text" id="mcatLabelInput" placeholder="məs. Elektronika" maxlength="40"/>
+    </div>
+
+    <!-- Seçilmiş icon preview -->
+    <div class="icon-preview-row">
+      <div class="icon-preview-big" id="mcatIconDisplay">📁</div>
+      <div class="icon-preview-info">
+        <div style="font-size:0.82rem;font-weight:500;margin-bottom:2px;">Seçilmiş icon</div>
+        <small>Aşağıdan seçin və ya özünüz yazın</small>
+      </div>
+    </div>
+    <input type="hidden" id="mcatSelectedIcon" value="📁"/>
+
+    <!-- Icon grid -->
+    <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.4rem;font-weight:500;">Hazır iconlar:</div>
+    <div class="icon-picker-grid" id="mcatIconGrid"></div>
+
+    <!-- Custom icon -->
+    <div class="custom-icon-row">
+      <input type="text" class="custom-icon-inp" id="mcatCustomIconInput"
+        placeholder="Özünüz emoji yazın (məs. 🎸)"
+        oninput="applyCustomIcon()">
+      <button class="btn btn-outline btn-sm" onclick="applyCustomIcon()">Tətbiq et</button>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeMcatModal()">Ləğv et</button>
+      <button class="btn btn-dark" onclick="saveMcat()">Saxla</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
-<!-- Firebase SDK (firebase.js daxilində konfiqurasiya olunur) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="js/firebase.js"></script>
-<!-- Chart.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<!-- Admin logic -->
 <script src="js/admin.js"></script>
 </body>
 </html>
