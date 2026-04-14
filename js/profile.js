@@ -1,0 +1,749 @@
+/* ══════════════════════════════════════════
+   PROFILE.JS — profile.html üçün skriptlər
+   ══════════════════════════════════════════ */
+
+/* ══════════════════════════════
+   GLOBAL STATE
+   ══════════════════════════════ */
+let currentUser       = null;
+let _profileAddresses = [];
+
+/* ══════════════════════════════
+   ÜNVAN MODAL — Leaflet xəritə ilə
+   ══════════════════════════════ */
+let _addrMap        = null;
+let _addrMarker     = null;
+let _addrGeoResult  = null;
+let _editingDocId   = null;
+
+function openAddrModal(editDocId = null) {
+  _editingDocId  = editDocId;
+  _addrGeoResult = null;
+
+  const modal   = document.getElementById('addrModal');
+  const titleEl = document.getElementById('addrModalTitle');
+  const saveBtn = document.getElementById('addrSaveBtn');
+
+  document.getElementById('addrBuilding').value    = '';
+  document.getElementById('addrApartment').value   = '';
+  document.getElementById('addrNote').value        = '';
+  document.getElementById('addrIsDefault').checked = false;
+  document.getElementById('addrPickerText').textContent = 'Xəritəyə klikləyin — ünvan avtomatik doldurulacaq';
+  saveBtn.disabled = true;
+
+  if (editDocId) {
+    titleEl.textContent = 'Ünvanı redaktə et';
+    const existing = _profileAddresses.find(a => a._docId === editDocId);
+    if (existing) {
+      document.getElementById('addrBuilding').value   = existing.building  || '';
+      document.getElementById('addrApartment').value  = existing.apartment || '';
+      document.getElementById('addrNote').value       = existing.note      || '';
+      document.getElementById('addrIsDefault').checked = existing.isDefault || false;
+      if (existing.label) {
+        document.getElementById('addrPickerText').textContent = existing.label;
+        _addrGeoResult = { lat: existing.lat || null, lng: existing.lng || null, label: existing.label };
+      }
+      saveBtn.disabled = false;
+    }
+  } else {
+    titleEl.textContent = 'Yeni ünvan əlavə et';
+  }
+
+  modal.classList.add('open');
+  modal.onclick = e => { if (e.target === modal) closeAddrModal(); };
+
+  _loadAddrLeaflet(() => {
+    setTimeout(() => _initAddrMap(editDocId), 100);
+  });
+}
+
+function closeAddrModal() {
+  document.getElementById('addrModal').classList.remove('open');
+  if (_addrMap) { _addrMap.remove(); _addrMap = null; }
+  _addrMarker    = null;
+  _addrGeoResult = null;
+  _editingDocId  = null;
+}
+
+function _loadAddrLeaflet(cb) {
+  if (window.L) { cb(); return; }
+  const link = document.createElement('link');
+  link.rel  = 'stylesheet';
+  link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+  document.head.appendChild(link);
+  const script = document.createElement('script');
+  script.src    = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+  script.onload = cb;
+  document.head.appendChild(script);
+}
+
+function _initAddrMap(editDocId) {
+  const mapEl = document.getElementById('addrPickerMap');
+  if (!mapEl || !window.L) return;
+  if (_addrMap) { _addrMap.remove(); _addrMap = null; _addrMarker = null; }
+
+  let startView = [40.4093, 49.8671];
+  let startZoom = 13;
+
+  if (editDocId) {
+    const existing = _profileAddresses.find(a => a._docId === editDocId);
+    if (existing && existing.lat && existing.lng) {
+      startView = [existing.lat, existing.lng];
+      startZoom = 16;
+    }
+  }
+
+  _addrMap = L.map('addrPickerMap').setView(startView, startZoom);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+  }).addTo(_addrMap);
+
+  if (editDocId) {
+    const existing = _profileAddresses.find(a => a._docId === editDocId);
+    if (existing && existing.lat && existing.lng) {
+      _addrMarker = L.marker([existing.lat, existing.lng], { draggable: true }).addTo(_addrMap);
+      _addrMarker.on('dragend', async () => {
+        const pos = _addrMarker.getLatLng();
+        await _addrReverseGeocode(pos.lat, pos.lng);
+      });
+    }
+  }
+
+  _addrMap.on('click', async (e) => {
+    const { lat, lng } = e.latlng;
+    if (_addrMarker) {
+      _addrMarker.setLatLng([lat, lng]);
+    } else {
+      _addrMarker = L.marker([lat, lng], { draggable: true }).addTo(_addrMap);
+      _addrMarker.on('dragend', async () => {
+        const pos = _addrMarker.getLatLng();
+        await _addrReverseGeocode(pos.lat, pos.lng);
+      });
+    }
+    await _addrReverseGeocode(lat, lng);
+  });
+
+  setTimeout(() => _addrMap.invalidateSize(), 200);
+}
+
+async function _addrReverseGeocode(lat, lng) {
+  const textEl = document.getElementById('addrPickerText');
+  if (textEl) textEl.textContent = 'Ünvan axtarılır...';
+  try {
+    const res  = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=az`);
+    const data = await res.json();
+    const label = data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    _addrGeoResult = { lat, lng, label };
+    if (textEl) textEl.textContent = label;
+  } catch {
+    _addrGeoResult = { lat, lng, label: `${lat.toFixed(5)}, ${lng.toFixed(5)}` };
+    if (textEl) textEl.textContent = _addrGeoResult.label;
+  }
+  _checkAddrSaveReady();
+}
+
+function _checkAddrSaveReady() {
+  const building  = (document.getElementById('addrBuilding')?.value  || '').trim();
+  const apartment = (document.getElementById('addrApartment')?.value || '').trim();
+  const hasMap    = _addrGeoResult && (_addrGeoResult.lat || _editingDocId);
+  const btn       = document.getElementById('addrSaveBtn');
+  if (btn) btn.disabled = !(hasMap && building && apartment);
+}
+
+document.addEventListener('input', e => {
+  if (['addrBuilding','addrApartment','addrNote'].includes(e.target.id)) {
+    _checkAddrSaveReady();
+  }
+});
+
+async function saveAddress() {
+  if (!currentUser) return;
+  const btn = document.getElementById('addrSaveBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saxlanır...'; }
+
+  try {
+    const building  = document.getElementById('addrBuilding').value.trim();
+    const apartment = document.getElementById('addrApartment').value.trim();
+    const note      = document.getElementById('addrNote').value.trim();
+    const isDefault = document.getElementById('addrIsDefault').checked;
+
+    if (isDefault) {
+      const batch = fbDb.batch();
+      _profileAddresses.forEach(a => {
+        if (a.isDefault && a._docId !== _editingDocId) {
+          batch.update(fbDb.collection('addresses').doc(a._docId), { isDefault: false });
+        }
+      });
+      await batch.commit();
+    }
+
+    const addrData = {
+      userId:    currentUser.uid,
+      label:     _addrGeoResult ? _addrGeoResult.label : (_profileAddresses.find(a => a._docId === _editingDocId)?.label || ''),
+      lat:       _addrGeoResult ? _addrGeoResult.lat   : (_profileAddresses.find(a => a._docId === _editingDocId)?.lat   || null),
+      lng:       _addrGeoResult ? _addrGeoResult.lng   : (_profileAddresses.find(a => a._docId === _editingDocId)?.lng   || null),
+      building,
+      apartment,
+      note,
+      isDefault,
+    };
+
+    if (_editingDocId) {
+      await fbDb.collection('addresses').doc(_editingDocId).update({
+        ...addrData,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      showToast('Ünvan yeniləndi ✓');
+    } else {
+      addrData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      if (_profileAddresses.length === 0) addrData.isDefault = true;
+      await fbDb.collection('addresses').add(addrData);
+      showToast('Ünvan əlavə edildi ✓');
+    }
+
+    closeAddrModal();
+    await loadAddresses(currentUser.uid);
+  } catch(err) {
+    showToast('Xəta: ' + err.message);
+    if (btn) { btn.disabled = false; btn.textContent = 'Ünvanı Saxla'; }
+  }
+}
+
+/* ══════════════════════════════
+   AUTH STATE
+   ══════════════════════════════ */
+fbAuth.onAuthStateChanged(async (user) => {
+  if (!user) { window.location.href = 'index.html'; return; }
+  currentUser = user;
+
+  try {
+    const userDoc = await fbDb.collection('users').doc(user.uid).get();
+    if (userDoc.exists && userDoc.data().role === 'admin') {
+      const adminSection = document.getElementById('adminMenuSection');
+      if (adminSection) adminSection.style.display = '';
+    }
+
+    await loadUserData(user);
+    await loadOrders(user.uid);
+    await loadWishlist(user.uid);
+    await loadAddresses(user.uid);
+    await updateVendorMenuBadge(user.uid);
+  } catch (err) {
+    console.warn('Profil yüklənmə xətası:', err.message);
+  }
+
+  document.getElementById('loadingOverlay').style.display = 'none';
+  applyLang();
+});
+
+/* ══════════════════════════════
+   DİL
+   ══════════════════════════════ */
+function handleLangChange(lang) {
+  setLang(lang);
+  if (currentUser) {
+    fbDb.collection('users').doc(currentUser.uid).set({ lang }, { merge: true });
+  }
+}
+
+/* ══════════════════════════════
+   VENDOR BADGE
+   ══════════════════════════════ */
+async function updateVendorMenuBadge(uid) {
+  const data  = await vendor.getStatus(uid);
+  const badge = document.getElementById('vendorMenuBadge');
+  if (!badge) return;
+  if (!data) {
+    badge.textContent = t('vendor.new'); badge.className = 'vendor-menu-badge new';
+  } else if (data.status === 'pending') {
+    badge.textContent = t('vendor.pending'); badge.className = 'vendor-menu-badge pending';
+  } else if (data.status === 'approved') {
+    badge.textContent = t('vendor.active'); badge.className = 'vendor-menu-badge approved';
+    const listingsItem = document.getElementById('listingsMenuItem');
+    if (listingsItem) listingsItem.style.display = '';
+    const mobListingsItem = document.getElementById('mobListingsItem');
+    if (mobListingsItem) mobListingsItem.style.display = '';
+  } else if (data.status === 'rejected') {
+    badge.textContent = t('vendor.rejected'); badge.className = 'vendor-menu-badge pending';
+  }
+}
+
+/* ══════════════════════════════
+   İSTİFADƏÇİ MƏLUMATLAR
+   ══════════════════════════════ */
+async function loadUserData(user) {
+  const doc  = await fbDb.collection('users').doc(user.uid).get();
+  const data = doc.exists ? doc.data() : {};
+
+  if (data.lang && ['az','ru','en'].includes(data.lang)) {
+    localStorage.setItem('sitelang', data.lang);
+  }
+
+  const first    = data.firstName || '';
+  const last     = data.lastName  || '';
+  const fullName = (first + ' ' + last).trim() || user.displayName || 'İstifadəçi';
+  const initials = ((first[0]||'') + (last[0]||'')).toUpperCase() || '?';
+
+  const avatarEl = document.getElementById('avatarInitials');
+  const photoURL = data.photoURL || user.photoURL || '';
+  if (photoURL) {
+    avatarEl.innerHTML = `<img src="${photoURL}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+  } else {
+    avatarEl.textContent = initials;
+  }
+  document.getElementById('sidebarName').textContent  = fullName;
+  document.getElementById('sidebarEmail').textContent = user.email || '';
+  document.getElementById('welcomeName').textContent  = first || fullName;
+  document.getElementById('firstName').value  = first;
+  document.getElementById('lastName').value   = last;
+  document.getElementById('emailField').value = user.email || '';
+  document.getElementById('phoneField').value = data.phone || '';
+  document.getElementById('dobField').value   = data.dob   || '';
+
+  const gSel = document.getElementById('genderField');
+  [...gSel.options].forEach(o => { o.selected = o.value === (data.gender || 'Qadın'); });
+  document.getElementById('noteField').value = data.note || '';
+  applyLang();
+}
+
+/* ══════════════════════════════
+   PROFİL SAXLA
+   ══════════════════════════════ */
+async function saveProfile() {
+  if (!currentUser) return;
+  const first = document.getElementById('firstName').value.trim();
+  const last  = document.getElementById('lastName').value.trim();
+  const lang  = document.getElementById('langField').value;
+  try {
+    await fbDb.collection('users').doc(currentUser.uid).set({
+      firstName: first, lastName: last,
+      phone:  document.getElementById('phoneField').value.trim(),
+      dob:    document.getElementById('dobField').value,
+      gender: document.getElementById('genderField').value,
+      note:   document.getElementById('noteField').value.trim(),
+      lang,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    const full = (first + ' ' + last).trim();
+    document.getElementById('sidebarName').textContent    = full || 'İstifadəçi';
+    document.getElementById('welcomeName').textContent    = first || full;
+    document.getElementById('avatarInitials').textContent = ((first[0]||'') + (last[0]||'')).toUpperCase() || '?';
+    setLang(lang);
+    showToast(t('p.saved'));
+  } catch (err) { showToast('Xəta: ' + err.message); }
+}
+
+/* ══════════════════════════════
+   ŞİFRƏ DƏYİŞ
+   ══════════════════════════════ */
+async function changePassword() {
+  const current = document.getElementById('currentPass').value;
+  const newPass = document.getElementById('newPass').value;
+  const confirm = document.getElementById('confirmPass').value;
+  if (!current || !newPass || !confirm) { showToast(t('p.fillAll')); return; }
+  if (newPass !== confirm) { showToast(t('p.passNoMatch')); return; }
+  if (newPass.length < 6)  { showToast(t('p.passShort')); return; }
+  try {
+    const cred = firebase.auth.EmailAuthProvider.credential(currentUser.email, current);
+    await currentUser.reauthenticateWithCredential(cred);
+    await currentUser.updatePassword(newPass);
+    ['currentPass','newPass','confirmPass'].forEach(id => document.getElementById(id).value = '');
+    showToast(t('p.passSaved'));
+  } catch (err) {
+    showToast('Xəta: ' + (err.code === 'auth/wrong-password' ? t('p.passWrong') : err.message));
+  }
+}
+
+/* ══════════════════════════════
+   SİFARİŞLƏR
+   ══════════════════════════════ */
+async function loadOrders(uid) {
+  const STATUS_MAP = {
+    delivered: { lbl: t('order.delivered'), cls: 'badge-success' },
+    shipped:   { lbl: t('order.shipped'),   cls: 'badge-shipped' },
+    pending:   { lbl: t('order.pending'),   cls: 'badge-pending' },
+    cancelled: { lbl: t('order.cancelled'), cls: 'badge-pending' },
+  };
+  try {
+    const snap = await fbDb.collection('orders')
+      .where('buyerId', '==', uid)
+      .orderBy('createdAt', 'desc')
+      .limit(30)
+      .get();
+
+    const allOrdersEl  = document.getElementById('allOrders');
+    const recentOrdEl  = document.getElementById('recentOrders');
+    const statOrdersEl = document.getElementById('statOrders');
+    const statSpentEl  = document.getElementById('statSpent');
+    if (!allOrdersEl || !recentOrdEl) return;
+
+    allOrdersEl.innerHTML = '';
+    recentOrdEl.innerHTML = '';
+    if (statOrdersEl) statOrdersEl.textContent = snap.size;
+
+    if (snap.empty) {
+      const emptyMsg = `<p style="color:var(--muted);font-size:.875rem;">${t('p.noOrders')}</p>`;
+      allOrdersEl.innerHTML = emptyMsg; recentOrdEl.innerHTML = emptyMsg;
+      if (statSpentEl) statSpentEl.textContent = '0 ₼';
+      return;
+    }
+
+    let totalSpent = 0, rendered = 0;
+    snap.forEach(doc => {
+      const o  = doc.data();
+      const st = STATUS_MAP[o.status] || { lbl: o.status || '—', cls: 'badge-pending' };
+      const date = o.createdAt?.toDate
+        ? o.createdAt.toDate().toLocaleDateString('az-AZ', { day: 'numeric', month: 'long', year: 'numeric' })
+        : '—';
+      totalSpent += o.total || 0;
+      const itemNames = (o.items || []).map(i => i.name).join(', ');
+      const shortName = itemNames.length > 50 ? itemNames.substring(0, 50) + '…' : (itemNames || 'Sifariş');
+      const firstImg  = (o.items || [])[0]?.img || '';
+      const imgHTML   = firstImg ? `<img src="${firstImg}" alt="${shortName}" style="width:100%;height:100%;object-fit:cover;">` : '🛍️';
+      const orderNum  = o.orderNumber ? `#${o.orderNumber}` : `#${doc.id.slice(-5).toUpperCase()}`;
+      const addr = o.address;
+      let addrLabel = '';
+      if (addr) {
+        const parts = [];
+        if (addr.label)     parts.push(addr.label.substring(0, 50) + (addr.label.length > 50 ? '…' : ''));
+        if (addr.building)  parts.push(`Bina: ${addr.building}`);
+        if (addr.apartment) parts.push(`Mənzil: ${addr.apartment}`);
+        addrLabel = parts.join(' · ');
+      }
+      const html = `
+        <div class="order-item">
+          <div class="order-img">${imgHTML}</div>
+          <div class="order-info">
+            <div class="order-name">${shortName}</div>
+            <div class="order-meta">
+              <span style="font-family:monospace;font-weight:600;">${orderNum}</span> · ${date}
+              ${addrLabel ? `<br><span style="font-size:0.75rem;color:var(--muted);">📍 ${addrLabel}</span>` : ''}
+            </div>
+          </div>
+          <div class="order-right">
+            <div class="order-price">${(o.total || 0).toFixed(2)} ₼</div>
+            <div class="badge ${st.cls}">${st.lbl}</div>
+          </div>
+        </div>`;
+      allOrdersEl.innerHTML += html;
+      if (rendered < 3) recentOrdEl.innerHTML += html;
+      rendered++;
+    });
+    if (statSpentEl) statSpentEl.textContent = totalSpent.toFixed(0) + ' ₼';
+  } catch (err) {
+    console.warn('Sifarişlər yüklənmədi:', err.message);
+    const el = document.getElementById('allOrders');
+    if (el) el.innerHTML = `<p style="color:var(--muted);font-size:.875rem;">${t('p.noOrders')}</p>`;
+  }
+}
+
+/* ══════════════════════════════
+   WİSHLİST
+   ══════════════════════════════ */
+async function loadWishlist(uid) {
+  try {
+    const snap       = await fbDb.collection('wishlists').doc(uid).get();
+    const container  = document.getElementById('wishlistItems');
+    const statWishEl = document.getElementById('statWishlist');
+    const items = snap.exists ? (snap.data().items || []) : [];
+    if (statWishEl) statWishEl.textContent = items.length;
+    if (!container) return;
+    if (items.length === 0) {
+      container.innerHTML = `<p style="color:var(--muted);font-size:.875rem;">${t('p.noWishlist')}</p>`;
+      return;
+    }
+    container.innerHTML = '';
+    items.forEach(item => {
+      container.innerHTML += `
+        <div class="order-item">
+          <div class="order-img">
+            ${item.image || item.img ? `<img src="${item.image || item.img}" alt="${item.name || ''}" style="width:100%;height:100%;object-fit:cover;">` : '❤️'}
+          </div>
+          <div class="order-info">
+            <div class="order-name">${item.name || '—'}</div>
+            <div class="order-meta">${item.brand || ''}</div>
+          </div>
+          <div class="order-right">
+            <div class="order-price">${(item.price || 0).toFixed(2)} ₼</div>
+            <button onclick="removeFromWishlist('${item.id}', '${uid}')"
+              style="background:none;border:none;color:var(--muted);font-size:0.78rem;cursor:pointer;text-decoration:underline;margin-top:4px;">Sil</button>
+          </div>
+        </div>`;
+    });
+  } catch (err) {
+    const el = document.getElementById('wishlistItems');
+    if (el) el.innerHTML = `<p style="color:var(--muted);font-size:.875rem;">${t('p.noWishlist')}</p>`;
+  }
+}
+
+async function removeFromWishlist(itemId, uid) {
+  try {
+    const ref  = fbDb.collection('wishlists').doc(uid);
+    const snap = await ref.get();
+    if (!snap.exists) return;
+    const newItems = (snap.data().items || []).filter(i => String(i.id) !== String(itemId));
+    await ref.set({ items: newItems }, { merge: false });
+    await loadWishlist(uid);
+    showToast(t('toast.wishDel'));
+  } catch (err) { console.warn('Silmə xətası:', err.message); }
+}
+
+/* ══════════════════════════════
+   ÜNVANLAR — YÜKLƏ + RENDER
+   ══════════════════════════════ */
+async function loadAddresses(uid) {
+  try {
+    const snap = await fbDb.collection('addresses')
+      .where('userId', '==', uid)
+      .get();
+    _profileAddresses = snap.docs.map(d => ({ _docId: d.id, ...d.data() }));
+    _renderAddressGrid();
+  } catch (err) {
+    console.warn('Ünvanlar yüklənmədi:', err.message);
+    _profileAddresses = [];
+    _renderAddressGrid();
+  }
+}
+
+function _renderAddressGrid() {
+  const grid = document.getElementById('addressGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  _profileAddresses.forEach(addr => {
+    const card = document.createElement('div');
+    card.className = 'addr-card' + (addr.isDefault ? ' default' : '');
+
+    const detailParts = [];
+    if (addr.building)  detailParts.push(`Bina: ${addr.building}`);
+    if (addr.apartment) detailParts.push(`Mənzil: ${addr.apartment}`);
+    if (addr.note)      detailParts.push(addr.note);
+
+    card.innerHTML = `
+      ${addr.isDefault ? '<span class="addr-tag">Əsas</span>' : ''}
+      <div class="addr-label">📍 ${addr.label ? (addr.label.substring(0, 60) + (addr.label.length > 60 ? '…' : '')) : 'Ünvan'}</div>
+      ${detailParts.length ? `<div class="addr-detail">${detailParts.join(' · ')}</div>` : ''}
+      <div class="addr-actions">
+        <button class="addr-btn" onclick="openAddrModal('${addr._docId}')">Redaktə et</button>
+        ${!addr.isDefault ? `<button class="addr-btn" onclick="setDefaultAddress('${addr._docId}')">Əsas et</button>` : ''}
+        <button class="addr-btn danger" onclick="deleteAddress('${addr._docId}')">Sil</button>
+      </div>`;
+    grid.appendChild(card);
+  });
+
+  const addCard = document.createElement('div');
+  addCard.className = 'add-addr-card';
+  addCard.innerHTML = `
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+    </svg>
+    <span style="font-size:0.85rem;font-weight:500">Yeni ünvan əlavə et</span>`;
+  addCard.onclick = () => openAddrModal(null);
+  grid.appendChild(addCard);
+}
+
+async function setDefaultAddress(docId) {
+  if (!currentUser) return;
+  try {
+    const batch = fbDb.batch();
+    _profileAddresses.forEach(a => {
+      batch.update(fbDb.collection('addresses').doc(a._docId), { isDefault: a._docId === docId });
+    });
+    await batch.commit();
+    await loadAddresses(currentUser.uid);
+    showToast('Əsas ünvan dəyişdirildi ✓');
+  } catch(err) { showToast('Xəta: ' + err.message); }
+}
+
+async function deleteAddress(id) {
+  if (!confirm('Bu ünvanı silmək istəyirsiniz?')) return;
+  try {
+    await fbDb.collection('addresses').doc(id).delete();
+    await loadAddresses(currentUser.uid);
+    showToast('Ünvan silindi');
+  } catch(err) { showToast('Xəta: ' + err.message); }
+}
+
+/* ══════════════════════════════
+   ÇIXIŞ
+   ══════════════════════════════ */
+async function logout() {
+  await fbAuth.signOut();
+  window.location.href = 'index.html';
+}
+
+/* ══════════════════════════════
+   TAB KEÇİDİ
+   ══════════════════════════════ */
+function switchTab(name, el) {
+  document.querySelectorAll('[id^="tab-"]').forEach(t => t.style.display = 'none');
+  document.getElementById('tab-' + name).style.display = '';
+
+  document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+  const sidebarItem = document.querySelector(`.menu-item[data-tab="${name}"]`);
+  if (sidebarItem) sidebarItem.classList.add('active');
+
+  document.querySelectorAll('#mobileMenuBar .mob-item').forEach(m => m.classList.remove('active'));
+  const mobItem = document.querySelector(`#mobileMenuBar .mob-item[data-tab="${name}"]`);
+  if (mobItem) mobItem.classList.add('active');
+
+  if (window.innerWidth <= 768) {
+    const sidebar = document.querySelector('.sidebar');
+    const mobBar  = document.getElementById('mobileMenuBar');
+    if (name === 'overview') {
+      if (sidebar) sidebar.classList.remove('mobile-hidden');
+      if (mobBar)  mobBar.style.display = 'none';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      if (sidebar) sidebar.classList.add('mobile-hidden');
+      if (mobBar)  mobBar.style.display = 'flex';
+    }
+  }
+
+  if (name === 'vendor'   && currentUser) loadVendorTab(currentUser.uid);
+  if (name === 'listings' && currentUser) loadListingsTab(currentUser.uid);
+  if (name === 'profile') { initAvatarUpload(); syncProfileTabAvatar(); applyLang(); }
+  applyLang();
+}
+
+/* ══════════════════════════════
+   PROFİL TAB FOTO YÜKLƏMƏ
+   ══════════════════════════════ */
+function syncProfileTabAvatar() {
+  const tabAvatar  = document.getElementById('profileTabAvatar');
+  const sideAvatar = document.getElementById('avatarInitials');
+  if (!tabAvatar || !sideAvatar) return;
+  tabAvatar.innerHTML = sideAvatar.innerHTML || sideAvatar.textContent;
+}
+
+async function uploadProfileTabPhoto(file) {
+  if (!file || !currentUser) return;
+  if (file.size > 5 * 1024 * 1024) {
+    showToast('Şəkil 5MB-dan böyük ola bilməz');
+    return;
+  }
+  const tabAvatar = document.getElementById('profileTabAvatar');
+  if (tabAvatar) tabAvatar.style.opacity = '0.5';
+  try {
+    const base64 = await compressImage(file, 300, 0.75);
+    await fbDb.collection('users').doc(currentUser.uid).set(
+      { photoURL: base64 },
+      { merge: true }
+    );
+    const imgHTML = `<img src="${base64}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+    if (tabAvatar) tabAvatar.innerHTML = imgHTML;
+    const sideAvatar = document.getElementById('avatarInitials');
+    if (sideAvatar) sideAvatar.innerHTML = imgHTML;
+    showToast('Profil şəkli yeniləndi ✓');
+  } catch (err) {
+    showToast('Xəta: ' + err.message);
+  } finally {
+    if (tabAvatar) tabAvatar.style.opacity = '1';
+    document.getElementById('profileTabFileInput').value = '';
+  }
+}
+
+function compressImage(file, maxSize, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let w = img.width, h = img.height;
+        if (w > h) { if (w > maxSize) { h = h * maxSize / w; w = maxSize; } }
+        else        { if (h > maxSize) { w = w * maxSize / h; h = maxSize; } }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ══════════════════════════════
+   TOAST
+   ══════════════════════════════ */
+function showToast(msg) {
+  const toastEl = document.getElementById('toast');
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  setTimeout(() => toastEl.classList.remove('show'), 2800);
+}
+
+/* ══════════════════════════════
+   MENU CLICK — default prevent
+   ══════════════════════════════ */
+document.querySelectorAll('.menu-item[data-tab]').forEach(el => {
+  el.addEventListener('click', e => e.preventDefault());
+});
+
+/* ══════════════════════════════
+   PROFİL ŞƏKLİ YÜKLƏMƏ (Sidebar avatar)
+   ══════════════════════════════ */
+function initAvatarUpload() {
+  const avatarEl = document.getElementById('avatarInitials');
+  if (!avatarEl || avatarEl.dataset.uploadReady) return;
+  avatarEl.dataset.uploadReady = 'true';
+  avatarEl.style.position = 'relative';
+  avatarEl.style.cursor   = 'pointer';
+  avatarEl.title = 'Şəkli dəyiş';
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position:absolute; inset:0; border-radius:50%;
+    background:rgba(0,0,0,0); display:flex;
+    align-items:center; justify-content:center;
+    transition:background .2s; pointer-events:none;
+  `;
+  overlay.innerHTML = `
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" style="opacity:0;transition:opacity .2s">
+      <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+      <circle cx="12" cy="13" r="4"/>
+    </svg>`;
+  avatarEl.appendChild(overlay);
+
+  const svg = overlay.querySelector('svg');
+  avatarEl.addEventListener('mouseenter', () => { overlay.style.background = 'rgba(0,0,0,0.5)'; svg.style.opacity = '1'; });
+  avatarEl.addEventListener('mouseleave', () => { overlay.style.background = 'rgba(0,0,0,0)';   svg.style.opacity = '0'; });
+
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file'; fileInput.accept = 'image/*'; fileInput.style.display = 'none';
+  document.body.appendChild(fileInput);
+  avatarEl.addEventListener('click', () => fileInput.click());
+
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files[0];
+    if (!file || !currentUser) return;
+    overlay.style.background = 'rgba(0,0,0,0.6)';
+    overlay.innerHTML = `<div style="color:#fff;font-size:0.68rem;font-weight:600;text-align:center;line-height:1.3;">Yüklənir...</div>`;
+    try {
+      const storageRef = firebase.storage().ref(`users/${currentUser.uid}/profile`);
+      await storageRef.put(file);
+      const photoURL = await storageRef.getDownloadURL();
+      await fbDb.collection('users').doc(currentUser.uid).set({ photoURL }, { merge: true });
+      const existingImg = avatarEl.querySelector('img');
+      if (existingImg) { existingImg.src = photoURL; }
+      else {
+        [...avatarEl.childNodes].forEach(n => { if (n !== overlay) n.remove(); });
+        const img = document.createElement('img');
+        img.src = photoURL;
+        img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;';
+        avatarEl.insertBefore(img, overlay);
+      }
+      showToast('Profil şəkli yeniləndi ✓');
+    } catch (err) { showToast('Xəta: ' + err.message); }
+    finally {
+      overlay.style.background = 'rgba(0,0,0,0)';
+      overlay.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" style="opacity:0;transition:opacity .2s"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>`;
+      const ns = overlay.querySelector('svg');
+      avatarEl.addEventListener('mouseenter', () => { overlay.style.background = 'rgba(0,0,0,0.5)'; ns.style.opacity = '1'; });
+      avatarEl.addEventListener('mouseleave', () => { overlay.style.background = 'rgba(0,0,0,0)';   ns.style.opacity = '0'; });
+      fileInput.value = '';
+    }
+  });
+}
