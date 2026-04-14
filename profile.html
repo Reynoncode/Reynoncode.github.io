@@ -991,14 +991,22 @@ fbAuth.onAuthStateChanged(async (user) => {
   applyLang();
 });
 
-  js-snippet>
-    // ── Admin menyusunu göstər ──
-    const userDoc = await fbDb.collection('users').doc(user.uid).get();
-    if (userDoc.exists && userDoc.data().role === 'admin') {
-      const adminSection = document.getElementById('adminMenuSection');
-      if (adminSection) adminSection.style.display = '';
-    }
-</js-snippet>
+ fbAuth.onAuthStateChanged(async (user) => {
+  if (!user) { window.location.href = 'index.html'; return; }
+  currentUser = user;
+
+  // ── Admin menyusunu göstər ──
+  const userDoc = await fbDb.collection('users').doc(user.uid).get();
+  if (userDoc.exists && userDoc.data().role === 'admin') {
+    const adminSection = document.getElementById('adminMenuSection');
+    if (adminSection) adminSection.style.display = '';
+  }
+
+  try {
+    await loadUserData(user);
+    // ... qalanı eyni
+  }
+});
   
 /* ══════════════════════════════
    DİL
