@@ -991,7 +991,7 @@ fbAuth.onAuthStateChanged(async (user) => {
   applyLang();
 });
 
-  <js-snippet>
+  js-snippet>
     // ── Admin menyusunu göstər ──
     const userDoc = await fbDb.collection('users').doc(user.uid).get();
     if (userDoc.exists && userDoc.data().role === 'admin') {
