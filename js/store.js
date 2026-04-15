@@ -8,6 +8,11 @@ let storeData     = {};
 let storeListings = [];
 let isFollowing   = false;
 
+// ── YENİ: Kateqoriya filter state ──
+let _storePlatformCats = []; // admin/platformSettings-dən oxunur
+let _storeActiveMainCat = null; // seçili ana kateqoriya id-si (null = hamısı)
+let _storeActiveSubCat  = null; // seçili alt kateqoriya adı (null = hamısı)
+
 /* ══════════════════════════════════════════
    ANA YÜKLƏMƏ
 ══════════════════════════════════════════ */
@@ -23,6 +28,17 @@ async function loadStorePage() {
 
   try {
     const cu = fbAuth.currentUser;
+
+    // ── YENİ: Platform kateqoriyalarını yüklə ──
+    try {
+      const settSnap = await fbDb.collection('admin').doc('platformSettings').get();
+      if (settSnap.exists) {
+        const d = settSnap.data();
+        _storePlatformCats = d.mainCategories || d.categories || [];
+      }
+    } catch(e) {
+      _storePlatformCats = [];
+    }
 
     const [vSnap, uSnap] = await Promise.all([
       fbDb.collection('vendors').doc(storeUid).get(),
@@ -82,6 +98,145 @@ async function loadStorePage() {
 }
 
 /* ══════════════════════════════════════════
+   YENİ: Kateqoriya filter köməkçiləri
+══════════════════════════════════════════ */
+
+// Bu mağazanın elanlarında hansı kateqoriyalar var?
+function _getStoreCatsUsed() {
+  const usedIds = new Set(storeListings.map(l => l.mainCategory || l.category).filter(Boolean));
+  return _storePlatformCats.filter(c => usedIds.has(c.id));
+}
+
+// Seçili ana kateqoriyaya görə alt kateqoriyaları tap
+function _getSubCatsForActive() {
+  if (!_storeActiveMainCat) return [];
+  const cat = _storePlatformCats.find(c => c.id === _storeActiveMainCat);
+  if (!cat || !cat.subCats) return [];
+  // Yalnız bu mağazada mövcud olan alt kateqoriyaları göstər
+  const usedSubs = new Set(
+    storeListings
+      .filter(l => (l.mainCategory || l.category) === _storeActiveMainCat)
+      .map(l => l.subCategory)
+      .filter(Boolean)
+  );
+  return cat.subCats.filter(s => usedSubs.has(s));
+}
+
+// Aktiv filterlərə görə elanları filtrele
+function _getFilteredListings() {
+  return storeListings.filter(l => {
+    const catMatch = !_storeActiveMainCat ||
+      (l.mainCategory || l.category) === _storeActiveMainCat;
+    const subMatch = !_storeActiveSubCat ||
+      l.subCategory === _storeActiveSubCat;
+    return catMatch && subMatch;
+  });
+}
+
+// Ana kateqoriya seçildi
+function storeSetMainCat(id) {
+  if (_storeActiveMainCat === id) {
+    // Eyni kateqoriyaya klik = sıfırla
+    _storeActiveMainCat = null;
+    _storeActiveSubCat  = null;
+  } else {
+    _storeActiveMainCat = id;
+    _storeActiveSubCat  = null;
+  }
+  _renderStoreCatFilter();
+  _renderStoreProducts();
+}
+
+// Alt kateqoriya seçildi
+function storeSetSubCat(name) {
+  _storeActiveSubCat = (_storeActiveSubCat === name) ? null : name;
+  _renderStoreCatFilter();
+  _renderStoreProducts();
+}
+
+/* ══════════════════════════════════════════
+   YENİ: Kateqoriya filter UI render
+══════════════════════════════════════════ */
+function _renderStoreCatFilter() {
+  const wrap = document.getElementById('storeCatFilter');
+  if (!wrap) return;
+
+  const usedCats = _getStoreCatsUsed();
+  const subCats  = _getSubCatsForActive();
+  const filtered = _getFilteredListings();
+
+  // Hamısı düyməsi
+  let html = `
+    <div class="scf-main-row">
+      <button class="scf-chip ${!_storeActiveMainCat ? 'scf-chip--active' : ''}"
+              onclick="storeSetMainCat(null)">
+        Hamısı
+        <span class="scf-count">${storeListings.length}</span>
+      </button>`;
+
+  usedCats.forEach(cat => {
+    const count = storeListings.filter(l => (l.mainCategory || l.category) === cat.id).length;
+    const isActive = _storeActiveMainCat === cat.id;
+    html += `
+      <button class="scf-chip ${isActive ? 'scf-chip--active' : ''}"
+              onclick="storeSetMainCat('${cat.id}')">
+        ${cat.icon ? `<span class="scf-icon">${cat.icon}</span>` : ''}
+        ${cat.label}
+        <span class="scf-count">${count}</span>
+      </button>`;
+  });
+
+  html += `</div>`;
+
+  // Alt kateqoriyalar (yalnız ana seçilibsə)
+  if (subCats.length > 0) {
+    html += `<div class="scf-sub-row">`;
+    subCats.forEach(sub => {
+      const count = storeListings.filter(l =>
+        (l.mainCategory || l.category) === _storeActiveMainCat && l.subCategory === sub
+      ).length;
+      const isActive = _storeActiveSubCat === sub;
+      html += `
+        <button class="scf-chip scf-chip--sub ${isActive ? 'scf-chip--active' : ''}"
+                onclick="storeSetSubCat('${sub}')">
+          ${sub}
+          <span class="scf-count">${count}</span>
+        </button>`;
+    });
+    html += `</div>`;
+  }
+
+  wrap.innerHTML = html;
+
+  // Məhsul sayını yenilə
+  const countEl = document.getElementById('storeProductCount');
+  if (countEl) countEl.textContent = `${filtered.length} məhsul`;
+}
+
+/* ══════════════════════════════════════════
+   YENİ: Məhsulları filtrə görə render et
+══════════════════════════════════════════ */
+function _renderStoreProducts() {
+  const grid = document.getElementById('storeProductGrid');
+  if (!grid) return;
+
+  const filtered = _getFilteredListings();
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `
+      <div class="store-empty" style="grid-column:1/-1;">
+        <div style="font-size:2.5rem;margin-bottom:.75rem;">🔍</div>
+        <p>Bu kateqoriyada məhsul yoxdur</p>
+      </div>`;
+    return;
+  }
+
+  if (typeof renderProducts === 'function') {
+    renderProducts(filtered, 'storeProductGrid');
+  }
+}
+
+/* ══════════════════════════════════════════
    RENDER — müştəri görünüşü
 ══════════════════════════════════════════ */
 function renderStorePage() {
@@ -121,6 +276,10 @@ function renderStorePage() {
   const deliveryText = s.deliveryDays ? `${s.deliveryDays} iş günü ərzində çatdırılma.` : '2–4 iş günü ərzində çatdırılma.';
   const freeShipText = `${s.freeShippingThreshold} AZN üzərindəki sifarişlərə pulsuz çatdırılma.`;
 
+  // ── YENİ: filter-i yalnız birdən çox kateqoriya varsa göstər
+  const usedCats = _getStoreCatsUsed();
+  const showFilter = usedCats.length > 0;
+
   document.getElementById('storePageContent').innerHTML = `
 
     <!-- HERO -->
@@ -145,6 +304,11 @@ function renderStorePage() {
       </div>
     </div>
 
+    <!-- ── YENİ: KATEQORİYA FİLTER PANEL ── -->
+    ${showFilter ? `
+    <div id="storeCatFilter" class="store-cat-filter"></div>
+    ` : ''}
+
     <!-- CONTENT GRID -->
     <div class="store-content-grid">
 
@@ -152,7 +316,7 @@ function renderStorePage() {
       <div>
         <div class="store-products-header">
           <h2 class="store-products-title">Məhsullar</h2>
-          <span class="section-count">${storeListings.length} məhsul</span>
+          <span class="section-count" id="storeProductCount">${storeListings.length} məhsul</span>
         </div>
         ${storeListings.length > 0
           ? `<div class="product-grid" id="storeProductGrid"></div>`
@@ -263,10 +427,88 @@ function renderStorePage() {
 
       </div>
     </div>
+
+    <!-- ── YENİ: Kateqoriya filter CSS ── -->
+    <style>
+      .store-cat-filter {
+        margin-bottom: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+      }
+      .scf-main-row, .scf-sub-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: center;
+      }
+      .scf-sub-row {
+        padding-left: 0.5rem;
+        border-left: 2px solid var(--border);
+      }
+      .scf-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.38rem 0.85rem;
+        border-radius: 20px;
+        border: 1.5px solid var(--border);
+        background: var(--surface, #fff);
+        color: var(--text);
+        font-size: 0.8rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.18s;
+        white-space: nowrap;
+        font-family: inherit;
+      }
+      .scf-chip:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .scf-chip--active {
+        background: var(--accent, #1a1a1a);
+        border-color: var(--accent, #1a1a1a);
+        color: #fff;
+      }
+      .scf-chip--active:hover {
+        opacity: 0.88;
+        color: #fff;
+      }
+      .scf-chip--sub {
+        font-size: 0.75rem;
+        padding: 0.3rem 0.72rem;
+        border-style: dashed;
+      }
+      .scf-chip--sub.scf-chip--active {
+        border-style: solid;
+      }
+      .scf-icon {
+        font-size: 0.85rem;
+        line-height: 1;
+      }
+      .scf-count {
+        font-size: 0.68rem;
+        font-weight: 600;
+        opacity: 0.65;
+        margin-left: 0.1rem;
+      }
+      .scf-chip--active .scf-count {
+        opacity: 0.8;
+      }
+      @media (max-width: 500px) {
+        .scf-chip { font-size: 0.74rem; padding: 0.32rem 0.7rem; }
+      }
+    </style>
   `;
 
   document.title = `${s.storeName} — MODA`;
-  if (storeListings.length > 0) renderProducts(storeListings, 'storeProductGrid');
+
+  // Filter paneli render et
+  if (showFilter) _renderStoreCatFilter();
+
+  // Məhsulları render et
+  if (storeListings.length > 0) _renderStoreProducts();
 }
 
 /* ══════════════════════════════════════════
