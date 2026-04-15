@@ -1,4 +1,4 @@
-/* ═══════════════════════════════════════════
+ /* ═══════════════════════════════════════════
    listings.js — Elan idarəetmə paneli
    Profile.html-ə əlavə et: <script src="js/listings.js"></script>
    ═══════════════════════════════════════════ */
@@ -149,10 +149,10 @@ function renderListingCard(l) {
   const isSale     = l.oldPrice && l.oldPrice > l.price;
 
   /* Kateqoriya etiketi */
-  const mainCat  = _listingMainCats.find(c => c.id === l.mainCategory);
-  const catLabel = mainCat
-    ? `${mainCat.icon || ''} ${mainCat.label}${l.subCategory ? ' › ' + l.subCategory : ''}`
-    : (l.category || '');
+const mainCat = _listingMainCats.find(c => c.id === (l.mainCategory || l.category));
+const catLabel = mainCat
+  ? `${mainCat.icon || ''} ${mainCat.label}${l.subCategory ? ' › ' + l.subCategory : ''}`
+  : (l.subCategory || l.category || '');
 
   return `
   <div class="lac-card" data-id="${l.id}">
@@ -620,9 +620,11 @@ async function submitListing() {
     desc:         document.getElementById('lmDesc').value.trim(),
     material:     document.getElementById('lmMaterial').value.trim(),
     condition:    document.getElementById('lmCondition').value,
-    mainCategory: mainCatId,                       // ana kateqoriya id
-    subCategory:  subCategory,                     // alt kateqoriya adı
-    category:     mainCatId,                       // köhnə uyğunluq
+    mainCategory:  mainCatId,
+    categoryLabel: mainCat ? mainCat.label : '',  // ← bu sətri əlavə et
+    subCategory:   subCategory,
+category:      mainCatId,
+     
     badge:        (oldPriceRaw > price) ? 'Endirim' : 'Yeni',
     imgs:         lState.images,
     colors:       lState.colors,
