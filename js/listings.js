@@ -25,17 +25,34 @@ const PRESET_COLORS = [
 let _listingMainCats = []; // [{id, icon, label, subCats:[...]}]
 
 async function loadListingCategories() {
+  let cats = null;
+ 
   try {
-    const snap = await fbDb.collection('admin').doc('platformSettings').get();
-    if (snap.exists) {
-      const d = snap.data();
-      _listingMainCats = d.mainCategories || d.categories || [];
+    // 1. Public location (bütün istifadəçilər üçün oxuna bilər)
+    const pubSnap = await fbDb.collection('settings').doc('categories').get();
+    if (pubSnap.exists) {
+      cats = pubSnap.data().items || null;
     }
   } catch(e) {
-    console.warn('Elan kateqoriyaları yüklənmədi:', e.message);
-    _listingMainCats = [];
+    console.warn('Public kateqoriyalar oxunmadı:', e.message);
   }
+ 
+  if (!cats) {
+    try {
+      // 2. Fallback: admin collection (yalnız admin üçün)
+      const adminSnap = await fbDb.collection('admin').doc('platformSettings').get();
+      if (adminSnap.exists) {
+        const d = adminSnap.data();
+        cats = d.mainCategories || d.categories || null;
+      }
+    } catch(e) {
+      console.warn('Admin kateqoriyalar oxunmadı:', e.message);
+    }
+  }
+ 
+  _listingMainCats = Array.isArray(cats) ? cats : [];
 }
+ 
 
 /* Ana kateqoriya seçimi dəyişdikdə alt kateqoriyaları doldur */
 function onMainCatChange() {
