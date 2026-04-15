@@ -444,9 +444,11 @@ async function loadPlatformSettings() {
 async function savePlatformSettings() {
   const btn = document.getElementById('platformSaveBtn');
   if (btn) { btn.disabled = true; btn.textContent = 'Saxlanır...'; }
+ 
   try {
     syncCommissionsFromDOM();
-    await fbDb.collection('admin').doc('platformSettings').set({
+ 
+    const payload = {
       siteName:       document.getElementById('cfg-siteName').value.trim() || 'MODA',
       maintenance:    document.getElementById('cfg-maintenance').checked,
       allowReg:       document.getElementById('cfg-allowReg').checked,
@@ -457,27 +459,46 @@ async function savePlatformSettings() {
       wishlist:       document.getElementById('cfg-wishlist').checked,
       reviews:        document.getElementById('cfg-reviews').checked,
       maxImages:      parseInt(document.getElementById('cfg-maxImages').value) || 8,
-      mainCategories: platformMainCategories,   // ← əsas yeni format
+      mainCategories: platformMainCategories,   // ← yeni format
       categories:     platformMainCategories,   // ← köhnə uyğunluq
       commissions:    platformCommissions,
       updatedAt:      firebase.firestore.FieldValue.serverTimestamp(),
       updatedBy:      currentAdmin?.uid || 'admin'
-    }, { merge: true });
-
+    };
+ 
+    // 1. Admin collection-a yaz (köhnə kimi)
+    await fbDb.collection('admin').doc('platformSettings').set(payload, { merge: true });
+ 
+    // 2. PUBLIC collection-a yaz — bütün istifadəçilər oxuya bilsin
+    //    Firestore rules-da: match /settings/{doc} { allow read: if true; allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'; }
+    await fbDb.collection('settings').doc('categories').set({
+      items: platformMainCategories,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedBy: currentAdmin?.uid || 'admin'
+    });
+ 
     const now = new Date();
-    document.getElementById('platformLastSaved').textContent =
-      now.toLocaleDateString('az-AZ', { day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    const formatted = now.toLocaleDateString('az-AZ', {
+      day: 'numeric', month: 'long', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+    document.getElementById('platformLastSaved').textContent = formatted;
     showToast('Ayarlar saxlandı ✓', 'success');
+ 
   } catch(e) {
     showToast('Xəta: ' + e.message, 'error');
   } finally {
     if (btn) {
       btn.disabled = false;
-      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Ayarları Saxla`;
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;">
+        <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+        <polyline points="17 21 17 13 7 13 7 21"/>
+        <polyline points="7 3 7 8 15 8"/>
+      </svg>Ayarları Saxla`;
     }
   }
 }
-
+ 
 /* ════════════════════════════════════════════════════════
    ANA KATEQORİYA — RENDER
 ════════════════════════════════════════════════════════ */
