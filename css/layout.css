@@ -269,6 +269,113 @@ header {
 .search-result-cart:hover { background: var(--accent-dark); }
 .search-result-cart svg { width: 15px; height: 15px; fill: none; stroke: white; stroke-width: 2; }
 
+/* ── HEADER DÜYMƏ QRUPU — wishlist, cart, user eyni stil ── */
+
+/* Wishlist ikonu */
+.btn-wishlist {
+  position: relative;
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-full);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s, background 0.2s;
+  flex-shrink: 0;
+}
+
+.btn-wishlist:hover {
+  border-color: var(--accent);
+  background: #fdf8f0;
+}
+
+.btn-wishlist svg {
+  width: 18px;
+  height: 18px;
+  stroke: var(--text);
+  fill: none;
+  stroke-width: 1.8;
+  transition: stroke 0.2s, fill 0.2s;
+}
+
+.btn-wishlist:hover svg {
+  stroke: var(--accent);
+}
+
+.btn-wishlist.has-items svg {
+  fill: var(--accent);
+  stroke: var(--accent);
+}
+
+.wishlist-header-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--accent);
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--surface);
+}
+
+/* Səbət ikonu */
+.btn-cart {
+  position: relative;
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-full);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s, background 0.2s;
+  flex-shrink: 0;
+}
+
+.btn-cart:hover {
+  border-color: var(--accent);
+  background: #fdf8f0;
+}
+
+.btn-cart svg {
+  width: 18px;
+  height: 18px;
+  stroke: var(--text);
+  fill: none;
+  stroke-width: 2;
+  transition: stroke 0.2s;
+}
+
+.btn-cart:hover svg {
+  stroke: var(--accent);
+}
+
+.cart-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--danger);
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--surface);
+}
+
 /* ── RESPONSIVE ── */
 @media (max-width: 768px) {
   .header-logo-wrap { display: none; }
@@ -314,7 +421,17 @@ header {
   background: #fdf8f0;
 }
 
-.btn-signin svg { width: 18px; height: 18px; }
+.btn-signin svg {
+  width: 18px;
+  height: 18px;
+  stroke: var(--text);
+  fill: none;
+  transition: stroke 0.2s;
+}
+
+.btn-signin:hover svg {
+  stroke: var(--accent);
+}
 
 /* Giriş edildikdən sonra göstərilən istifadəçi adı */
 .btn-user {
@@ -324,18 +441,22 @@ header {
   background: var(--bg);
   border: 1.5px solid var(--border);
   border-radius: var(--radius-full);
-  padding: 6px 14px;
+  padding: 6px 14px 6px 6px;
   font-size: 0.88rem;
   font-weight: 500;
   color: var(--text);
   transition: all 0.2s;
 }
 
-.btn-user:hover { border-color: var(--accent); }
+.btn-user:hover {
+  border-color: var(--accent);
+  background: #fdf8f0;
+  color: var(--accent);
+}
 
 .btn-user .avatar {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: var(--accent);
   color: white;
@@ -344,40 +465,8 @@ header {
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-/* Səbət ikonu */
-.btn-cart {
-  position: relative;
-  background: none;
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-full);
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-
-.btn-cart:hover { border-color: var(--accent); }
-.btn-cart svg { width: 18px; height: 18px; }
-
-.cart-badge {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  background: var(--danger);
-  color: white;
-  font-size: 0.65rem;
-  font-weight: 700;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid var(--surface);
+  flex-shrink: 0;
+  overflow: hidden;
 }
 
 /* ── HERO STRIP (elan banneri) ── */
