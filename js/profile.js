@@ -712,7 +712,9 @@ function initAvatarUpload() {
   avatarEl.addEventListener('mouseleave', () => { overlay.style.background = 'rgba(0,0,0,0)';   svg.style.opacity = '0'; });
 
   const fileInput = document.createElement('input');
-  fileInput.type = 'file'; fileInput.accept = 'image/*'; fileInput.style.display = 'none';
+  fileInput.type = 'file'; 
+  fileInput.accept = 'image/*';
+  fileInput.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;';
   document.body.appendChild(fileInput);
   avatarEl.addEventListener('click', () => fileInput.click());
 
