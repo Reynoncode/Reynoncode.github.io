@@ -444,12 +444,13 @@ header {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 14px 0 6px;
+  padding: 0 14px 0 0;       /* sola padding sıfır — avatar yapışsın */
   font-size: 0.88rem;
   font-weight: 500;
   color: var(--text);
   transition: border-color 0.2s, background 0.2s;
   flex-shrink: 0;
+  overflow: hidden;           /* avatar kənara çıxmasın */
 }
 
 .btn-user:hover {
@@ -459,12 +460,12 @@ header {
 }
 
 .btn-user .avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
+  width: 40px;                /* buton hündürlüyü ilə eyni */
+  height: 40px;
+  border-radius: var(--radius-md) 0 0 var(--radius-md);  /* yalnız sol künclər */
   background: var(--accent);
   color: white;
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   font-weight: 700;
   display: flex;
   align-items: center;
