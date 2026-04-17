@@ -1,4 +1,4 @@
- /* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════
    listings.js — Elan idarəetmə paneli
    Profile.html-ə əlavə et: <script src="js/listings.js"></script>
    ═══════════════════════════════════════════ */
@@ -22,55 +22,35 @@ const PRESET_COLORS = [
 /* ════════════════════════════════════════════════════════════
    KATEQORİYA SİSTEMİ — Firebase-dən oxunur
    ════════════════════════════════════════════════════════════ */
-let _listingMainCats = []; // [{id, icon, label, subCats:[...]}]
+let _listingMainCats = [];
 
 async function loadListingCategories() {
   let cats = null;
- 
   try {
-    // 1. Public location (bütün istifadəçilər üçün oxuna bilər)
     const pubSnap = await fbDb.collection('settings').doc('categories').get();
-    if (pubSnap.exists) {
-      cats = pubSnap.data().items || null;
-    }
-  } catch(e) {
-    console.warn('Public kateqoriyalar oxunmadı:', e.message);
-  }
- 
+    if (pubSnap.exists) { cats = pubSnap.data().items || null; }
+  } catch(e) { console.warn('Public kateqoriyalar oxunmadı:', e.message); }
+
   if (!cats) {
     try {
-      // 2. Fallback: admin collection (yalnız admin üçün)
       const adminSnap = await fbDb.collection('admin').doc('platformSettings').get();
       if (adminSnap.exists) {
         const d = adminSnap.data();
         cats = d.mainCategories || d.categories || null;
       }
-    } catch(e) {
-      console.warn('Admin kateqoriyalar oxunmadı:', e.message);
-    }
+    } catch(e) { console.warn('Admin kateqoriyalar oxunmadı:', e.message); }
   }
- 
   _listingMainCats = Array.isArray(cats) ? cats : [];
 }
- 
 
-/* Ana kateqoriya seçimi dəyişdikdə alt kateqoriyaları doldur */
 function onMainCatChange() {
   const mainCatId = document.getElementById('lmMainCategory')?.value;
   const subWrap   = document.getElementById('lmSubCatWrap');
   const subSelect = document.getElementById('lmSubCategory');
-
   if (!subWrap || !subSelect) return;
-
-  const cat = _listingMainCats.find(c => c.id === mainCatId);
+  const cat  = _listingMainCats.find(c => c.id === mainCatId);
   const subs = (cat && Array.isArray(cat.subCats)) ? cat.subCats : [];
-
-  if (subs.length === 0) {
-    subWrap.style.display = 'none';
-    subSelect.innerHTML = '';
-    return;
-  }
-
+  if (subs.length === 0) { subWrap.style.display = 'none'; subSelect.innerHTML = ''; return; }
   subSelect.innerHTML = `<option value="">— Seçin —</option>` +
     subs.map(s => `<option value="${s}">${s}</option>`).join('');
   subWrap.style.display = '';
@@ -80,9 +60,7 @@ function buildMainCatSelect() {
   const sel = document.getElementById('lmMainCategory');
   if (!sel) return;
   sel.innerHTML = `<option value="">Seçin...</option>` +
-    _listingMainCats.map(c =>
-      `<option value="${c.id}">${c.icon || ''} ${c.label}</option>`
-    ).join('');
+    _listingMainCats.map(c => `<option value="${c.id}">${c.icon || ''} ${c.label}</option>`).join('');
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -94,6 +72,31 @@ let lState = {
   colors:          [],
   sizes:           [],
   colorPickerOpen: false,
+};
+
+/* ════════════════════════════════════════════════════════════
+   CROP STATE & SABİTLƏR
+   ════════════════════════════════════════════════════════════ */
+// Kart aspect-ratio 3/4 (en:hündürlük)
+const CROP_RATIO = 3 / 4;
+
+let _crop = {
+  img:           null,
+  callback:      null,
+  zoom:          1,
+  panX:          0,
+  panY:          0,
+  dragging:      false,
+  dragStartX:    0,
+  dragStartY:    0,
+  dragStartPanX: 0,
+  dragStartPanY: 0,
+  vpW:           0,
+  vpH:           0,
+  frameW:        0,
+  frameH:        0,
+  natW:          0,
+  natH:          0,
 };
 
 /* ════════════════════════════════════════════════════════════
@@ -118,7 +121,6 @@ function loadListingsTab(uid) {
     </div>
     <div id="listingsGrid"></div>
   `;
-
   injectListingStyles();
   injectListingModal();
   fetchUserListings(uid);
@@ -165,11 +167,10 @@ function renderListingCard(l) {
   const totalStock = sizes.reduce((s, x) => s + (parseInt(x.stock) || 0), 0);
   const isSale     = l.oldPrice && l.oldPrice > l.price;
 
-  /* Kateqoriya etiketi */
-const mainCat = _listingMainCats.find(c => c.id === (l.mainCategory || l.category));
-const catLabel = mainCat
-  ? `${mainCat.icon || ''} ${mainCat.label}${l.subCategory ? ' › ' + l.subCategory : ''}`
-  : (l.subCategory || l.category || '');
+  const mainCat  = _listingMainCats.find(c => c.id === (l.mainCategory || l.category));
+  const catLabel = mainCat
+    ? `${mainCat.icon || ''} ${mainCat.label}${l.subCategory ? ' › ' + l.subCategory : ''}`
+    : (l.subCategory || l.category || '');
 
   return `
   <div class="lac-card" data-id="${l.id}">
@@ -237,7 +238,7 @@ function injectListingModal() {
 
         <!-- Şəkillər -->
         <div class="lm-section">
-          <div class="lm-section-label">Şəkillər <span class="lm-hint">(maksimum 5)</span></div>
+          <div class="lm-section-label">Şəkillər <span class="lm-hint">(maksimum 8)</span></div>
           <div id="lmImgPreviews" class="lm-img-previews"></div>
           <input type="file" id="lmImgInput" accept="image/*" multiple style="display:none" onchange="lmHandleImages(this.files)">
         </div>
@@ -256,7 +257,7 @@ function injectListingModal() {
           </div>
         </div>
 
-        <!-- Alt Kateqoriya (yalnız ana seçiləndə görünür) -->
+        <!-- Alt Kateqoriya -->
         <div class="lm-field lm-field-full" id="lmSubCatWrap" style="display:none;margin-bottom:0.75rem;">
           <label class="lm-label">Alt Kateqoriya</label>
           <select class="lm-input lm-select" id="lmSubCategory">
@@ -402,6 +403,82 @@ function injectListingModal() {
       </div>
     </div>
   </div>
+
+  <!-- CROP MODAL -->
+  <div id="lmCropOverlay" class="lm-crop-overlay">
+    <div class="lm-crop-modal">
+
+      <div class="lm-crop-header">
+        <div class="lm-crop-header-left">
+          <div class="lm-crop-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 2 6 8 2 8"/><polyline points="18 22 18 16 22 16"/>
+              <path d="M2 8h16v12"/><path d="M6 2v16h16"/>
+            </svg>
+          </div>
+          <div>
+            <div class="lm-crop-title">Şəkili kəs</div>
+            <div class="lm-crop-subtitle">Kart ölçüsünə uyğun sahəni seçin (3:4)</div>
+          </div>
+        </div>
+        <button class="lm-close-btn" onclick="lmCropCancel()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="lm-crop-body">
+        <div class="lm-crop-viewport-wrap">
+          <div class="lm-crop-viewport" id="lmCropViewport">
+            <canvas id="lmCropCanvas"></canvas>
+            <div class="lm-crop-frame" id="lmCropFrame">
+              <div class="lm-crop-grid">
+                <div class="lm-crop-grid-line lm-crop-grid-h" style="top:33.33%"></div>
+                <div class="lm-crop-grid-line lm-crop-grid-h" style="top:66.66%"></div>
+                <div class="lm-crop-grid-line lm-crop-grid-v" style="left:33.33%"></div>
+                <div class="lm-crop-grid-line lm-crop-grid-v" style="left:66.66%"></div>
+              </div>
+              <div class="lm-crop-corner lm-crop-corner-tl"></div>
+              <div class="lm-crop-corner lm-crop-corner-tr"></div>
+              <div class="lm-crop-corner lm-crop-corner-bl"></div>
+              <div class="lm-crop-corner lm-crop-corner-br"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="lm-crop-controls">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--muted);flex-shrink:0">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            <line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>
+          </svg>
+          <input type="range" id="lmCropZoom" class="lm-crop-zoom-slider"
+            min="100" max="300" value="100" step="1"
+            oninput="lmCropSetZoom(this.value)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--muted);flex-shrink:0">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <span class="lm-crop-zoom-val" id="lmCropZoomVal">100%</span>
+          <button type="button" class="lm-btn-sm lm-btn-outline" onclick="lmCropReset()" style="margin-left:auto;">
+            Sıfırla
+          </button>
+        </div>
+      </div>
+
+      <div class="lm-crop-footer">
+        <button type="button" class="lm-btn-outline-full" onclick="lmCropCancel()">
+          Ləğv et
+        </button>
+        <button type="button" class="lm-btn-submit" onclick="lmCropConfirm()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:6px">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          Kəs və əlavə et
+        </button>
+      </div>
+
+    </div>
+  </div>
   `);
 }
 
@@ -426,10 +503,7 @@ async function openListingModal(editId = null) {
   document.getElementById('lmSizeInputRow').style.display = 'none';
   document.getElementById('lmSubCatWrap').style.display = 'none';
 
-  /* Kateqoriyaları yüklə (hənuz yüklənməmişsə) */
-  if (_listingMainCats.length === 0) {
-    await loadListingCategories();
-  }
+  if (_listingMainCats.length === 0) { await loadListingCategories(); }
   buildMainCatSelect();
 
   lmRenderImages();
@@ -488,16 +562,45 @@ async function lmFillStoreName() {
 }
 
 /* ════════════════════════════════════════════════════════════
-   ŞƏKİL
+   ŞƏKİL — CROP İLƏ (YENİLƏNİB)
    ════════════════════════════════════════════════════════════ */
+
+/**
+ * İstifadəçi fayl seçəndə çağırılır.
+ * Hər şəkil üçün ardıcıl crop modal açılır.
+ * Onaylamadan əvvəl lState.images-ə əlavə edilmir.
+ */
 function lmHandleImages(files) {
-  const remaining = 5 - lState.images.length;
-  Array.from(files).slice(0, remaining).forEach(file => {
-    if (!file.type.startsWith('image/')) return;
-    const reader = new FileReader();
-    reader.onload = e => { lState.images.push(e.target.result); lmRenderImages(); };
-    reader.readAsDataURL(file);
-  });
+  const fileArr = Array.from(files).filter(f => f.type.startsWith('image/'));
+  if (!fileArr.length) return;
+
+  // Input-u sıfırla ki eyni fayl yenidən seçilə bilsin
+  const inp = document.getElementById('lmImgInput');
+  if (inp) inp.value = '';
+
+  _processCropQueue(fileArr, 0);
+}
+
+function _processCropQueue(queue, index) {
+  if (index >= queue.length) return;
+
+  if (lState.images.length >= 8) {
+    showToast('Maksimum 8 şəkil əlavə edə bilərsiniz');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    lmOpenCrop(e.target.result, croppedDataUrl => {
+      if (croppedDataUrl) {
+        lState.images.push(croppedDataUrl);
+        lmRenderImages();
+      }
+      // Növbəti faylı işlə (ləğv edilsə də növbəti açılır)
+      _processCropQueue(queue, index + 1);
+    });
+  };
+  reader.readAsDataURL(queue[index]);
 }
 
 function lmRenderImages() {
@@ -507,19 +610,283 @@ function lmRenderImages() {
   lState.images.forEach((src, i) => {
     const div = document.createElement('div');
     div.className = 'lm-img-thumb';
-    div.innerHTML = `<img src="${src}" alt="şəkil"><button type="button" class="lm-img-rm" onclick="lmRemoveImg(${i})">✕</button>${i===0?'<span class="lm-img-main">Əsas</span>':''}`;
+    div.innerHTML = `
+      <img src="${src}" alt="şəkil">
+      <button type="button" class="lm-img-rm" onclick="lmRemoveImg(${i})">✕</button>
+      ${i === 0 ? '<span class="lm-img-main">Əsas</span>' : ''}
+    `;
     wrap.appendChild(div);
   });
-  if (lState.images.length < 5) {
+  if (lState.images.length < 8) {
     const add = document.createElement('label');
     add.className = 'lm-img-add';
     add.htmlFor   = 'lmImgInput';
-    add.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span>${lState.images.length}/5</span>`;
+    add.innerHTML = `
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <rect x="3" y="3" width="18" height="18" rx="3"/>
+        <line x1="12" y1="8" x2="12" y2="16"/>
+        <line x1="8" y1="12" x2="16" y2="12"/>
+      </svg>
+      <span>${lState.images.length}/8</span>
+    `;
     wrap.appendChild(add);
   }
 }
 
-function lmRemoveImg(i) { lState.images.splice(i,1); lmRenderImages(); }
+function lmRemoveImg(i) { lState.images.splice(i, 1); lmRenderImages(); }
+
+/* ════════════════════════════════════════════════════════════
+   CROP — AÇMA
+   ════════════════════════════════════════════════════════════ */
+function lmOpenCrop(dataUrl, callback) {
+  _crop.callback = callback;
+  _crop.zoom     = 1;
+  _crop.panX     = 0;
+  _crop.panY     = 0;
+
+  const img = new Image();
+  img.onload = () => {
+    _crop.img  = img;
+    _crop.natW = img.naturalWidth;
+    _crop.natH = img.naturalHeight;
+    _cropSetupViewport();
+    _cropDraw();
+    _cropBindDrag();
+  };
+  img.src = dataUrl;
+
+  document.getElementById('lmCropOverlay').classList.add('lm-open');
+  document.getElementById('lmCropZoom').value = 100;
+  document.getElementById('lmCropZoomVal').textContent = '100%';
+}
+
+function _cropSetupViewport() {
+  const vp = document.getElementById('lmCropViewport');
+
+  _crop.vpW = vp.offsetWidth  || 460;
+  _crop.vpH = vp.offsetHeight || 420;
+
+  // Crop frame: viewport-un 85%-i, 3:4 nisbətinə görə
+  const maxFrameW = _crop.vpW * 0.85;
+  const maxFrameH = _crop.vpH * 0.85;
+
+  if (maxFrameW / CROP_RATIO <= maxFrameH) {
+    _crop.frameW = maxFrameW;
+    _crop.frameH = maxFrameW / CROP_RATIO;
+  } else {
+    _crop.frameH = maxFrameH;
+    _crop.frameW = maxFrameH * CROP_RATIO;
+  }
+
+  // Frame mövqeyi (mərkəzdə)
+  const frame = document.getElementById('lmCropFrame');
+  const fLeft = (_crop.vpW - _crop.frameW) / 2;
+  const fTop  = (_crop.vpH - _crop.frameH) / 2;
+  frame.style.width  = _crop.frameW + 'px';
+  frame.style.height = _crop.frameH + 'px';
+  frame.style.left   = fLeft + 'px';
+  frame.style.top    = fTop  + 'px';
+
+  // Canvas ölçüsü = viewport ölçüsü
+  const canvas = document.getElementById('lmCropCanvas');
+  canvas.width  = _crop.vpW;
+  canvas.height = _crop.vpH;
+
+  _cropResetPan();
+}
+
+function _cropResetPan() {
+  const scaleToFit = Math.max(
+    _crop.frameW / _crop.natW,
+    _crop.frameH / _crop.natH
+  );
+  const scaledW = _crop.natW * scaleToFit * _crop.zoom;
+  const scaledH = _crop.natH * scaleToFit * _crop.zoom;
+
+  const fLeft = (_crop.vpW - _crop.frameW) / 2;
+  const fTop  = (_crop.vpH - _crop.frameH) / 2;
+
+  _crop.panX = fLeft + (_crop.frameW - scaledW) / 2;
+  _crop.panY = fTop  + (_crop.frameH - scaledH) / 2;
+}
+
+function _cropDraw() {
+  const canvas = document.getElementById('lmCropCanvas');
+  if (!canvas || !_crop.img) return;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, _crop.vpW, _crop.vpH);
+
+  const scaleToFit = Math.max(
+    _crop.frameW / _crop.natW,
+    _crop.frameH / _crop.natH
+  );
+  const scaledW = _crop.natW * scaleToFit * _crop.zoom;
+  const scaledH = _crop.natH * scaleToFit * _crop.zoom;
+
+  ctx.drawImage(_crop.img, _crop.panX, _crop.panY, scaledW, scaledH);
+
+  // Frame xaricini karalt
+  const fLeft = (_crop.vpW - _crop.frameW) / 2;
+  const fTop  = (_crop.vpH - _crop.frameH) / 2;
+
+  ctx.fillStyle = 'rgba(0,0,0,0.52)';
+  ctx.fillRect(0, 0, _crop.vpW, fTop);
+  ctx.fillRect(0, fTop + _crop.frameH, _crop.vpW, _crop.vpH - fTop - _crop.frameH);
+  ctx.fillRect(0, fTop, fLeft, _crop.frameH);
+  ctx.fillRect(fLeft + _crop.frameW, fTop, _crop.vpW - fLeft - _crop.frameW, _crop.frameH);
+}
+
+function _cropClampPan() {
+  const scaleToFit = Math.max(
+    _crop.frameW / _crop.natW,
+    _crop.frameH / _crop.natH
+  );
+  const scaledW = _crop.natW * scaleToFit * _crop.zoom;
+  const scaledH = _crop.natH * scaleToFit * _crop.zoom;
+
+  const fLeft = (_crop.vpW - _crop.frameW) / 2;
+  const fTop  = (_crop.vpH - _crop.frameH) / 2;
+
+  _crop.panX = Math.min(fLeft, Math.max(fLeft + _crop.frameW - scaledW, _crop.panX));
+  _crop.panY = Math.min(fTop,  Math.max(fTop  + _crop.frameH - scaledH, _crop.panY));
+}
+
+/* ── Drag (mouse) ── */
+function _cropBindDrag() {
+  const vp = document.getElementById('lmCropViewport');
+  vp.onmousedown  = _cropMouseDown;
+  vp.ontouchstart = _cropTouchStart;
+}
+
+function _cropMouseDown(e) {
+  e.preventDefault();
+  _crop.dragging      = true;
+  _crop.dragStartX    = e.clientX;
+  _crop.dragStartY    = e.clientY;
+  _crop.dragStartPanX = _crop.panX;
+  _crop.dragStartPanY = _crop.panY;
+  document.onmousemove = _cropMouseMove;
+  document.onmouseup   = _cropMouseUp;
+}
+
+function _cropMouseMove(e) {
+  if (!_crop.dragging) return;
+  _crop.panX = _crop.dragStartPanX + (e.clientX - _crop.dragStartX);
+  _crop.panY = _crop.dragStartPanY + (e.clientY - _crop.dragStartY);
+  _cropClampPan();
+  _cropDraw();
+}
+
+function _cropMouseUp() {
+  _crop.dragging = false;
+  document.onmousemove = null;
+  document.onmouseup   = null;
+}
+
+/* ── Drag (touch) ── */
+function _cropTouchStart(e) {
+  if (e.touches.length !== 1) return;
+  const t = e.touches[0];
+  _crop.dragging      = true;
+  _crop.dragStartX    = t.clientX;
+  _crop.dragStartY    = t.clientY;
+  _crop.dragStartPanX = _crop.panX;
+  _crop.dragStartPanY = _crop.panY;
+  document.ontouchmove = _cropTouchMove;
+  document.ontouchend  = _cropTouchEnd;
+}
+
+function _cropTouchMove(e) {
+  if (!_crop.dragging || e.touches.length !== 1) return;
+  e.preventDefault();
+  const t = e.touches[0];
+  _crop.panX = _crop.dragStartPanX + (t.clientX - _crop.dragStartX);
+  _crop.panY = _crop.dragStartPanY + (t.clientY - _crop.dragStartY);
+  _cropClampPan();
+  _cropDraw();
+}
+
+function _cropTouchEnd() {
+  _crop.dragging = false;
+  document.ontouchmove = null;
+  document.ontouchend  = null;
+}
+
+/* ════════════════════════════════════════════════════════════
+   CROP — ZOOM, RESET, CONFIRM, CANCEL
+   ════════════════════════════════════════════════════════════ */
+function lmCropSetZoom(val) {
+  const newZoom = parseInt(val) / 100;
+  const scaleToFit = Math.max(_crop.frameW / _crop.natW, _crop.frameH / _crop.natH);
+
+  const oldW = _crop.natW * scaleToFit * _crop.zoom;
+  const oldH = _crop.natH * scaleToFit * _crop.zoom;
+  const newW = _crop.natW * scaleToFit * newZoom;
+  const newH = _crop.natH * scaleToFit * newZoom;
+
+  // Mərkəzi sabit saxla
+  const cx = _crop.vpW / 2;
+  const cy = _crop.vpH / 2;
+  _crop.panX = cx - (cx - _crop.panX) * (newW / oldW);
+  _crop.panY = cy - (cy - _crop.panY) * (newH / oldH);
+
+  _crop.zoom = newZoom;
+  _cropClampPan();
+  _cropDraw();
+  document.getElementById('lmCropZoomVal').textContent = val + '%';
+}
+
+function lmCropReset() {
+  _crop.zoom = 1;
+  _cropResetPan();
+  _cropDraw();
+  document.getElementById('lmCropZoom').value = 100;
+  document.getElementById('lmCropZoomVal').textContent = '100%';
+}
+
+function lmCropConfirm() {
+  if (!_crop.img) return;
+
+  // Çıxış ölçüsü: 600×800 (3:4, yüksək keyfiyyət)
+  const OUT_W = 600, OUT_H = 800;
+  const outCanvas = document.createElement('canvas');
+  outCanvas.width  = OUT_W;
+  outCanvas.height = OUT_H;
+  const outCtx = outCanvas.getContext('2d');
+
+  const scaleToFit = Math.max(_crop.frameW / _crop.natW, _crop.frameH / _crop.natH);
+  const scaledW = _crop.natW * scaleToFit * _crop.zoom;
+  const scaledH = _crop.natH * scaleToFit * _crop.zoom;
+
+  const fLeft = (_crop.vpW - _crop.frameW) / 2;
+  const fTop  = (_crop.vpH - _crop.frameH) / 2;
+
+  // Şəkildə crop frame-ə düşən hissəni hesabla
+  const srcX = (fLeft - _crop.panX) / scaledW * _crop.natW;
+  const srcY = (fTop  - _crop.panY) / scaledH * _crop.natH;
+  const srcW = (_crop.frameW / scaledW) * _crop.natW;
+  const srcH = (_crop.frameH / scaledH) * _crop.natH;
+
+  outCtx.drawImage(_crop.img, srcX, srcY, srcW, srcH, 0, 0, OUT_W, OUT_H);
+
+  const result = outCanvas.toDataURL('image/jpeg', 0.88);
+  _closeCropModal();
+  if (_crop.callback) _crop.callback(result);
+}
+
+function lmCropCancel() {
+  _closeCropModal();
+  if (_crop.callback) _crop.callback(null);
+}
+
+function _closeCropModal() {
+  const overlay = document.getElementById('lmCropOverlay');
+  if (overlay) overlay.classList.remove('lm-open');
+  document.onmousemove = null;
+  document.onmouseup   = null;
+  document.ontouchmove = null;
+  document.ontouchend  = null;
+}
 
 /* ════════════════════════════════════════════════════════════
    RƏNGLƏR
@@ -544,13 +911,13 @@ function lmAddCustomColor() {
   document.getElementById('lmCpName').value = '';
 }
 
-function lmRemoveColor(i) { lState.colors.splice(i,1); lmRenderColors(); }
+function lmRemoveColor(i) { lState.colors.splice(i, 1); lmRenderColors(); }
 
 function lmRenderColors() {
   const wrap = document.getElementById('lmSelectedColors');
   if (!wrap) return;
   wrap.innerHTML = lState.colors.length
-    ? lState.colors.map((c,i) => `
+    ? lState.colors.map((c, i) => `
         <div class="lm-color-chip">
           <span class="lm-cc-swatch" style="background:${c.hex};${c.hex==='#FFFFFF'?'border:1px solid #ccc;':''}"></span>
           <span class="lm-cc-name">${c.name}</span>
@@ -579,14 +946,14 @@ function lmAddSize() {
   lmRenderSizes();
 }
 
-function lmRemoveSize(i) { lState.sizes.splice(i,1); lmRenderSizes(); }
-function lmUpdateSizeStock(i,val) { lState.sizes[i].stock = parseInt(val)||0; }
+function lmRemoveSize(i) { lState.sizes.splice(i, 1); lmRenderSizes(); }
+function lmUpdateSizeStock(i, val) { lState.sizes[i].stock = parseInt(val) || 0; }
 
 function lmRenderSizes() {
   const wrap = document.getElementById('lmSizeList');
   if (!wrap) return;
   wrap.innerHTML = lState.sizes.length
-    ? lState.sizes.map((s,i) => `
+    ? lState.sizes.map((s, i) => `
         <div class="lm-size-row">
           <span class="lm-size-label">${s.label}</span>
           <div class="lm-size-stock-wrap">
@@ -603,8 +970,8 @@ function lmRenderSizes() {
     : '<p class="lm-hint-block" style="margin:0;">Hər hansı ölçü əlavə etməyibsiniz</p>';
 }
 
-function lmStepStock(i,delta) {
-  lState.sizes[i].stock = Math.max(0,(lState.sizes[i].stock||0)+delta);
+function lmStepStock(i, delta) {
+  lState.sizes[i].stock = Math.max(0, (lState.sizes[i].stock || 0) + delta);
   lmRenderSizes();
 }
 
@@ -631,25 +998,24 @@ async function submitListing() {
 
   const payload = {
     name,
-    brand:        document.getElementById('lmBrand').value.trim(),
+    brand:         document.getElementById('lmBrand').value.trim(),
     price,
-    oldPrice:     (oldPriceRaw > price) ? oldPriceRaw : null,
-    desc:         document.getElementById('lmDesc').value.trim(),
-    material:     document.getElementById('lmMaterial').value.trim(),
-    condition:    document.getElementById('lmCondition').value,
+    oldPrice:      (oldPriceRaw > price) ? oldPriceRaw : null,
+    desc:          document.getElementById('lmDesc').value.trim(),
+    material:      document.getElementById('lmMaterial').value.trim(),
+    condition:     document.getElementById('lmCondition').value,
     mainCategory:  mainCatId,
-    categoryLabel: mainCat ? mainCat.label : '',  // ← bu sətri əlavə et
-    subCategory:   subCategory,
-category:      mainCatId,
-     
-    badge:        (oldPriceRaw > price) ? 'Endirim' : 'Yeni',
-    imgs:         lState.images,
-    colors:       lState.colors,
-    sizes:        lState.sizes,
-    userId:       fbAuth.currentUser.uid,
-    userEmail:    fbAuth.currentUser.email,
-    storeName:    document.getElementById('lmStoreName').value,
-    updatedAt:    firebase.firestore.FieldValue.serverTimestamp(),
+    categoryLabel: mainCat ? mainCat.label : '',
+    subCategory,
+    category:      mainCatId,
+    badge:         (oldPriceRaw > price) ? 'Endirim' : 'Yeni',
+    imgs:          lState.images,
+    colors:        lState.colors,
+    sizes:         lState.sizes,
+    userId:        fbAuth.currentUser.uid,
+    userEmail:     fbAuth.currentUser.email,
+    storeName:     document.getElementById('lmStoreName').value,
+    updatedAt:     firebase.firestore.FieldValue.serverTimestamp(),
   };
 
   try {
@@ -698,7 +1064,7 @@ async function openStockModal(id) {
   const sizes = stockEditData.sizes || [];
   document.getElementById('stockModalSubtitle').textContent = stockEditData.name || '';
   document.getElementById('stockModalBody').innerHTML = sizes.length
-    ? sizes.map((s,i) => `
+    ? sizes.map((s, i) => `
         <div class="lm-size-row" style="margin-bottom:.75rem;">
           <span class="lm-size-label">${s.label}</span>
           <div class="lm-size-stock-wrap">
@@ -712,24 +1078,34 @@ async function openStockModal(id) {
   document.getElementById('stockModalOverlay').classList.add('lm-open');
 }
 
-function smStep(i,delta) {
+function smStep(i, delta) {
   const inp = document.getElementById(`sm-stock-${i}`);
-  if (inp) inp.value = Math.max(0,(parseInt(inp.value)||0)+delta);
+  if (inp) inp.value = Math.max(0, (parseInt(inp.value) || 0) + delta);
 }
 
 async function saveStock() {
-  if (!stockEditId||!stockEditData) return;
-  const sizes = (stockEditData.sizes||[]).map((s,i)=>({...s,stock:parseInt(document.getElementById(`sm-stock-${i}`)?.value)||0}));
+  if (!stockEditId || !stockEditData) return;
+  const sizes = (stockEditData.sizes || []).map((s, i) => ({
+    ...s,
+    stock: parseInt(document.getElementById(`sm-stock-${i}`)?.value) || 0
+  }));
   try {
-    await fbDb.collection('listings').doc(stockEditId).update({sizes,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+    await fbDb.collection('listings').doc(stockEditId).update({
+      sizes,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
     showToast('Stok yeniləndi ✓');
     closeStockModal();
     fetchUserListings(fbAuth.currentUser.uid);
-  } catch(err) { showToast('Xəta: '+err.message); }
+  } catch(err) { showToast('Xəta: ' + err.message); }
 }
 
-function closeStockModal() { document.getElementById('stockModalOverlay').classList.remove('lm-open'); stockEditId=null; stockEditData=null; }
-function closeStockIfBg(e) { if (e.target.id==='stockModalOverlay') closeStockModal(); }
+function closeStockModal() {
+  document.getElementById('stockModalOverlay').classList.remove('lm-open');
+  stockEditId = null;
+  stockEditData = null;
+}
+function closeStockIfBg(e) { if (e.target.id === 'stockModalOverlay') closeStockModal(); }
 
 /* ════════════════════════════════════════════════════════════
    STİLLƏR
@@ -834,9 +1210,53 @@ function injectListingStyles() {
   .lm-footer{display:flex;gap:.75rem;}
   .lm-btn-outline-full{flex:1;padding:.75rem;border-radius:10px;border:1.5px solid var(--border);background:none;font-size:.875rem;font-weight:500;cursor:pointer;transition:all .15s;}
   .lm-btn-outline-full:hover{border-color:var(--accent);color:var(--accent);}
-  .lm-btn-submit{flex:2;padding:.75rem;border-radius:10px;background:var(--accent,#1a1a1a);color:#fff;border:none;font-size:.9rem;font-weight:600;cursor:pointer;transition:opacity .2s;}
+  .lm-btn-submit{flex:2;padding:.75rem;border-radius:10px;background:var(--accent,#1a1a1a);color:#fff;border:none;font-size:.9rem;font-weight:600;cursor:pointer;transition:opacity .2s;display:inline-flex;align-items:center;justify-content:center;}
   .lm-btn-submit:hover{opacity:.88;}.lm-btn-submit:disabled{opacity:.5;cursor:not-allowed;}
-  @media(max-width:640px){.lm-modal{border-radius:20px 20px 0 0;max-height:95vh;}.lm-overlay{align-items:flex-end;padding:0;}.lm-row2{grid-template-columns:1fr;}.lst-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));}.lm-cp-presets{grid-template-columns:repeat(6,1fr);}}
+
+  /* ══════════════════════════════
+     CROP MODAL STİLLƏRİ
+  ══════════════════════════════ */
+  .lm-crop-overlay{position:fixed;inset:0;z-index:600;background:rgba(10,8,5,.75);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s;padding:1rem;}
+  .lm-crop-overlay.lm-open{opacity:1;pointer-events:all;}
+  .lm-crop-modal{background:#fff;border-radius:20px;width:100%;max-width:520px;box-shadow:0 32px 96px rgba(0,0,0,.24);transform:translateY(24px) scale(.97);transition:transform .35s cubic-bezier(.34,1.56,.64,1);overflow:hidden;}
+  .lm-crop-overlay.lm-open .lm-crop-modal{transform:translateY(0) scale(1);}
+  .lm-crop-header{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem 1rem;border-bottom:1px solid var(--border);}
+  .lm-crop-header-left{display:flex;align-items:center;gap:.75rem;}
+  .lm-crop-icon{width:36px;height:36px;background:var(--bg,#f7f4f0);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--accent);flex-shrink:0;}
+  .lm-crop-title{font-family:'Playfair Display',serif;font-size:1rem;font-weight:600;color:var(--accent);}
+  .lm-crop-subtitle{font-size:.72rem;color:var(--muted);margin-top:.1rem;}
+  .lm-crop-body{padding:1.25rem 1.5rem;}
+  .lm-crop-viewport-wrap{border-radius:14px;overflow:hidden;border:1.5px solid var(--border);background:#0a0a0a;margin-bottom:1rem;}
+  .lm-crop-viewport{position:relative;width:100%;height:420px;cursor:grab;overflow:hidden;user-select:none;-webkit-user-select:none;touch-action:none;}
+  .lm-crop-viewport:active{cursor:grabbing;}
+  #lmCropCanvas{display:block;width:100%;height:100%;}
+  .lm-crop-frame{position:absolute;pointer-events:none;box-sizing:border-box;border:2px solid rgba(255,255,255,.92);border-radius:2px;}
+  .lm-crop-corner{position:absolute;width:18px;height:18px;border-color:#fff;border-style:solid;}
+  .lm-crop-corner-tl{top:-2px;left:-2px;border-width:3px 0 0 3px;}
+  .lm-crop-corner-tr{top:-2px;right:-2px;border-width:3px 3px 0 0;}
+  .lm-crop-corner-bl{bottom:-2px;left:-2px;border-width:0 0 3px 3px;}
+  .lm-crop-corner-br{bottom:-2px;right:-2px;border-width:0 3px 3px 0;}
+  .lm-crop-grid{position:absolute;inset:0;}
+  .lm-crop-grid-line{position:absolute;background:rgba(255,255,255,.18);}
+  .lm-crop-grid-h{width:100%;height:1px;left:0;}
+  .lm-crop-grid-v{height:100%;width:1px;top:0;}
+  .lm-crop-controls{display:flex;align-items:center;gap:.75rem;padding:.25rem 0;}
+  .lm-crop-zoom-slider{flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:4px;background:var(--border);outline:none;cursor:pointer;}
+  .lm-crop-zoom-slider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--accent,#1a1a1a);cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.18);transition:transform .15s;}
+  .lm-crop-zoom-slider::-webkit-slider-thumb:hover{transform:scale(1.15);}
+  .lm-crop-zoom-val{font-size:.72rem;font-weight:600;color:var(--muted);min-width:38px;text-align:right;}
+  .lm-crop-footer{display:flex;gap:.75rem;padding:1rem 1.5rem 1.5rem;border-top:1px solid var(--border);}
+
+  @media(max-width:640px){
+    .lm-modal{border-radius:20px 20px 0 0;max-height:95vh;}
+    .lm-overlay{align-items:flex-end;padding:0;}
+    .lm-crop-modal{border-radius:20px 20px 0 0;max-height:96vh;}
+    .lm-crop-overlay{align-items:flex-end;padding:0;}
+    .lm-crop-viewport{height:320px;}
+    .lm-row2{grid-template-columns:1fr;}
+    .lst-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));}
+    .lm-cp-presets{grid-template-columns:repeat(6,1fr);}
+  }
   `;
   document.head.appendChild(style);
 }
