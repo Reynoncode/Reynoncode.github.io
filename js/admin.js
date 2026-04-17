@@ -511,7 +511,9 @@ async function searchFeaturedStore(query) {
           };
         })
         .filter(u => {
-          if (u.role !== 'vendor') return false;
+          // vendors kolleksiyasında varsa vendor sayılır (role undefined ola bilər)
+          const isVendor = u.role === 'vendor' || vendorMap[u.uid] !== undefined;
+          if (!isVendor) return false;
           const name  = (u.storeName || u.displayName).toLowerCase();
           const email = u.email.toLowerCase();
           return name.includes(q) || email.includes(q);
