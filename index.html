@@ -183,6 +183,49 @@
   .cat-item { padding: 0.45rem 0.7rem; min-width: auto; gap: 0; }
   .cat-item-label { font-size: 0.72rem; max-width: none; }
 }
+
+    /* ══ KAMPANİYA SLİDER ══ */
+    #campaignSlider:hover #csPrev,
+    #campaignSlider:hover #csNext { opacity: 1 !important; }
+
+    #campaignTrack .cs-slide {
+      /* Genişlik JS-də ayarlanır */
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      /* Hündürlük: 15vh, minimum 90px, maksimum 200px */
+      height: clamp(90px, 15vh, 200px);
+      overflow: hidden;
+    }
+    #campaignTrack .cs-slide img {
+      height: 100%;
+      width: auto;
+      max-width: 100%;
+      object-fit: contain;
+      display: block;
+      border-radius: 10px;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /* Dots */
+    .cs-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.5);
+      border: none; cursor: pointer;
+      padding: 0; transition: background .2s, transform .2s;
+    }
+    .cs-dot.active {
+      background: #fff;
+      transform: scale(1.3);
+    }
+
+    /* Mobile: ok düymələri həmişə görünsün */
+    @media (max-width: 600px) {
+      #csPrev, #csNext { opacity: .7 !important; width:30px!important;height:30px!important; }
+    }
   </style>
 </head>
 <body>
@@ -212,6 +255,37 @@
 </div>
 
 <main>
+  <!-- ══ KAMPANİYA SLİDER ══ -->
+  <div id="campaignSliderWrap" style="display:none;margin-bottom:1.5rem;">
+    <div id="campaignSlider" style="position:relative;width:100%;overflow:hidden;border-radius:12px;background:var(--surface);">
+      <!-- Track -->
+      <div id="campaignTrack"
+        style="display:flex;transition:transform .55s cubic-bezier(.4,0,.2,1);will-change:transform;">
+      </div>
+
+      <!-- Prev / Next arrows — hover ile gorunsun -->
+      <button id="csPrev" aria-label="Əvvəlki"
+        style="position:absolute;left:10px;top:50%;transform:translateY(-50%);
+               width:38px;height:38px;border-radius:50%;border:none;
+               background:rgba(255,255,255,.88);box-shadow:0 2px 8px rgba(0,0,0,.18);
+               cursor:pointer;display:flex;align-items:center;justify-content:center;
+               opacity:0;transition:opacity .2s;z-index:10;color:#222;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <button id="csNext" aria-label="Növbəti"
+        style="position:absolute;right:10px;top:50%;transform:translateY(-50%);
+               width:38px;height:38px;border-radius:50%;border:none;
+               background:rgba(255,255,255,.88);box-shadow:0 2px 8px rgba(0,0,0,.18);
+               cursor:pointer;display:flex;align-items:center;justify-content:center;
+               opacity:0;transition:opacity .2s;z-index:10;color:#222;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+
+      <!-- Dots -->
+      <div id="csDots" style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:10;"></div>
+    </div>
+  </div>
+
   <div class="section-header">
     <h1 class="section-title" id="mainSectionTitle">Yeni Kolleksiya</h1>
     <div style="display:flex;align-items:center;gap:1rem;">
@@ -459,11 +533,103 @@
     }
   }
 
+  /* ════════════════════════════════════════════════════════
+     KAMPANİYA SLİDER
+  ════════════════════════════════════════════════════════ */
+  async function loadCampaignSlider() {
+    try {
+      let items = [];
+      try {
+        const snap = await fbDb.collection('settings').doc('campaigns').get();
+        if (snap.exists) items = snap.data().items || [];
+      } catch(e) {
+        try {
+          const snap2 = await fbDb.collection('admin').doc('platformSettings').get();
+          if (snap2.exists) items = snap2.data().campaigns || [];
+        } catch(_) {}
+      }
+      if (!items.length) return;
+
+      const wrap  = document.getElementById('campaignSliderWrap');
+      const track = document.getElementById('campaignTrack');
+      const dots  = document.getElementById('csDots');
+      if (!wrap || !track || !dots) return;
+      wrap.style.display = 'block';
+
+      const total = items.length;
+      let current = 0, autoTimer = null, isAnimating = false;
+
+      track.innerHTML = items.map((c, i) =>
+        '<div class="cs-slide" style="width:100%;flex-shrink:0;">' +
+        '<img src="' + c.url + '" alt="' + (c.name || 'Kampaniya').replace(/"/g,'&quot;') + '" draggable="false" loading="' + (i===0?'eager':'lazy') + '"/></div>'
+      ).join('');
+
+      function renderDots() {
+        dots.innerHTML = items.map((_, i) =>
+          '<button class="cs-dot' + (i===0?' active':'') + '" onclick="csGoSlide(' + i + ')"></button>'
+        ).join('');
+      }
+      renderDots();
+
+      window.csGoSlide = function(n) {
+        if (isAnimating) return;
+        isAnimating = true;
+        current = ((n % total) + total) % total;
+        track.style.transform = 'translateX(-' + (current * 100) + '%)';
+        dots.querySelectorAll('.cs-dot').forEach((d, i) => d.classList.toggle('active', i === current));
+        setTimeout(() => { isAnimating = false; }, 580);
+        resetAutoPlay();
+      };
+
+      function resetAutoPlay() {
+        clearInterval(autoTimer);
+        if (total > 1) autoTimer = setInterval(() => csGoSlide(current + 1), 7000);
+      }
+
+      const prevBtn = document.getElementById('csPrev');
+      const nextBtn = document.getElementById('csNext');
+      if (prevBtn) prevBtn.onclick = () => csGoSlide(current - 1);
+      if (nextBtn) nextBtn.onclick = () => csGoSlide(current + 1);
+      if (total === 1) {
+        if (prevBtn) prevBtn.style.display = 'none';
+        if (nextBtn) nextBtn.style.display = 'none';
+        dots.style.display = 'none';
+      }
+
+      let touchStartX = 0, touchStartY = 0;
+      track.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; }, {passive:true});
+      track.addEventListener('touchend', e => {
+        const dx = touchStartX - e.changedTouches[0].clientX;
+        const dy = Math.abs(touchStartY - e.changedTouches[0].clientY);
+        if (Math.abs(dx) > 40 && Math.abs(dx) > dy) csGoSlide(current + (dx > 0 ? 1 : -1));
+      }, {passive:true});
+
+      let mouseStartX = 0, isDragging = false;
+      track.addEventListener('mousedown', e => { mouseStartX = e.clientX; isDragging = true; });
+      track.addEventListener('mouseup', e => {
+        if (!isDragging) return; isDragging = false;
+        const dx = mouseStartX - e.clientX;
+        if (Math.abs(dx) > 40) csGoSlide(current + (dx > 0 ? 1 : -1));
+      });
+      track.addEventListener('mouseleave', () => { isDragging = false; });
+
+      const sliderEl = document.getElementById('campaignSlider');
+      if (sliderEl) {
+        sliderEl.addEventListener('mouseenter', () => clearInterval(autoTimer));
+        sliderEl.addEventListener('mouseleave', () => resetAutoPlay());
+      }
+      resetAutoPlay();
+    } catch(e) {
+      console.warn('Kampaniya slider yuklenmeди:', e.message);
+    }
+  }
+
   /* ────────────────────────────────────────
-     SƏHIFƏ YÜKLƏNMƏ
+     SEHIFE YUKLENME
   ──────────────────────────────────────── */
   document.addEventListener('DOMContentLoaded', () => {
     loadCategoriesFromFirebase();
+    loadCampaignSlider();
     loadListings();
     listing.renderPreviews();
   });
