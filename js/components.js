@@ -89,7 +89,6 @@ async function renderHeader() {
   const header = document.querySelector('header');
   if (header) {
     header.innerHTML = headerHTML;
-   
     initHeaderEvents();
     initSearchPopup();
   }
@@ -267,11 +266,11 @@ function renderSearchPopup(query, results) {
     }
     body.innerHTML = html;
 
+    // ── DÜZƏLİŞ: yalnız cart.add() — stopPropagation artıq HTML-dədir ──
     body.querySelectorAll('.search-result-cart').forEach(btn => {
       btn.addEventListener('click', e => {
-        e.stopPropagation();
-        const id = parseInt(btn.dataset.id);
-        const product = PRODUCTS.find(p => p.id === id);
+        const id = btn.dataset.id;
+        const product = PRODUCTS.find(p => String(p.id) === String(id));
         if (product) cart.add(product);
       });
     });
@@ -280,17 +279,28 @@ function renderSearchPopup(query, results) {
   openSearchPopup();
 }
 
+// ── DÜZƏLİŞ: Kart klikinə modal açan köməkçi funksiya ──
+function openSearchProduct(id) {
+  const product = PRODUCTS.find(p => String(p.id) === String(id));
+  if (product && typeof openProductDetail === 'function') {
+    closeSearchPopup();
+    openProductDetail(product);
+  }
+}
+
+// ── DÜZƏLİŞ: searchResultCard — kartın özünə onclick əlavə edildi ──
 function searchResultCard(p) {
   const isSale = p.oldPrice !== null;
   return `
-    <div class="search-result-item">
+    <div class="search-result-item" style="cursor:pointer" onclick="openSearchProduct('${p.id}')">
       <img class="search-result-img" src="${(p.imgs && p.imgs[0]) || p.img || ''}" alt="${p.name}" loading="lazy"/>
       <div class="search-result-info">
         <div class="search-result-brand">${p.brand || p.storeName || ''}</div>
         <div class="search-result-name">${p.name}</div>
         <div class="search-result-price ${isSale ? 'sale' : ''}">${p.price} ₼</div>
       </div>
-      <button class="search-result-cart" data-id="${p.id}" title="${t('header.cart')}">
+      <button class="search-result-cart" data-id="${p.id}" title="${t('header.cart')}"
+              onclick="event.stopPropagation()">
         <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0"/></svg>
       </button>
     </div>`;
@@ -425,6 +435,7 @@ function updateCartBadge() {
 
 /* ══════════════════════════════
    MAĞAZA İZLƏ DÜYMƏSİ HTML
+   — Tək yeganə tərif burada (store.js-dəki silindi)
    ══════════════════════════════ */
 function followBtnHTML(following) {
   if (following) {
