@@ -54,8 +54,7 @@ async function renderHeader() {
       <button class="btn-wishlist" id="wishlistBtn"
         onclick="openWishlistModal()"
         title="${t('header.wishlist')}">
-        <svg viewBox="0 0 24 24"
-  fill="none" stroke="currentColor" stroke-width="1.8">
+        <svg viewBox="0 0 24 24"  fill="none" stroke="currentColor" stroke-width="1.8">
           <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06
                    a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84
                    a5.5 5.5 0 0 0 0-7.78z"/>
@@ -76,7 +75,7 @@ async function renderHeader() {
              <span>${user.name.split(' ')[0]}</span>
            </button>`
         : `<button class="btn-signin" id="signinBtn">
-             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                <circle cx="12" cy="8" r="4"/>
                <path d="M4 20c0-4 3.58-7 8-7s8 3 8 7"/>
              </svg>
