@@ -71,18 +71,18 @@ async function renderHeader() {
       </button>
 
       ${user
-        ? `<button class="btn-user" id="userBtn" style="background:none; height:40px;">
-  <div class="avatar">${avatarHTML}</div>
-  <span>${user.name.split(' ')[0]}</span>
-</button>
-        : `<button class="btn-signin" id="signinBtn">
-             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-               <circle cx="12" cy="8" r="4"/>
-               <path d="M4 20c0-4 3.58-7 8-7s8 3 8 7"/>
-             </svg>
-             <span>${t('header.signin')}</span>
-           </button>`
-      }
+  ? `<button class="btn-user" id="userBtn" style="background:none; height:40px;">
+       <div class="avatar">${avatarHTML}</div>
+       <span>${user.name.split(' ')[0]}</span>
+     </button>`
+  : `<button class="btn-signin" id="signinBtn">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+         <circle cx="12" cy="8" r="4"/>
+         <path d="M4 20c0-4 3.58-7 8-7s8 3 8 7"/>
+       </svg>
+       <span>${t('header.signin')}</span>
+     </button>`
+}
     </div>
   `;
    
