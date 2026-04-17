@@ -482,18 +482,38 @@ async function searchFeaturedStore(query) {
     resultsEl.innerHTML = '';
 
     try {
-      // Firebase-dən vendor rollu istifadəçiləri axtar
-      const snap = await fbDb.collection('users')
-        .where('role', '==', 'vendor')
-        .limit(40)
-        .get();
+      // users və vendors kolleksiyalarını paralel oxu
+      const [usersSnap, vendorsSnap] = await Promise.all([
+        fbDb.collection('users').limit(300).get(),
+        fbDb.collection('vendors').limit(300).get()
+      ]);
+
+      // vendors map-i qur: uid → vendor data
+      const vendorMap = {};
+      vendorsSnap.docs.forEach(d => { vendorMap[d.id] = d.data(); });
 
       const q = query.toLowerCase();
-      const matches = snap.docs
-        .map(d => ({ uid: d.id, ...d.data() }))
+
+      const matches = usersSnap.docs
+        .map(d => {
+          const u = d.data();
+          const v = vendorMap[d.id] || {};
+          return {
+            uid:       d.id,
+            role:      u.role || '',
+            email:     u.email || '',
+            // storeName: vendors-dan gəlir, fallback users-da
+            storeName: v.storeName || u.storeName || '',
+            displayName: u.displayName || [u.firstName, u.lastName].filter(Boolean).join(' ') || '',
+            photoURL:  v.photoURL || u.photoURL || '',
+            coverURL:  v.coverURL || u.coverURL || '',
+            category:  v.category || u.category || '',
+          };
+        })
         .filter(u => {
-          const name  = (u.storeName || u.displayName || '').toLowerCase();
-          const email = (u.email || '').toLowerCase();
+          if (u.role !== 'vendor') return false;
+          const name  = (u.storeName || u.displayName).toLowerCase();
+          const email = u.email.toLowerCase();
           return name.includes(q) || email.includes(q);
         })
         .slice(0, 6);
@@ -514,7 +534,7 @@ async function searchFeaturedStore(query) {
               <div style="width:34px;height:34px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;">${logo}</div>
               <div>
                 <div style="font-size:0.85rem;font-weight:600;color:var(--text);">${name}</div>
-                <div style="font-size:0.72rem;color:var(--muted);">${u.email || ''}</div>
+                <div style="font-size:0.72rem;color:var(--muted);">${u.email}</div>
               </div>
             </div>`;
         }).join('');
