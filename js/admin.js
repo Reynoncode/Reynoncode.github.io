@@ -463,6 +463,163 @@ function renderCampaignPreviews() {
 }
 
 /* ════════════════════════════════════════════════════════
+   ÖNCÜ MAĞAZA — ADMIN
+════════════════════════════════════════════════════════ */
+let featuredStoreObj = null;   // { uid, storeName, ... }
+let _fsSearchTimer   = null;
+
+async function searchFeaturedStore(query) {
+  const resultsEl = document.getElementById('featuredStoreResults');
+  const spinner   = document.getElementById('featuredStoreSpinner');
+  if (!resultsEl) return;
+
+  query = (query || '').trim();
+  if (query.length < 2) { resultsEl.innerHTML = ''; return; }
+
+  clearTimeout(_fsSearchTimer);
+  _fsSearchTimer = setTimeout(async () => {
+    if (spinner) spinner.style.display = '';
+    resultsEl.innerHTML = '';
+
+    try {
+      // Firebase-dən vendor rollu istifadəçiləri axtar
+      const snap = await fbDb.collection('users')
+        .where('role', '==', 'vendor')
+        .limit(40)
+        .get();
+
+      const q = query.toLowerCase();
+      const matches = snap.docs
+        .map(d => ({ uid: d.id, ...d.data() }))
+        .filter(u => {
+          const name  = (u.storeName || u.displayName || '').toLowerCase();
+          const email = (u.email || '').toLowerCase();
+          return name.includes(q) || email.includes(q);
+        })
+        .slice(0, 6);
+
+      if (!matches.length) {
+        resultsEl.innerHTML = '<div style="font-size:0.8rem;color:var(--muted);padding:0.5rem 0;">Nəticə tapılmadı</div>';
+      } else {
+        resultsEl.innerHTML = matches.map(u => {
+          const name     = u.storeName || u.displayName || 'Mağaza';
+          const initials = name.split(' ').map(w=>w[0]||'').join('').substring(0,2).toUpperCase();
+          const logo     = u.photoURL
+            ? `<img src="${u.photoURL}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`
+            : `<span style="font-size:0.75rem;font-weight:700;color:#fff;">${initials}</span>`;
+          return `
+            <div onclick="selectFeaturedStore('${u.uid}')"
+              style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer;background:var(--surface);transition:background .15s;"
+              onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='var(--surface)'">
+              <div style="width:34px;height:34px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;">${logo}</div>
+              <div>
+                <div style="font-size:0.85rem;font-weight:600;color:var(--text);">${name}</div>
+                <div style="font-size:0.72rem;color:var(--muted);">${u.email || ''}</div>
+              </div>
+            </div>`;
+        }).join('');
+      }
+    } catch(e) {
+      resultsEl.innerHTML = '<div style="font-size:0.8rem;color:var(--danger);">Axtarış xətası: ' + e.message + '</div>';
+    }
+    if (spinner) spinner.style.display = 'none';
+  }, 350);
+}
+
+async function selectFeaturedStore(uid) {
+  const resultsEl = document.getElementById('featuredStoreResults');
+  const searchEl  = document.getElementById('featuredStoreSearch');
+  const selectedEl = document.getElementById('featuredStoreSelected');
+  if (resultsEl) resultsEl.innerHTML = '';
+
+  try {
+    // İstifadəçi məlumatlarını al
+    const [userSnap, vendorSnap] = await Promise.all([
+      fbDb.collection('users').doc(uid).get(),
+      fbDb.collection('vendors').doc(uid).get()
+    ]);
+    const u = userSnap.exists ? userSnap.data() : {};
+    const v = vendorSnap.exists ? vendorSnap.data() : {};
+
+    // Məhsul sayını al
+    let productCount = 0;
+    try {
+      const pSnap = await fbDb.collection('listings').where('userId','==',uid).where('status','==','active').get();
+      productCount = pSnap.size;
+    } catch(_) {}
+
+    // İzləyici sayını al
+    let followerCount = 0;
+    try {
+      const fSnap = await fbDb.collection('follows').where('storeId','==',uid).get();
+      followerCount = fSnap.size;
+    } catch(_) {}
+
+    const fullName  = [u.firstName, u.lastName].filter(Boolean).join(' ');
+    const storeName = v.storeName || u.storeName || fullName || 'Mağaza';
+    const joinYear  = u.createdAt?.toDate ? u.createdAt.toDate().getFullYear() : null;
+
+    featuredStoreObj = {
+      uid, storeName,
+      desc:      v.desc      || u.desc      || '',
+      photoURL:  v.photoURL  || u.photoURL  || '',
+      coverURL:  v.coverURL  || u.coverURL  || '',
+      category:  v.category  || u.category  || '',
+      followerCount, productCount,
+      joinYear
+    };
+
+    if (searchEl) searchEl.value = storeName;
+    renderFeaturedStorePreview();
+  } catch(e) {
+    showToast('Mağaza məlumatları alınmadı: ' + e.message, 'error');
+  }
+}
+
+function renderFeaturedStorePreview() {
+  const el = document.getElementById('featuredStoreSelected');
+  if (!el) return;
+  if (!featuredStoreObj) { el.style.display = 'none'; return; }
+
+  const s = featuredStoreObj;
+  const coverStyle = s.coverURL
+    ? `background:url('${s.coverURL}') center/cover no-repeat;`
+    : `background:linear-gradient(135deg,#1a1a1a 0%,#2c2c2c 60%,#1a1a1a 100%);`;
+  const initials = (s.storeName||'M').split(' ').map(w=>w[0]||'').join('').substring(0,2).toUpperCase();
+  const logoHTML = s.photoURL
+    ? `<img src="${s.photoURL}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`
+    : `<span style="font-size:1rem;font-weight:700;color:#fff;">${initials}</span>`;
+
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div style="position:relative;border-radius:10px;overflow:hidden;height:110px;${coverStyle}">
+      <div style="position:absolute;inset:0;background:rgba(0,0,0,.5);"></div>
+      <div style="position:relative;z-index:1;padding:12px 14px;display:flex;align-items:center;gap:12px;height:100%;box-sizing:border-box;">
+        <div style="width:44px;height:44px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;border:2px solid rgba(255,255,255,.3);">${logoHTML}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:0.9rem;font-weight:700;color:#fff;">${s.storeName}</div>
+          ${s.category ? `<div style="font-size:0.68rem;color:rgba(255,255,255,.7);">${s.category}</div>` : ''}
+          <div style="display:flex;gap:14px;margin-top:6px;">
+            <div style="font-size:0.72rem;color:rgba(255,255,255,.85);"><strong>${s.followerCount}</strong> izləyici</div>
+            <div style="font-size:0.72rem;color:rgba(255,255,255,.85);"><strong>${s.productCount}</strong> məhsul</div>
+            ${s.joinYear ? `<div style="font-size:0.72rem;color:rgba(255,255,255,.85);">${s.joinYear}</div>` : ''}
+          </div>
+        </div>
+        <button onclick="clearFeaturedStore()" title="Sil"
+          style="background:rgba(220,38,38,.7);border:none;border-radius:6px;width:26px;height:26px;color:#fff;font-size:.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
+      </div>
+    </div>`;
+}
+
+function clearFeaturedStore() {
+  featuredStoreObj = null;
+  const el = document.getElementById('featuredStoreSelected');
+  if (el) el.style.display = 'none';
+  const searchEl = document.getElementById('featuredStoreSearch');
+  if (searchEl) searchEl.value = '';
+}
+
+/* ════════════════════════════════════════════════════════
    PLATFORMA AYARLARI — LOAD / SAVE
 ════════════════════════════════════════════════════════ */
 async function loadPlatformSettings() {
@@ -492,6 +649,13 @@ async function loadPlatformSettings() {
       // Kampaniyaları yüklə
       platformCampaigns = Array.isArray(d.campaigns) ? d.campaigns : [];
 
+      // Öncü mağazanı yüklə
+      if (d.featuredStore && d.featuredStore.uid) {
+        featuredStoreObj = d.featuredStore;
+      } else {
+        featuredStoreObj = null;
+      }
+
       if (Array.isArray(d.commissions) && d.commissions.length)
         platformCommissions = d.commissions;
 
@@ -512,6 +676,7 @@ async function loadPlatformSettings() {
   renderMainCategoryList();
   renderCommissionTable();
   renderCampaignPreviews();
+  renderFeaturedStorePreview();
   document.getElementById('platformLoader').style.display  = 'none';
   document.getElementById('platformContent').style.display = 'block';
 }
@@ -538,6 +703,7 @@ async function savePlatformSettings() {
       categories:     platformMainCategories,   // ← köhnə uyğunluq
       commissions:    platformCommissions,
       campaigns:      platformCampaigns,
+      featuredStore:  featuredStoreObj || null,
       updatedAt:      firebase.firestore.FieldValue.serverTimestamp(),
       updatedBy:      currentAdmin?.uid || 'admin'
     };
@@ -559,6 +725,13 @@ async function savePlatformSettings() {
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
       updatedBy: currentAdmin?.uid || 'admin'
     });
+
+    // 4. Öncü mağazanı public collection-a yaz
+    await fbDb.collection('settings').doc('featuredStore').set(
+      featuredStoreObj
+        ? { ...featuredStoreObj, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }
+        : { uid: null, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }
+    );
  
     const now = new Date();
     const formatted = now.toLocaleDateString('az-AZ', {
