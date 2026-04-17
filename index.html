@@ -76,20 +76,28 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.15rem;
-      line-height: 1;
       transition: background 0.18s, border-color 0.18s, transform 0.18s;
     }
+    .cat-item-icon svg {
+      width: 18px;
+      height: 18px;
+      stroke: rgba(26, 26, 26, 0.55);
+      transition: stroke 0.18s;
+      flex-shrink: 0;
+    }
     .cat-item:hover .cat-item-icon {
-      border-color: var(--accent);
+      border-color: rgba(201, 168, 108, 0.6);
       transform: translateY(-2px);
     }
-    .cat-item.active .cat-item-icon {
-      background: var(--accent);
-      border-color: var(--accent);
+    .cat-item:hover .cat-item-icon svg {
+      stroke: rgba(201, 168, 108, 1);
     }
-    .cat-item.active .cat-item-icon span {
-      filter: brightness(0) invert(1);
+    .cat-item.active .cat-item-icon {
+      background: rgba(26, 26, 26, 1);
+      border-color: rgba(26, 26, 26, 1);
+    }
+    .cat-item.active .cat-item-icon svg {
+      stroke: rgba(201, 168, 108, 1);
     }
 
     .cat-item-label {
@@ -347,6 +355,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <script src="js/firebase.js"></script>
+<script src="js/icon-library.js"></script>
 <script src="js/lang.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/cart.js"></script>
@@ -423,7 +432,7 @@
         class="cat-item${cat.id === activeCategoryId ? ' active' : ''}"
         data-cat="${cat.id}"
         onclick="selectCategory('${cat.id}', this)">
-        <div class="cat-item-icon"><span>${cat.icon}</span></div>
+        <div class="cat-item-icon">${getLucideIcon(cat.icon || '📁')}</div>
         <span class="cat-item-label">${cat.label}</span>
       </button>
     `).join('');
@@ -460,9 +469,9 @@
       strip?.classList.remove('show');
       if (titleEl) titleEl.textContent = 'Yeni Kolleksiya';
     } else {
-      if (pill) pill.textContent = `${cat?.icon || ''} ${cat?.label || catId}`;
+      if (pill) pill.textContent = `${cat?.label || catId}`;
       strip?.classList.add('show');
-      if (titleEl) titleEl.textContent = `${cat?.icon || ''} ${cat?.label || catId}`;
+      if (titleEl) titleEl.textContent = `${cat?.label || catId}`;
     }
     applyFilter();
   }
@@ -526,7 +535,7 @@
       const cat = CATEGORIES.find(c => c.id === activeCategoryId);
       grid.insertAdjacentHTML('afterbegin', `
         <div class="cat-empty" style="grid-column:1/-1;">
-          <div class="cat-empty-icon">${cat?.icon || '🔍'}</div>
+          <div class="cat-empty-icon">${getLucideIcon(cat?.icon || '🔍')}</div>
           <p><strong>${cat?.label || activeCategoryId}</strong> kateqoriyasında<br>hələ məhsul yoxdur.</p>
         </div>
       `);
