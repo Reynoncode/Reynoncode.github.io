@@ -228,37 +228,41 @@ function createFeaturedStoreCard(s) {
 
   return `
     <div class="card featured-store-card"
-         style="overflow:hidden;border-radius:var(--radius-md);position:relative;min-height:200px;cursor:pointer;"
+         style="overflow:hidden;border-radius:var(--radius-md);position:relative;cursor:pointer;"
          onclick="goToStore('${s.uid}')">
       <div style="position:absolute;inset:0;${coverStyle}"></div>
-      <div style="position:absolute;inset:0;background:rgba(0,0,0,0.48);"></div>
-      <div style="position:relative;z-index:1;padding:14px 12px 12px;display:flex;flex-direction:column;height:100%;box-sizing:border-box;min-height:200px;">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
-          <div style="width:42px;height:42px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;border:2px solid rgba(255,255,255,0.25);">
-            ${logoHTML}
-          </div>
-          <div style="min-width:0;flex:1;">
-            <div style="font-size:0.85rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-              ${s.storeName || 'Mağaza'}${catTag}
+      <div style="position:absolute;inset:0;background:rgba(0,0,0,0.50);"></div>
+      <div style="position:relative;z-index:1;padding:28px 36px;display:flex;align-items:center;gap:32px;min-height:220px;box-sizing:border-box;">
+        <!-- Logo -->
+        <div style="width:80px;height:80px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;border:3px solid rgba(255,255,255,0.3);">
+          ${logoHTML}
+        </div>
+        <!-- Məlumat -->
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+            <div style="font-size:1.4rem;font-weight:800;color:#fff;letter-spacing:-0.01em;">
+              ${s.storeName || 'Mağaza'}
             </div>
+            ${catTag}
+          </div>
+          ${desc}
+          <div style="display:flex;gap:28px;margin-top:8px;">
+            <div style="text-align:center;">
+              <div style="font-size:1.1rem;font-weight:700;color:#fff;">${s.followerCount ?? 0}</div>
+              <div style="font-size:0.65rem;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.05em;">İzləyici</div>
+            </div>
+            <div style="text-align:center;">
+              <div style="font-size:1.1rem;font-weight:700;color:#fff;">${s.productCount ?? 0}</div>
+              <div style="font-size:0.65rem;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.05em;">Məhsul</div>
+            </div>
+            ${s.joinYear ? `<div style="text-align:center;"><div style="font-size:1.1rem;font-weight:700;color:#fff;">${s.joinYear}</div><div style="font-size:0.65rem;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.05em;">İldən bəri</div></div>` : ''}
           </div>
         </div>
-        ${desc}
-        <div style="display:flex;gap:14px;margin-bottom:10px;">
-          <div style="text-align:center;">
-            <div style="font-size:0.85rem;font-weight:700;color:#fff;">${s.followerCount ?? 0}</div>
-            <div style="font-size:0.6rem;color:rgba(255,255,255,0.6);">İzləyici</div>
-          </div>
-          <div style="text-align:center;">
-            <div style="font-size:0.85rem;font-weight:700;color:#fff;">${s.productCount ?? 0}</div>
-            <div style="font-size:0.6rem;color:rgba(255,255,255,0.6);">Məhsul</div>
-          </div>
-          ${s.joinYear ? `<div style="text-align:center;"><div style="font-size:0.85rem;font-weight:700;color:#fff;">${s.joinYear}</div><div style="font-size:0.6rem;color:rgba(255,255,255,0.6);">İldən bəri</div></div>` : ''}
-        </div>
+        <!-- Düymə -->
         <button id="featuredFollowBtn_${s.uid}"
           onclick="event.stopPropagation(); toggleFeaturedFollow('${s.uid}', this)"
-          style="margin-top:auto;width:100%;height:34px;border-radius:var(--radius-sm);border:1.5px solid rgba(255,255,255,0.5);background:rgba(255,255,255,0.1);color:#fff;font-size:0.78rem;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;backdrop-filter:blur(4px);transition:background .2s,border-color .2s;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>
+          style="flex-shrink:0;padding:0 28px;height:42px;border-radius:var(--radius-sm);border:2px solid rgba(255,255,255,0.6);background:rgba(255,255,255,0.12);color:#fff;font-size:0.85rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;backdrop-filter:blur(6px);transition:background .2s,border-color .2s;white-space:nowrap;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>
           İzlə
         </button>
       </div>
