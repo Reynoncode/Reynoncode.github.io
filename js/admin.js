@@ -26,17 +26,29 @@ const DEFAULT_MAIN_CATEGORIES = [
   { id:'hediyye',     icon:'🎁', label:'Hədiyyələr və Digər',      subCats:['Hədiyyə dəstləri','Zərgərlik','Suvenirlər','Çiçəklər','Şirniyyat','Digər'] },
 ];
 
+// İcon ID-ləri — admin paneldə seçilir, ön tərəfdə Lucide SVG kimi göstərilir
 const ICON_OPTIONS = [
+  // Elektronika
   '📱','💻','🖥️','⌨️','🖱️','📷','🎮','🎧','📺','📡',
+  // Geyim
   '👗','👔','👕','👖','🧥','👠','👟','🧣','👒','🎩',
+  // Ev
   '🏠','🛋️','🛏️','🚿','🍳','🪴','💡','🧹','🛒',
+  // Gözəllik
   '💄','💋','🧴','🧼','💅','🪞','🧽',
+  // Sağlamlıq
   '💊','🩺','🏥','💉','🧬','🩹',
+  // Uşaq
   '🧸','🪀','🎠','🚂','✏️','📚','🎒',
+  // Avto
   '🚗','🏍️','🚌','✈️','⛽','🔧','🛞',
+  // İdman
   '⚽','🏀','🎾','🏊','🚴','🧘','🏋️','🤸',
+  // Kitab / Ofis
   '📖','📝','📋','✂️','🖊️','📐','🗂️',
+  // Hədiyyə
   '🎁','🎀','💍','💎','🌹','🍫','🪅',
+  // Digər
   '🔑','🏷️','🛍️','📦','🔔','⭐','✨','🌟',
 ];
 
@@ -793,7 +805,7 @@ function renderMainCategoryList() {
     <div class="mcat-item" id="mcat-${i}">
       <div class="mcat-header">
         <div class="mcat-left">
-          <span class="mcat-icon-badge">${cat.icon || '📁'}</span>
+          <span class="mcat-icon-badge">${getLucideIcon(cat.icon || '📁')}</span>
           <span class="mcat-name-text">${escHtml(cat.label)}</span>
           <span class="mcat-sub-count">${(cat.subCats||[]).length} alt</span>
         </div>
@@ -886,7 +898,8 @@ function openAddMcat() {
   editMcatIdx = null;
   document.getElementById('mcatModalTitle').textContent = 'Yeni Ana Kateqoriya';
   document.getElementById('mcatLabelInput').value = '';
-  document.getElementById('mcatIconDisplay').textContent = '📁';
+  const display = document.getElementById('mcatIconDisplay');
+  if (display) { display.innerHTML = getLucideIcon('📁'); display.dataset.iconId = '📁'; }
   document.getElementById('mcatSelectedIcon').value = '📁';
   document.getElementById('mcatCustomIconInput').value = '';
   renderIconGrid('📁');
@@ -898,7 +911,8 @@ function openEditMcat(i) {
   const cat = platformMainCategories[i];
   document.getElementById('mcatModalTitle').textContent = 'Kateqoriyanı Düzəlt';
   document.getElementById('mcatLabelInput').value = cat.label;
-  document.getElementById('mcatIconDisplay').textContent = cat.icon;
+  const display = document.getElementById('mcatIconDisplay');
+  if (display) { display.innerHTML = getLucideIcon(cat.icon); display.dataset.iconId = cat.icon; }
   document.getElementById('mcatSelectedIcon').value = cat.icon;
   document.getElementById('mcatCustomIconInput').value = '';
   renderIconGrid(cat.icon);
@@ -929,7 +943,7 @@ function saveMcat() {
   closeMcatModal();
 }
 
-/* ── İcon Grid ── */
+/* ── İcon Grid (Lucide SVG) ── */
 function renderIconGrid(selected) {
   const grid = document.getElementById('mcatIconGrid');
   if (!grid) return;
@@ -937,23 +951,31 @@ function renderIconGrid(selected) {
     <button type="button"
       class="icon-opt${ic === selected ? ' icon-opt-selected' : ''}"
       onclick="selectMcatIcon('${ic}')"
-      title="${ic}">${ic}</button>
+      title="${ic}">
+      ${getLucideIcon(ic)}
+    </button>
   `).join('');
 }
 
 function selectMcatIcon(ic) {
-  document.getElementById('mcatIconDisplay').textContent = ic;
+  // Preview-u SVG ilə göstər
+  const display = document.getElementById('mcatIconDisplay');
+  if (display) {
+    display.innerHTML = getLucideIcon(ic);
+    display.dataset.iconId = ic;
+  }
   document.getElementById('mcatSelectedIcon').value = ic;
   document.getElementById('mcatCustomIconInput').value = ic;
   document.querySelectorAll('.icon-opt').forEach(b => {
-    b.classList.toggle('icon-opt-selected', b.textContent.trim() === ic);
+    b.classList.toggle('icon-opt-selected', b.title === ic);
   });
 }
 
 function applyCustomIcon() {
   const val = document.getElementById('mcatCustomIconInput').value.trim();
   if (!val) return;
-  const ic = [...val][0] || val; // İlk emoji/simvol
+  // İcon ID kimi istifadə et (kitabxanada varsa), yoxsa ilk emojini götür
+  const ic = LUCIDE_ICONS && LUCIDE_ICONS[val] ? val : ([...val][0] || val);
   selectMcatIcon(ic);
 }
 
