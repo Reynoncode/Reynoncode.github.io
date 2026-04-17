@@ -459,8 +459,8 @@ header {
 }
 
 .btn-user .avatar {
-  width: 28px;
-  height: 28px;
+  width: 90%;
+  height: 90%;
   border-radius: 50%;
   background: var(--accent);
   color: white;
