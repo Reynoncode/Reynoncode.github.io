@@ -363,7 +363,7 @@ header {
   position: absolute;
   top: -4px;
   right: -4px;
-  background: var(--danger);
+  background: var(--accent);
   color: white;
   font-size: 0.65rem;
   font-weight: 700;
@@ -435,17 +435,21 @@ header {
 
 /* Giriş edildikdən sonra göstərilən istifadəçi adı */
 .btn-user {
+  position: relative;
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-full);
+  width: auto;
+  height: 40px;
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--bg);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-full);
-  padding: 6px 14px 6px 6px;
+  padding: 0 14px 0 6px;
   font-size: 0.88rem;
   font-weight: 500;
   color: var(--text);
-  transition: all 0.2s;
+  transition: border-color 0.2s, background 0.2s;
+  flex-shrink: 0;
 }
 
 .btn-user:hover {
