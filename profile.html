@@ -184,11 +184,10 @@
           <div>
             <div style="font-size:0.85rem;font-weight:500;margin-bottom:0.4rem;">Profil şəkli</div>
             <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.65rem;">JPG, PNG — maks. 5MB</div>
-            <button class="btn btn-outline" onclick="document.getElementById('profileTabFileInput').click()" style="font-size:0.78rem;padding:0.45rem 1rem;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-              Şəkil seç
-            </button>
-            <input type="file" id="profileTabFileInput" accept="image/*" style="display:none" onchange="uploadProfileTabPhoto(this.files[0])" />
+            <label for="profileTabFileInput" class="btn btn-outline" style="font-size:0.78rem;padding:0.45rem 1rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+  📷 <span data-i18n="p.changePhoto">Şəkli dəyiş</span>
+</label>
+<input type="file" id="profileTabFileInput" accept="image/*" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;" onchange="uploadProfileTabPhoto(this.files[0])" />
             <input type="file" id="profileTabFileInput" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;" ...>
           </div>
         </div>
