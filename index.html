@@ -289,24 +289,20 @@
      — Yalnız "Hamısı" sabit qalır, qalanı Firebase-dən gəlir
      — "settings/categories" (public) → "admin/platformSettings" (fallback)
   ══════════════════════════════════════════════════════ */
- 
-  // Yalnız "Hamısı" sabit — digərləri Firebase-dən
+
   let CATEGORIES = [
     { id: 'all', icon: '🛍️', label: 'Hamısı' }
   ];
- 
+
   let activeCategoryId = 'all';
- 
+
   /* ────────────────────────────────────────
      Firebase-dən kateqoriyaları yüklə
-     Əvvəlcə public "settings/categories" oxuyur (bütün istifadəçilər üçün),
-     tapılmasa admin/platformSettings-ə baxır (admin öz brauzerindən yazanda).
   ──────────────────────────────────────── */
   async function loadCategoriesFromFirebase() {
     let cats = null;
- 
+
     try {
-      // 1. Public location — Firestore rules: allow read: if true;
       const pubSnap = await fbDb.collection('settings').doc('categories').get();
       if (pubSnap.exists) {
         cats = pubSnap.data().items || null;
@@ -314,10 +310,9 @@
     } catch(e) {
       console.warn('Public kateqoriyalar oxunmadı:', e.message);
     }
- 
+
     if (!cats) {
       try {
-        // 2. Fallback — admin/platformSettings (yalnız admin oxuya bilər)
         const adminSnap = await fbDb.collection('admin').doc('platformSettings').get();
         if (adminSnap.exists) {
           const d = adminSnap.data();
@@ -327,7 +322,7 @@
         console.warn('Admin kateqoriyalar oxunmadı:', e.message);
       }
     }
- 
+
     if (Array.isArray(cats) && cats.length) {
       CATEGORIES = [
         { id: 'all', icon: '🛍️', label: 'Hamısı' },
@@ -338,18 +333,17 @@
         }))
       ];
     }
-    // Hər iki halda (uğurlu və ya boş) bar-ı yenilə
     buildCategoryBar();
     applyFilter();
   }
- 
+
   /* ────────────────────────────────────────
      Kateqoriya bar-ını qur
   ──────────────────────────────────────── */
   function buildCategoryBar() {
     const inner = document.getElementById('catBarInner');
     if (!inner) return;
- 
+
     inner.innerHTML = CATEGORIES.map(cat => `
       <button
         class="cat-item${cat.id === activeCategoryId ? ' active' : ''}"
@@ -359,11 +353,11 @@
         <span class="cat-item-label">${cat.label}</span>
       </button>
     `).join('');
- 
+
     inner.addEventListener('scroll', updateArrows, { passive: true });
     setTimeout(updateArrows, 50);
   }
- 
+
   function updateArrows() {
     const inner = document.getElementById('catBarInner');
     const left  = document.getElementById('catArrowLeft');
@@ -372,22 +366,22 @@
     left?.classList.toggle('hidden',  inner.scrollLeft <= 0);
     right?.classList.toggle('hidden', inner.scrollLeft + inner.clientWidth >= inner.scrollWidth - 2);
   }
- 
+
   function scrollCatBar(delta) {
     const inner = document.getElementById('catBarInner');
     if (inner) inner.scrollBy({ left: delta, behavior: 'smooth' });
   }
- 
+
   function selectCategory(catId, btnEl) {
     activeCategoryId = catId;
     document.querySelectorAll('.cat-item').forEach(b => b.classList.remove('active'));
     if (btnEl) btnEl.classList.add('active');
- 
+
     const strip   = document.getElementById('activeCatStrip');
     const pill    = document.getElementById('activeCatLabel');
     const titleEl = document.getElementById('mainSectionTitle');
     const cat     = CATEGORIES.find(c => c.id === catId);
- 
+
     if (catId === 'all') {
       strip?.classList.remove('show');
       if (titleEl) titleEl.textContent = 'Yeni Kolleksiya';
@@ -398,30 +392,43 @@
     }
     applyFilter();
   }
- 
+
   function clearCategoryFilter() {
     const allBtn = document.querySelector('.cat-item[data-cat="all"]');
     selectCategory('all', allBtn);
   }
- 
+
   /* ────────────────────────────────────────
-     FİLTR
-     Elanın mainCategory (yeni) və ya category (köhnə) sahəsinə baxır
+     FİLTR — DÜZƏLDİLMİŞ
+     
+     PROBLEM: Kartlar `data-id` ilə yaradılır (products.js-də createProductCard),
+     amma köhnə kod `data-product-id` axtarırdı — heç vaxt tapılmırdı.
+     Həmçinin 'all' branch-i yalnız display:'' edirdi, renderProducts çağırmırdı,
+     buna görə kateqoriyadan 'Hamısı'-ya qayıdanda ekran boş qalırdı.
+     
+     HƏLL: 
+     1. `data-id` selector-u istifadə et (products.js ilə uyğun)
+     2. 'all' üçün həmişə renderProducts(PRODUCTS) çağır — DOM-u tam yenilə
+     3. Filter üçün də renderProducts(filtered) çağır — eyni yanaşma
   ──────────────────────────────────────── */
   function applyFilter() {
     const grid            = document.getElementById('productGrid');
     const countEl         = document.getElementById('productCount');
     const filteredCountEl = document.getElementById('filteredCount');
     if (!grid) return;
- 
+
+    // Boş vəziyyət elementini hər dəfə təmizlə
+    grid.querySelector('.cat-empty')?.remove();
+
     if (activeCategoryId === 'all') {
-      grid.querySelectorAll('[data-product-id], .card').forEach(card => { card.style.display = ''; });
+      // Bütün məhsulları göstər — həmişə renderProducts ilə yenilə
+      renderProducts(PRODUCTS, 'productGrid');
       if (countEl) countEl.textContent = `${PRODUCTS.length} məhsul`;
       if (filteredCountEl) filteredCountEl.textContent = '';
-      grid.querySelector('.cat-empty')?.remove();
       return;
     }
- 
+
+    // Aktiv kateqoriyaya görə filtr et
     const filtered = PRODUCTS.filter(p => {
       // 1. Yeni sistem: mainCategory birbaşa kateqoriya id-sidir
       if (p.mainCategory === activeCategoryId) return true;
@@ -432,24 +439,15 @@
       const cat = (p.category || '').toLowerCase();
       return cat === activeCategoryId || cat.includes(activeCategoryId);
     });
- 
-    // DOM kartlarını göstər/gizlət
-    const cards = grid.querySelectorAll('[data-product-id]');
-    if (cards.length > 0) {
-      const filteredIds = new Set(filtered.map(p => String(p.id)));
-      cards.forEach(card => {
-        card.style.display = filteredIds.has(card.dataset.productId) ? '' : 'none';
-      });
-    } else if (typeof renderProducts === 'function') {
-      renderProducts(filtered, 'productGrid');
-    }
- 
+
+    // Filtrlənmiş məhsulları render et
+    renderProducts(filtered, 'productGrid');
+
     const shown = filtered.length;
     if (countEl) countEl.textContent = `${shown} məhsul`;
     if (filteredCountEl) filteredCountEl.textContent = `${shown} nəticə`;
- 
+
     // Boş vəziyyət
-    grid.querySelector('.cat-empty')?.remove();
     if (shown === 0) {
       const cat = CATEGORIES.find(c => c.id === activeCategoryId);
       grid.insertAdjacentHTML('afterbegin', `
@@ -460,12 +458,11 @@
       `);
     }
   }
- 
+
   /* ────────────────────────────────────────
-     SƏHIFƏ YÜKLƏNMƏ — tək bir DOMContentLoaded
+     SƏHIFƏ YÜKLƏNMƏ
   ──────────────────────────────────────── */
   document.addEventListener('DOMContentLoaded', () => {
-    // Kateqoriyaları Firebase-dən yüklə (buildCategoryBar içindən çağrılır)
     loadCategoriesFromFirebase();
     loadListings();
     listing.renderPreviews();
