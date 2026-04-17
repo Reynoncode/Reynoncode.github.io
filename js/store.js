@@ -8,10 +8,10 @@ let storeData     = {};
 let storeListings = [];
 let isFollowing   = false;
 
-// ── YENİ: Kateqoriya filter state ──
-let _storePlatformCats = []; // admin/platformSettings-dən oxunur
-let _storeActiveMainCat = null; // seçili ana kateqoriya id-si (null = hamısı)
-let _storeActiveSubCat  = null; // seçili alt kateqoriya adı (null = hamısı)
+// ── Kateqoriya filter state ──
+let _storePlatformCats = [];
+let _storeActiveMainCat = null;
+let _storeActiveSubCat  = null;
 
 /* ══════════════════════════════════════════
    ANA YÜKLƏMƏ
@@ -29,7 +29,7 @@ async function loadStorePage() {
   try {
     const cu = fbAuth.currentUser;
 
-    // ── YENİ: Platform kateqoriyalarını yüklə ──
+    // Platform kateqoriyalarını yüklə
     try {
       const settSnap = await fbDb.collection('admin').doc('platformSettings').get();
       if (settSnap.exists) {
@@ -84,6 +84,16 @@ async function loadStorePage() {
     storeListings = listSnap.docs.map(d => ({ id: d.id, ...d.data(), _fromFirebase: true }));
     storeData.followerCount = followSnap.size;
 
+    // ── DÜZƏLİŞ: Store məhsullarını qlobal PRODUCTS massivinə əlavə et ──
+    // product-detail.js openProductDetail() üçün PRODUCTS-da tapmaq lazımdır
+    if (typeof PRODUCTS !== 'undefined' && Array.isArray(PRODUCTS)) {
+      storeListings.forEach(listing => {
+        if (!PRODUCTS.find(p => String(p.id) === String(listing.id))) {
+          PRODUCTS.push(listing);
+        }
+      });
+    }
+
     if (cu) {
       const myFollow = await fbDb.collection('follows').doc(`${cu.uid}_${storeUid}`).get();
       isFollowing = myFollow.exists;
@@ -98,21 +108,18 @@ async function loadStorePage() {
 }
 
 /* ══════════════════════════════════════════
-   YENİ: Kateqoriya filter köməkçiləri
+   Kateqoriya filter köməkçiləri
 ══════════════════════════════════════════ */
 
-// Bu mağazanın elanlarında hansı kateqoriyalar var?
 function _getStoreCatsUsed() {
   const usedIds = new Set(storeListings.map(l => l.mainCategory || l.category).filter(Boolean));
   return _storePlatformCats.filter(c => usedIds.has(c.id));
 }
 
-// Seçili ana kateqoriyaya görə alt kateqoriyaları tap
 function _getSubCatsForActive() {
   if (!_storeActiveMainCat) return [];
   const cat = _storePlatformCats.find(c => c.id === _storeActiveMainCat);
   if (!cat || !cat.subCats) return [];
-  // Yalnız bu mağazada mövcud olan alt kateqoriyaları göstər
   const usedSubs = new Set(
     storeListings
       .filter(l => (l.mainCategory || l.category) === _storeActiveMainCat)
@@ -122,7 +129,6 @@ function _getSubCatsForActive() {
   return cat.subCats.filter(s => usedSubs.has(s));
 }
 
-// Aktiv filterlərə görə elanları filtrele
 function _getFilteredListings() {
   return storeListings.filter(l => {
     const catMatch = !_storeActiveMainCat ||
@@ -133,10 +139,8 @@ function _getFilteredListings() {
   });
 }
 
-// Ana kateqoriya seçildi
 function storeSetMainCat(id) {
   if (_storeActiveMainCat === id) {
-    // Eyni kateqoriyaya klik = sıfırla
     _storeActiveMainCat = null;
     _storeActiveSubCat  = null;
   } else {
@@ -147,7 +151,6 @@ function storeSetMainCat(id) {
   _renderStoreProducts();
 }
 
-// Alt kateqoriya seçildi
 function storeSetSubCat(name) {
   _storeActiveSubCat = (_storeActiveSubCat === name) ? null : name;
   _renderStoreCatFilter();
@@ -155,7 +158,7 @@ function storeSetSubCat(name) {
 }
 
 /* ══════════════════════════════════════════
-   YENİ: Kateqoriya filter UI render
+   Kateqoriya filter UI render
 ══════════════════════════════════════════ */
 function _renderStoreCatFilter() {
   const wrap = document.getElementById('storeCatFilter');
@@ -165,7 +168,6 @@ function _renderStoreCatFilter() {
   const subCats  = _getSubCatsForActive();
   const filtered = _getFilteredListings();
 
-  // Hamısı düyməsi
   let html = `
     <div class="scf-main-row">
       <button class="scf-chip ${!_storeActiveMainCat ? 'scf-chip--active' : ''}"
@@ -188,7 +190,6 @@ function _renderStoreCatFilter() {
 
   html += `</div>`;
 
-  // Alt kateqoriyalar (yalnız ana seçilibsə)
   if (subCats.length > 0) {
     html += `<div class="scf-sub-row">`;
     subCats.forEach(sub => {
@@ -208,13 +209,12 @@ function _renderStoreCatFilter() {
 
   wrap.innerHTML = html;
 
-  // Məhsul sayını yenilə
   const countEl = document.getElementById('storeProductCount');
   if (countEl) countEl.textContent = `${filtered.length} məhsul`;
 }
 
 /* ══════════════════════════════════════════
-   YENİ: Məhsulları filtrə görə render et
+   Məhsulları filtrə görə render et
 ══════════════════════════════════════════ */
 function _renderStoreProducts() {
   const grid = document.getElementById('storeProductGrid');
@@ -276,7 +276,6 @@ function renderStorePage() {
   const deliveryText = s.deliveryDays ? `${s.deliveryDays} iş günü ərzində çatdırılma.` : '2–4 iş günü ərzində çatdırılma.';
   const freeShipText = `${s.freeShippingThreshold} AZN üzərindəki sifarişlərə pulsuz çatdırılma.`;
 
-  // ── YENİ: filter-i yalnız birdən çox kateqoriya varsa göstər
   const usedCats = _getStoreCatsUsed();
   const showFilter = usedCats.length > 0;
 
@@ -304,10 +303,8 @@ function renderStorePage() {
       </div>
     </div>
 
-    <!-- ── YENİ: KATEQORİYA FİLTER PANEL ── -->
-    ${showFilter ? `
-    <div id="storeCatFilter" class="store-cat-filter"></div>
-    ` : ''}
+    <!-- KATEQORİYA FİLTER PANEL -->
+    ${showFilter ? `<div id="storeCatFilter" class="store-cat-filter"></div>` : ''}
 
     <!-- CONTENT GRID -->
     <div class="store-content-grid">
@@ -330,7 +327,6 @@ function renderStorePage() {
       <!-- Sağ: sidebar -->
       <div class="store-side-col">
 
-        <!-- Haqqımızda -->
         ${s.desc ? `
         <div class="store-side-card">
           <div class="store-side-title">Haqqımızda</div>
@@ -342,7 +338,6 @@ function renderStorePage() {
           </div>` : ''}
         </div>` : ''}
 
-        <!-- Kampaniya -->
         <div class="store-side-card campaign-card">
           <div class="store-side-title">Kampaniya</div>
           <div class="campaign-badge">Aktiv deyil</div>
@@ -350,7 +345,6 @@ function renderStorePage() {
           <p class="store-side-text">Bu mağazanın aktiv kampaniyası olmadıqda burada görünəcək.</p>
         </div>
 
-        <!-- Əlaqə -->
         ${hasContact ? `
         <div class="store-side-card">
           <div class="store-side-title">Əlaqə</div>
@@ -375,7 +369,6 @@ function renderStorePage() {
           </div>` : ''}
         </div>` : ''}
 
-        <!-- Ünvan & İş saatları -->
         ${(hasAddress || s.workHours) ? `
         <div class="store-side-card">
           <div class="store-side-title">Ünvan & İş saatları</div>
@@ -391,7 +384,6 @@ function renderStorePage() {
           </div>` : ''}
         </div>` : ''}
 
-        <!-- Sosial Media -->
         ${hasSocial ? `
         <div class="store-side-card">
           <div class="store-side-title">Sosial Media</div>
@@ -413,7 +405,6 @@ function renderStorePage() {
           </div>
         </div>` : ''}
 
-        <!-- Çatdırılma -->
         <div class="store-side-card">
           <div class="store-side-title">Çatdırılma</div>
           <div class="store-delivery-tag">✓ Pulsuz çatdırılma</div>
@@ -428,7 +419,7 @@ function renderStorePage() {
       </div>
     </div>
 
-    <!-- ── YENİ: Kateqoriya filter CSS ── -->
+    <!-- Kateqoriya filter CSS -->
     <style>
       .store-cat-filter {
         margin-bottom: 1.5rem;
@@ -462,40 +453,18 @@ function renderStorePage() {
         white-space: nowrap;
         font-family: inherit;
       }
-      .scf-chip:hover {
-        border-color: var(--accent);
-        color: var(--accent);
-      }
+      .scf-chip:hover { border-color: var(--accent); color: var(--accent); }
       .scf-chip--active {
         background: var(--accent, #1a1a1a);
         border-color: var(--accent, #1a1a1a);
         color: #fff;
       }
-      .scf-chip--active:hover {
-        opacity: 0.88;
-        color: #fff;
-      }
-      .scf-chip--sub {
-        font-size: 0.75rem;
-        padding: 0.3rem 0.72rem;
-        border-style: dashed;
-      }
-      .scf-chip--sub.scf-chip--active {
-        border-style: solid;
-      }
-      .scf-icon {
-        font-size: 0.85rem;
-        line-height: 1;
-      }
-      .scf-count {
-        font-size: 0.68rem;
-        font-weight: 600;
-        opacity: 0.65;
-        margin-left: 0.1rem;
-      }
-      .scf-chip--active .scf-count {
-        opacity: 0.8;
-      }
+      .scf-chip--active:hover { opacity: 0.88; color: #fff; }
+      .scf-chip--sub { font-size: 0.75rem; padding: 0.3rem 0.72rem; border-style: dashed; }
+      .scf-chip--sub.scf-chip--active { border-style: solid; }
+      .scf-icon { font-size: 0.85rem; line-height: 1; }
+      .scf-count { font-size: 0.68rem; font-weight: 600; opacity: 0.65; margin-left: 0.1rem; }
+      .scf-chip--active .scf-count { opacity: 0.8; }
       @media (max-width: 500px) {
         .scf-chip { font-size: 0.74rem; padding: 0.32rem 0.7rem; }
       }
@@ -504,21 +473,14 @@ function renderStorePage() {
 
   document.title = `${s.storeName} — MODA`;
 
-  // Filter paneli render et
   if (showFilter) _renderStoreCatFilter();
-
-  // Məhsulları render et
   if (storeListings.length > 0) _renderStoreProducts();
 }
 
 /* ══════════════════════════════════════════
    İZLƏ / İZLƏMƏ
+   — followBtnHTML components.js-dədir, burada təkrar yoxdur
 ══════════════════════════════════════════ */
-function followBtnHTML(following) {
-  if (following) return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>İzləyirsiniz`;
-  return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>İzlə`;
-}
-
 async function toggleFollow() {
   const cu = fbAuth.currentUser;
   if (!cu) {
