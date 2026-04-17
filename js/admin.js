@@ -392,6 +392,77 @@ function confirmDeleteListing(id) {
 }
 
 /* ════════════════════════════════════════════════════════
+   KAMPANİYA ŞƏKİLLƏRİ
+════════════════════════════════════════════════════════ */
+// Her element: { id, url, name } — url ya base64 (yeni) ya da saxlanmış url
+let platformCampaigns = [];
+const MAX_CAMPAIGNS = 10;
+
+function handleCampaignFiles(files) {
+  const remaining = MAX_CAMPAIGNS - platformCampaigns.length;
+  const toAdd = Array.from(files).slice(0, remaining);
+  if (!toAdd.length) { showToast(`Maksimum ${MAX_CAMPAIGNS} şəkil əlavə edə bilərsiniz`, 'warn'); return; }
+  let loaded = 0;
+  toAdd.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      platformCampaigns.push({ id: 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2), url: e.target.result, name: file.name });
+      loaded++;
+      if (loaded === toAdd.length) renderCampaignPreviews();
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function handleCampaignDrop(e) {
+  e.preventDefault();
+  const dz = document.getElementById('campaignDropzone');
+  dz.style.borderColor = ''; dz.style.background = '';
+  handleCampaignFiles(e.dataTransfer.files);
+}
+
+function removeCampaign(id) {
+  platformCampaigns = platformCampaigns.filter(c => c.id !== id);
+  renderCampaignPreviews();
+}
+
+function moveCampaign(id, dir) {
+  const idx = platformCampaigns.findIndex(c => c.id === id);
+  if (idx < 0) return;
+  const swapIdx = idx + dir;
+  if (swapIdx < 0 || swapIdx >= platformCampaigns.length) return;
+  [platformCampaigns[idx], platformCampaigns[swapIdx]] = [platformCampaigns[swapIdx], platformCampaigns[idx]];
+  renderCampaignPreviews();
+}
+
+function renderCampaignPreviews() {
+  const grid  = document.getElementById('campaignPreviews');
+  const count = document.getElementById('campaignCount');
+  if (!grid) return;
+  if (count) count.textContent = `${platformCampaigns.length} / ${MAX_CAMPAIGNS}`;
+
+  const dz = document.getElementById('campaignDropzone');
+  if (dz) dz.style.display = platformCampaigns.length >= MAX_CAMPAIGNS ? 'none' : '';
+
+  grid.innerHTML = platformCampaigns.map((c, i) => `
+    <div style="position:relative;border-radius:8px;overflow:hidden;border:1px solid var(--border);background:var(--bg);aspect-ratio:16/7;">
+      <img src="${c.url}" alt="${c.name}"
+           style="width:100%;height:100%;object-fit:cover;display:block;"
+           onerror="this.style.display='none'"/>
+      <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.55) 0%,transparent 55%);pointer-events:none;"></div>
+      <div style="position:absolute;bottom:4px;left:6px;right:6px;display:flex;align-items:center;gap:3px;justify-content:space-between;">
+        <span style="font-size:0.62rem;color:#fff;opacity:.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60px;">${i+1}. ${c.name}</span>
+        <div style="display:flex;gap:2px;">
+          ${i > 0 ? `<button onclick="moveCampaign('${c.id}',-1)" title="Sola" style="background:rgba(255,255,255,.2);border:none;border-radius:4px;width:20px;height:20px;cursor:pointer;color:#fff;font-size:.7rem;display:flex;align-items:center;justify-content:center;">◀</button>` : ''}
+          ${i < platformCampaigns.length-1 ? `<button onclick="moveCampaign('${c.id}',1)" title="Sağa" style="background:rgba(255,255,255,.2);border:none;border-radius:4px;width:20px;height:20px;cursor:pointer;color:#fff;font-size:.7rem;display:flex;align-items:center;justify-content:center;">▶</button>` : ''}
+          <button onclick="removeCampaign('${c.id}')" title="Sil" style="background:rgba(220,38,38,.75);border:none;border-radius:4px;width:20px;height:20px;cursor:pointer;color:#fff;font-size:.75rem;display:flex;align-items:center;justify-content:center;">✕</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+/* ════════════════════════════════════════════════════════
    PLATFORMA AYARLARI — LOAD / SAVE
 ════════════════════════════════════════════════════════ */
 async function loadPlatformSettings() {
@@ -418,6 +489,9 @@ async function loadPlatformSettings() {
       else if (Array.isArray(d.categories) && d.categories.length)
         platformMainCategories = d.categories; // köhnə format fallback
 
+      // Kampaniyaları yüklə
+      platformCampaigns = Array.isArray(d.campaigns) ? d.campaigns : [];
+
       if (Array.isArray(d.commissions) && d.commissions.length)
         platformCommissions = d.commissions;
 
@@ -437,6 +511,7 @@ async function loadPlatformSettings() {
 
   renderMainCategoryList();
   renderCommissionTable();
+  renderCampaignPreviews();
   document.getElementById('platformLoader').style.display  = 'none';
   document.getElementById('platformContent').style.display = 'block';
 }
@@ -462,6 +537,7 @@ async function savePlatformSettings() {
       mainCategories: platformMainCategories,   // ← yeni format
       categories:     platformMainCategories,   // ← köhnə uyğunluq
       commissions:    platformCommissions,
+      campaigns:      platformCampaigns,
       updatedAt:      firebase.firestore.FieldValue.serverTimestamp(),
       updatedBy:      currentAdmin?.uid || 'admin'
     };
@@ -473,6 +549,13 @@ async function savePlatformSettings() {
     //    Firestore rules-da: match /settings/{doc} { allow read: if true; allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'; }
     await fbDb.collection('settings').doc('categories').set({
       items: platformMainCategories,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedBy: currentAdmin?.uid || 'admin'
+    });
+
+    // 3. Kampaniyaları public collection-a yaz
+    await fbDb.collection('settings').doc('campaigns').set({
+      items: platformCampaigns,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
       updatedBy: currentAdmin?.uid || 'admin'
     });
