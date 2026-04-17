@@ -189,6 +189,116 @@ function createProductCard(p, favIds = []) {
 /* ══════════════════════════════
    GRID RENDER
    ══════════════════════════════ */
+/* ══════════════════════════════════════════════════
+   ÖNCÜ MAĞAZA KARTI
+   ══════════════════════════════════════════════════ */
+let _featuredStoreData   = null;
+let _featuredStoreLoaded = false;
+
+async function loadFeaturedStore() {
+  if (_featuredStoreLoaded) return _featuredStoreData;
+  _featuredStoreLoaded = true;
+  try {
+    const snap = await fbDb.collection('settings').doc('featuredStore').get();
+    if (snap.exists) {
+      const d = snap.data();
+      if (d.uid) _featuredStoreData = d;
+    }
+  } catch(e) { console.warn('Öncü mağaza yüklənmədi:', e.message); }
+  return _featuredStoreData;
+}
+
+function createFeaturedStoreCard(s) {
+  const initials = (s.storeName || 'M').split(' ').map(w => w[0]||'').join('').substring(0,2).toUpperCase();
+  const logoHTML = s.photoURL
+    ? `<img src="${s.photoURL}" alt="${s.storeName}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`
+    : `<span style="font-size:1.1rem;font-weight:700;color:#fff;">${initials}</span>`;
+
+  const coverStyle = s.coverURL
+    ? `background:url('${s.coverURL}') center/cover no-repeat;`
+    : `background:linear-gradient(135deg,#1a1a1a 0%,#2c2c2c 60%,#1a1a1a 100%);`;
+
+  const catTag = s.category
+    ? `<span style="background:rgba(255,255,255,0.13);color:rgba(255,255,255,0.75);font-size:0.62rem;padding:2px 8px;border-radius:20px;margin-left:6px;letter-spacing:0.04em;vertical-align:middle;">${s.category}</span>`
+    : '';
+
+  const desc = s.desc
+    ? `<div style="font-size:0.72rem;color:rgba(255,255,255,0.72);line-height:1.4;margin:6px 0 8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${s.desc}</div>`
+    : '';
+
+  return `
+    <div class="card featured-store-card"
+         style="overflow:hidden;border-radius:var(--radius-md);position:relative;min-height:200px;cursor:pointer;"
+         onclick="goToStore('${s.uid}')">
+      <div style="position:absolute;inset:0;${coverStyle}"></div>
+      <div style="position:absolute;inset:0;background:rgba(0,0,0,0.48);"></div>
+      <div style="position:relative;z-index:1;padding:14px 12px 12px;display:flex;flex-direction:column;height:100%;box-sizing:border-box;min-height:200px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+          <div style="width:42px;height:42px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;border:2px solid rgba(255,255,255,0.25);">
+            ${logoHTML}
+          </div>
+          <div style="min-width:0;flex:1;">
+            <div style="font-size:0.85rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              ${s.storeName || 'Mağaza'}${catTag}
+            </div>
+          </div>
+        </div>
+        ${desc}
+        <div style="display:flex;gap:14px;margin-bottom:10px;">
+          <div style="text-align:center;">
+            <div style="font-size:0.85rem;font-weight:700;color:#fff;">${s.followerCount ?? 0}</div>
+            <div style="font-size:0.6rem;color:rgba(255,255,255,0.6);">İzləyici</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:0.85rem;font-weight:700;color:#fff;">${s.productCount ?? 0}</div>
+            <div style="font-size:0.6rem;color:rgba(255,255,255,0.6);">Məhsul</div>
+          </div>
+          ${s.joinYear ? `<div style="text-align:center;"><div style="font-size:0.85rem;font-weight:700;color:#fff;">${s.joinYear}</div><div style="font-size:0.6rem;color:rgba(255,255,255,0.6);">İldən bəri</div></div>` : ''}
+        </div>
+        <button id="featuredFollowBtn_${s.uid}"
+          onclick="event.stopPropagation(); toggleFeaturedFollow('${s.uid}', this)"
+          style="margin-top:auto;width:100%;height:34px;border-radius:var(--radius-sm);border:1.5px solid rgba(255,255,255,0.5);background:rgba(255,255,255,0.1);color:#fff;font-size:0.78rem;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;backdrop-filter:blur(4px);transition:background .2s,border-color .2s;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>
+          İzlə
+        </button>
+      </div>
+    </div>`;
+}
+
+async function toggleFeaturedFollow(storeUid, btn) {
+  const cu = fbAuth.currentUser;
+  if (!cu) { if (typeof openAuthModal === 'function') openAuthModal(); return; }
+  const ref = fbDb.collection('follows').doc(`${cu.uid}_${storeUid}`);
+  try {
+    const snap = await ref.get();
+    if (snap.exists) {
+      await ref.delete();
+      btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg> İzlə`;
+      btn.style.background = 'rgba(255,255,255,0.1)';
+      btn.style.borderColor = 'rgba(255,255,255,0.5)';
+    } else {
+      await ref.set({ followerId: cu.uid, storeId: storeUid, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+      btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg> İzlənilir`;
+      btn.style.background = 'rgba(255,255,255,0.25)';
+      btn.style.borderColor = 'rgba(255,255,255,0.9)';
+    }
+  } catch(e) { console.warn('Follow xətası:', e.message); }
+}
+
+async function syncFeaturedFollowBtn(storeUid) {
+  const cu = fbAuth.currentUser;
+  const btn = document.getElementById('featuredFollowBtn_' + storeUid);
+  if (!btn || !cu) return;
+  try {
+    const snap = await fbDb.collection('follows').doc(`${cu.uid}_${storeUid}`).get();
+    if (snap.exists) {
+      btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg> İzlənilir`;
+      btn.style.background = 'rgba(255,255,255,0.25)';
+      btn.style.borderColor = 'rgba(255,255,255,0.9)';
+    }
+  } catch(e) {}
+}
+
 async function renderProducts(products, containerId = 'productGrid') {
   const grid = document.getElementById(containerId);
   if (!grid) return;
@@ -204,7 +314,52 @@ async function renderProducts(products, containerId = 'productGrid') {
     } catch (e) {}
   }
 
-  grid.innerHTML = products.map(p => createProductCard(p, favIds)).join('');
+  // Ana productGrid üçün: ilk 14, araya mağaza kartı, sonra qalan
+  if (containerId !== 'productGrid' || products.length === 0) {
+    grid.innerHTML = products.map(p => createProductCard(p, favIds)).join('');
+    return;
+  }
+
+  const INITIAL   = 14;  // 2 sıra × 7 = 14
+  const INSERT_AT = 7;   // 1-ci sıranın sonundan sonra mağaza kartı
+
+  const featuredStore = await loadFeaturedStore();
+  const first14 = products.slice(0, INITIAL);
+  const rest    = products.slice(INITIAL);
+  const before  = first14.slice(0, INSERT_AT);
+  const after   = first14.slice(INSERT_AT);
+
+  let html = before.map(p => createProductCard(p, favIds)).join('');
+  if (featuredStore) html += createFeaturedStoreCard(featuredStore);
+  html += after.map(p => createProductCard(p, favIds)).join('');
+
+  if (rest.length > 0) {
+    html += `<div id="productGridRest" style="display:none;">${rest.map(p => createProductCard(p, favIds)).join('')}</div>`;
+  }
+
+  grid.innerHTML = html;
+
+  // "Hamısını göstər" düyməsi
+  const showMoreBtn = document.getElementById('showMoreBtn');
+  if (showMoreBtn) {
+    if (rest.length > 0) {
+      showMoreBtn.style.display = '';
+      showMoreBtn.onclick = () => {
+        const restWrap = document.getElementById('productGridRest');
+        if (restWrap) {
+          restWrap.style.display = 'contents';
+          // içindəki kartları grid-ə çıxar
+          while (restWrap.firstChild) grid.insertBefore(restWrap.firstChild, restWrap);
+          restWrap.remove();
+        }
+        showMoreBtn.style.display = 'none';
+      };
+    } else {
+      showMoreBtn.style.display = 'none';
+    }
+  }
+
+  if (featuredStore) syncFeaturedFollowBtn(featuredStore.uid);
 }
 
 /* ══════════════════════════════
