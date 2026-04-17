@@ -202,6 +202,12 @@
   gap: 20px;
 }
 
+/* Öncü mağaza kartı — tam sətri tutsun */
+.featured-store-card {
+  grid-column: 1 / -1;
+  min-height: 220px !important;
+}
+
 /* ══════════════
    FORMS
    ══════════════ */
