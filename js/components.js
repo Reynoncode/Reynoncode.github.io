@@ -28,7 +28,7 @@ async function renderHeader() {
   const user = u ? { name: displayName, photoURL } : null;
 
   const avatarHTML = photoURL
-    ? `<img src="${photoURL}" alt="${displayName}" style="width:26px;height:26px;border-radius:50%;object-fit:cover"/>`
+  ? `<img src="${photoURL}" alt="${displayName}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block"/>`
     : `<span>${displayName ? displayName.charAt(0).toUpperCase() : ''}</span>`;
 
   const headerHTML = `
