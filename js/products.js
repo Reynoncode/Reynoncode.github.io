@@ -337,44 +337,48 @@ async function renderProducts(products, containerId = 'productGrid') {
   }
 
   const COLS      = getColumnsPerRow();   // bir sıradakı məhsul sayı
-  const INSERT_AT = COLS;                 // 1-ci sıranın sonundan sonra mağaza kartı
-  const INITIAL   = COLS * 2;            // 2 sıra = cari sütun × 2
+  // Struktur: [COLS məhsul] → [Mağaza kartı — tam en] → [qalan məhsullar]
+  // İlk səhifədə max 14 məhsul göstər (COLS + (14 - COLS) = 14)
+  const PAGE_SIZE = 14;
 
   const featuredStore = await loadFeaturedStore();
-  const first2rows = products.slice(0, INITIAL);
-  const rest       = products.slice(INITIAL);
-  const before     = first2rows.slice(0, INSERT_AT);
-  const after      = first2rows.slice(INSERT_AT);
 
-  let html = before.map(p => createProductCard(p, favIds)).join('');
+  // İlk sıra: COLS məhsul; sonra mağaza kartı; sonra qalan (PAGE_SIZE - COLS ədəd)
+  const visible = products.slice(0, PAGE_SIZE);
+  const row1    = visible.slice(0, COLS);
+  const row3on  = visible.slice(COLS);       // mağaza kartından sonrakılar (3-cü sıra və daha çox)
+  const rest    = products.slice(PAGE_SIZE); // "Daha çox göstər"-dən sonra gələcəklər
+
+  let html = row1.map(p => createProductCard(p, favIds)).join('');
   if (featuredStore) html += createFeaturedStoreCard(featuredStore);
-  html += after.map(p => createProductCard(p, favIds)).join('');
-
-  if (rest.length > 0) {
-    html += `<div id="productGridRest" style="display:none;">${rest.map(p => createProductCard(p, favIds)).join('')}</div>`;
-  }
+  html += row3on.map(p => createProductCard(p, favIds)).join('');
 
   grid.innerHTML = html;
 
-  // "Hamısını göstər" düyməsi
-  const showMoreBtn = document.getElementById('showMoreBtn');
-  if (showMoreBtn) {
-    if (rest.length > 0) {
-      showMoreBtn.style.display = '';
-      showMoreBtn.onclick = () => {
-        const restWrap = document.getElementById('productGridRest');
-        if (restWrap) {
-          restWrap.style.display = 'contents';
-          // içindəki kartları grid-ə çıxar
-          while (restWrap.firstChild) grid.insertBefore(restWrap.firstChild, restWrap);
-          restWrap.remove();
-        }
-        showMoreBtn.style.display = 'none';
-      };
+  // "Daha çox göstər" düyməsi — hər dəfə PAGE_SIZE məhsul əlavə göstər
+  const showMoreBtn  = document.getElementById('showMoreBtn');
+  const showMoreWrap = document.getElementById('showMoreWrap');
+
+  let shownCount = PAGE_SIZE;
+
+  function updateShowMore() {
+    if (!showMoreWrap) return;
+    if (shownCount < products.length) {
+      showMoreWrap.style.display = '';
+      if (showMoreBtn) {
+        showMoreBtn.onclick = async () => {
+          const nextBatch = products.slice(shownCount, shownCount + PAGE_SIZE);
+          shownCount += nextBatch.length;
+          nextBatch.forEach(p => grid.insertAdjacentHTML('beforeend', createProductCard(p, favIds)));
+          updateShowMore();
+        };
+      }
     } else {
-      showMoreBtn.style.display = 'none';
+      showMoreWrap.style.display = 'none';
     }
   }
+
+  updateShowMore();
 
   if (featuredStore) syncFeaturedFollowBtn(featuredStore.uid);
 }
