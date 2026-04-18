@@ -506,13 +506,46 @@ async function openOrderDetail(orderId) {
   const orderNum = o.orderNumber ? `#${o.orderNumber}` : `#${o._id.slice(-5).toUpperCase()}`;
   if (title) title.textContent = `Sifariş ${orderNum}`;
 
+  // ── Vizual Status Tracker ──
+  const STEPS = [
+    { key: 'placed',    lbl: 'Sifariş\nVerildi'  },
+    { key: 'preparing', lbl: 'Hazır-\nlanır'     },
+    { key: 'shipped',   lbl: 'Yolda'             },
+    { key: 'delivered', lbl: 'Çatdırıldı'        },
+  ];
+  const isCancelled = o.status === 'cancelled';
+  const stepDone = (key) => {
+    if (key === 'placed') return !!o.createdAt;
+    if (isCancelled) return false;
+    return { preparing:['preparing','shipped','delivered'], shipped:['shipped','delivered'], delivered:['delivered'] }[key]?.includes(o.status) || false;
+  };
+  const stepCurrent = (key) => {
+    if (isCancelled || key === 'placed') return false;
+    const map = { preparing:'preparing', shipped:'shipped', delivered:'delivered' };
+    return map[key] === o.status;
+  };
+
+  const trackerHTML = isCancelled
+    ? `<div style="display:flex;align-items:center;gap:0.5rem;padding:0.85rem 1rem;background:rgba(231,76,60,.08);border:1px solid rgba(231,76,60,.2);border-radius:10px;color:#e74c3c;font-size:0.85rem;font-weight:500;">
+        <span>❌</span> Bu sifariş ləğv edilib ${o.cancelledAt ? '· ' + _fmtDate(o.cancelledAt) : ''}
+       </div>`
+    : `<div class="ord-tracker">
+        ${STEPS.map((step, i) => `
+          <div class="ord-tracker-step${stepDone(step.key) ? ' done' : ''}${stepCurrent(step.key) ? ' current' : ''}">
+            <div class="ord-tracker-icon">${stepDone(step.key) ? '✓' : (i+1)}</div>
+            <div class="ord-tracker-lbl">${step.lbl.replace('\n','<br>')}</div>
+          </div>
+          ${i < STEPS.length - 1 ? `<div class="ord-tracker-line${stepDone(STEPS[i+1].key) ? ' done' : ''}"></div>` : ''}
+        `).join('')}
+      </div>`;
+
   // Tarix/status cədvəli
   const timeline = [];
-  if (o.createdAt)   timeline.push({ lbl: 'Sifariş verildi',  date: _fmtDate(o.createdAt) });
-  if (o.preparedAt)  timeline.push({ lbl: 'Hazırlanmağa başladı', date: _fmtDate(o.preparedAt) });
-  if (o.shippedAt)   timeline.push({ lbl: 'Yola çıxdı',       date: _fmtDate(o.shippedAt) });
-  if (o.deliveredAt) timeline.push({ lbl: 'Çatdırıldı',        date: _fmtDate(o.deliveredAt) });
-  if (o.cancelledAt) timeline.push({ lbl: 'Ləğv edildi',       date: _fmtDate(o.cancelledAt) });
+  if (o.createdAt)   timeline.push({ lbl: 'Sifariş verildi',         date: _fmtDate(o.createdAt)   });
+  if (o.preparedAt)  timeline.push({ lbl: 'Hazırlanmağa başladı',     date: _fmtDate(o.preparedAt)  });
+  if (o.shippedAt)   timeline.push({ lbl: 'Yola çıxdı',               date: _fmtDate(o.shippedAt)   });
+  if (o.deliveredAt) timeline.push({ lbl: 'Çatdırıldı',               date: _fmtDate(o.deliveredAt) });
+  if (o.cancelledAt) timeline.push({ lbl: 'Ləğv edildi',              date: _fmtDate(o.cancelledAt) });
 
   // Məhsul detayları
   const items = o.items || [];
@@ -566,14 +599,17 @@ async function openOrderDetail(orderId) {
     addrText = parts.join(', ');
   }
 
-  // Ləğv etmə düyməsi (yalnız pending/preparing)
   const canCancel = ['pending', 'preparing'].includes(o.status);
-  const cancelHTML = canCancel ? `
-    <button class="ord-cancel-btn" onclick="cancelOrder('${o._id}')">
-      Sifarişi Ləğv Et
-    </button>` : '';
+  const cancelHTML = canCancel
+    ? `<button class="ord-cancel-btn" onclick="openCancelModal('${o._id}')">Sifarişi Ləğv Et</button>`
+    : '';
 
   body.innerHTML = `
+    <div class="ord-detail-section">
+      <div class="ord-detail-label">Sifariş Durumu</div>
+      ${trackerHTML}
+    </div>
+
     <div class="ord-detail-section">
       <div class="ord-detail-label">Məhsullar</div>
       ${itemsHTML || '<div style="color:var(--muted);font-size:.875rem;">Məhsul tapılmadı</div>'}
@@ -600,13 +636,13 @@ async function openOrderDetail(orderId) {
 
     ${timeline.length ? `
     <div class="ord-detail-section">
-      <div class="ord-detail-label">Sifariş Tarixi</div>
+      <div class="ord-detail-label">Tarix Cədvəli</div>
       <div class="ord-timeline">
-        ${timeline.map(t => `
+        ${timeline.map(tl => `
           <div class="ord-timeline-item">
             <div class="ord-timeline-dot"></div>
-            <span style="color:var(--muted);min-width:110px;font-size:0.78rem;">${t.date}</span>
-            <span>${t.lbl}</span>
+            <span style="color:var(--muted);min-width:110px;font-size:0.78rem;">${tl.date}</span>
+            <span>${tl.lbl}</span>
           </div>`).join('')}
       </div>
     </div>` : ''}
@@ -632,24 +668,120 @@ function closeOrderDetail() {
   if (modal) { modal.classList.remove('open'); modal.removeEventListener('click', _detailModalBg); }
 }
 
-/* ── Sifarişi Ləğv Et ── */
-async function cancelOrder(orderId) {
-  const confirmed = confirm(
-    'Sifarişi ləğv etmək istəyirsiniz?\n\nÖdəniş 2-10 iş günü ərzində kartınıza qaytarılacaq.'
-  );
-  if (!confirmed) return;
-  try {
-    await fbDb.collection('orders').doc(orderId).update({
-      status: 'cancelled',
-      cancelledAt: firebase.firestore.FieldValue.serverTimestamp()
+/* ══════════════════════════════
+   LƏĞVETMƏ POPUP
+   ══════════════════════════════ */
+let _cancelOrderId = null;
+
+function openCancelModal(orderId) {
+  _cancelOrderId = orderId;
+  const o = _allOrders.find(x => x._id === orderId);
+  if (!o) return;
+
+  const modal = document.getElementById('cancelOrderModal');
+  if (!modal) return;
+
+  const items = o.items || [];
+
+  const itemListHTML = items.length > 1
+    ? `<div class="ord-detail-label" style="margin-top:1.25rem;margin-bottom:0.4rem;">Ləğv ediləcək məhsulları seçin</div>
+       <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.75rem;">Seçilməyən məhsullar sifarişdə qalmaqda davam edəcək</div>
+       <div style="display:flex;flex-direction:column;gap:0.5rem;">
+         ${items.map((item, i) => {
+           const img = item.img || item.image || '';
+           return `<label style="display:flex;align-items:center;gap:0.75rem;padding:0.6rem 0.75rem;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;transition:border-color .18s;" id="ci_lbl_${i}">
+             <input type="checkbox" id="ci_${i}" value="${i}" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;"
+               onchange="document.getElementById('ci_lbl_${i}').style.borderColor=this.checked?'var(--accent)':'var(--border)'">
+             <div style="width:40px;height:40px;border-radius:8px;overflow:hidden;flex-shrink:0;background:var(--tag-bg);display:flex;align-items:center;justify-content:center;font-size:1rem;">
+               ${img ? `<img src="${img}" style="width:100%;height:100%;object-fit:cover;">` : '🛍️'}
+             </div>
+             <div style="flex:1;min-width:0;">
+               <div style="font-size:0.84rem;font-weight:500;line-height:1.3;">${item.name || '—'}</div>
+               <div style="font-size:0.78rem;color:var(--muted);">${(item.price || 0).toFixed(2)} ₼</div>
+             </div>
+           </label>`;
+         }).join('')}
+       </div>`
+    : '';
+
+  document.getElementById('cancelItemSection').innerHTML = itemListHTML;
+  document.getElementById('cancelReason').value = '';
+  document.getElementById('cancelAgree').checked = false;
+  document.getElementById('cancelConfirmBtn').disabled = true;
+  document.getElementById('cancelAgree').onchange = function() {
+    document.getElementById('cancelConfirmBtn').disabled = !this.checked;
+  };
+
+  modal.classList.add('open');
+  modal.addEventListener('click', _cancelModalBg);
+}
+
+function _cancelModalBg(e) {
+  if (e.target === document.getElementById('cancelOrderModal')) closeCancelModal();
+}
+function closeCancelModal() {
+  const modal = document.getElementById('cancelOrderModal');
+  if (modal) { modal.classList.remove('open'); modal.removeEventListener('click', _cancelModalBg); }
+  _cancelOrderId = null;
+}
+
+async function confirmCancelOrder() {
+  if (!_cancelOrderId) return;
+  const o = _allOrders.find(x => x._id === _cancelOrderId);
+  if (!o) return;
+
+  const btn = document.getElementById('cancelConfirmBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Göndərilir...'; }
+
+  const reason = (document.getElementById('cancelReason')?.value || '').trim();
+  const items  = o.items || [];
+
+  let cancelledItems = [];
+  let remainingItems = [];
+
+  if (items.length > 1) {
+    items.forEach((item, i) => {
+      const cb = document.getElementById(`ci_${i}`);
+      if (cb && cb.checked) cancelledItems.push(item);
+      else remainingItems.push(item);
     });
-    showToast('Sifariş ləğv edildi. Ödəniş 2-10 gün ərzində qaytarılacaq.');
+    if (cancelledItems.length === 0) { cancelledItems = [...items]; remainingItems = []; }
+  } else {
+    cancelledItems = [...items];
+    remainingItems = [];
+  }
+
+  try {
+    if (remainingItems.length > 0) {
+      const newTotal = remainingItems.reduce((s, it) => s + (it.price || 0) * (it.qty || 1), 0);
+      await fbDb.collection('orders').doc(_cancelOrderId).update({
+        items:          remainingItems,
+        total:          newTotal,
+        partialCancel:  true,
+        cancelledItems: firebase.firestore.FieldValue.arrayUnion(...cancelledItems),
+        cancelReason:   reason || null,
+        updatedAt:      firebase.firestore.FieldValue.serverTimestamp()
+      });
+      showToast('Seçilmiş məhsullar ləğv edildi. Ödəniş 2-10 gün ərzində qaytarılacaq.');
+    } else {
+      await fbDb.collection('orders').doc(_cancelOrderId).update({
+        status:       'cancelled',
+        cancelReason:  reason || null,
+        cancelledAt:  firebase.firestore.FieldValue.serverTimestamp()
+      });
+      showToast('Sifariş ləğv edildi. Ödəniş 2-10 gün ərzində qaytarılacaq.');
+    }
+    closeCancelModal();
     closeOrderDetail();
     if (currentUser) await loadOrders(currentUser.uid);
   } catch (err) {
     showToast('Xəta: ' + err.message);
+    if (btn) { btn.disabled = false; btn.textContent = 'Ləğvetməni Təsdiq Et'; }
   }
 }
+
+async function cancelOrder(orderId) { openCancelModal(orderId); }
+
 
 /* ══════════════════════════════
    WİSHLİST
