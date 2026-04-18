@@ -444,6 +444,16 @@ async function renderVendorDashboard(container, data, uid) {
           </tbody>
         </table>
       </div>
+    </div>
+
+    <div class="section-card" style="padding:1.5rem 1.75rem;border-left:3px solid #dc2626;">
+      <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:1.25rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border);">
+        <span style="font-size:1.1rem;">❌</span>
+        <span style="font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:600;color:#dc2626;">Müştərinin Ləğv etdiyi Sifarişlər</span>
+      </div>
+      <div id="vd-customer-cancelled-list">
+        <div class="spinner" style="margin:1.5rem auto;"></div>
+      </div>
     </div>`;
 
   const [listings, orders] = await Promise.all([
@@ -465,6 +475,7 @@ async function renderVendorDashboard(container, data, uid) {
 
   vdRenderOrderCards(orders);
   vdRenderListingRows(listings);
+  vdRenderCustomerCancelledOrders(orders);
 }
 
 /* ══════════════════════════════════════════════════
@@ -548,12 +559,14 @@ function vdOrderCardHTML(o) {
         <span style="flex:1;"></span>
         <span style="font-weight:700;font-size:0.9rem;">${(o.total||0).toFixed(2)} ₼</span>
         <span style="background:${st.bg};color:${st.color};padding:3px 10px;border-radius:20px;font-size:0.72rem;font-weight:600;">${st.lbl}</span>
-        <button onclick="vdOpenStatusModal('${o.id}','${o.status||'pending'}')"
+        ${o.cancelledByCustomer
+          ? `<span style="background:#fef2f2;color:#dc2626;padding:4px 10px;border-radius:8px;font-size:0.73rem;font-weight:600;white-space:nowrap;">🔒 Müştəri ləğv etdi</span>`
+          : `<button onclick="vdOpenStatusModal('${o.id}','${o.status||'pending'}')"
           style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:0.75rem;cursor:pointer;color:var(--accent);white-space:nowrap;font-family:inherit;transition:border-color .15s;"
           onmouseover="this.style.borderColor='#1a1a1a'"
           onmouseout="this.style.borderColor='var(--border)'">
           Status dəyiş
-        </button>
+        </button>`}
       </div>
       <div style="margin-bottom:0.85rem;">
         <div style="font-size:0.68rem;font-weight:600;color:var(--muted);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:0.4rem;">
@@ -610,6 +623,116 @@ function vdFilterOrders() {
   vdRenderOrderCards(filtered);
 }
 
+/* ══════════════════════════════════════════════════
+   MÜŞTƏRİNİN LƏĞVETDİYİ SİFARİŞLƏR
+══════════════════════════════════════════════════ */
+function vdRenderCustomerCancelledOrders(orders) {
+  const container = document.getElementById('vd-customer-cancelled-list');
+  if (!container) return;
+  const cancelled = orders.filter(o => o.cancelledByCustomer === true);
+  if (cancelled.length === 0) {
+    container.innerHTML = `
+      <div style="text-align:center;padding:2rem;color:var(--muted);">
+        <div style="font-size:2rem;margin-bottom:0.5rem;">✅</div>
+        Müştəri tərəfindən ləğv edilmiş sifariş yoxdur
+      </div>`;
+    return;
+  }
+  container.innerHTML = cancelled.map(o => vdCancelledByCustomerCardHTML(o)).join('');
+}
+
+function vdCancelledByCustomerCardHTML(o) {
+  const date = o.createdAt?.toDate
+    ? o.createdAt.toDate().toLocaleDateString('az-AZ', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    : '—';
+  const cancelledDate = o.cancelledAt?.toDate
+    ? o.cancelledAt.toDate().toLocaleDateString('az-AZ', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    : '—';
+
+  const items    = o.items || [];
+  const orderNum = o.orderNumber ? '#' + o.orderNumber : '#' + o.id.slice(-6).toUpperCase();
+  const buyerName  = o.buyerName  || o.userName  || o.customerName || '';
+  const buyerPhone = o.buyerPhone || o.phone     || '';
+  const buyerEmail = o.buyerEmail || '';
+  const addrObj    = o.address || o.deliveryAddress || o.shippingAddress || '';
+  const addressStr = typeof addrObj === 'object'
+    ? (addrObj.label || [addrObj.city, addrObj.district, addrObj.street, addrObj.apartment].filter(Boolean).join(', '))
+    : (addrObj || '');
+
+  function itemChips(item) {
+    const color    = item.selectedColor?.name || item.color    || '';
+    const colorHex = item.selectedColor?.hex  || item.colorHex || '';
+    const size     = item.selectedSize?.label || item.size     || '';
+    const qty      = item.quantity || 1;
+    const colorChip = color
+      ? '<span style="display:inline-flex;align-items:center;gap:4px;background:#f5f0ff;color:#6b21a8;font-size:0.7rem;padding:2px 8px;border-radius:10px;">'
+        + (colorHex ? '<span style="width:9px;height:9px;border-radius:50%;background:' + colorHex + ';border:1px solid rgba(0,0,0,.15);flex-shrink:0;display:inline-block;"></span>' : '🎨')
+        + ' ' + color + '</span>'
+      : '';
+    const sizeChip = size ? '<span style="background:#f0f9ff;color:#1a4fb8;font-size:0.7rem;padding:2px 8px;border-radius:10px;">📐 ' + size + '</span>' : '';
+    const qtyChip  = qty > 1 ? '<span style="background:#f0faf4;color:#1e8449;font-size:0.7rem;padding:2px 8px;border-radius:10px;">×' + qty + '</span>' : '';
+    return (colorChip || sizeChip || qtyChip)
+      ? '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">' + colorChip + sizeChip + qtyChip + '</div>' : '';
+  }
+
+  const itemsHTML = items.map(function(item) {
+    const name  = item.name || item.title || '—';
+    const price = ((item.price || 0) * (item.quantity || 1)).toFixed(2);
+    return '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px dashed var(--border);">'
+      + '<div style="flex:1;"><div style="font-size:0.82rem;font-weight:500;">' + name + '</div>' + itemChips(item) + '</div>'
+      + '<div style="font-size:0.8rem;font-weight:600;white-space:nowrap;flex-shrink:0;">' + price + ' ₼</div></div>';
+  }).join('');
+
+  const bankCard = o.bankCardNumber || '1234 1234 1234 1234';
+  const cancelReasonHTML = o.cancelReason
+    ? '<div style="font-size:0.72rem;color:#856404;margin-top:3px;font-style:italic;">"' + o.cancelReason + '"</div>' : '';
+
+  return '<div style="border:1px solid #fecaca;border-radius:12px;padding:1rem 1.25rem;margin-bottom:0.75rem;background:#fff9f9;">'
+
+    + '<div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;margin-bottom:0.75rem;">'
+    + '<span style="font-family:monospace;font-weight:700;font-size:0.85rem;">' + orderNum + '</span>'
+    + '<span style="color:var(--muted);font-size:0.78rem;">Sifariş tarixi: ' + date + '</span>'
+    + '<span style="flex:1;"></span>'
+    + '<span style="font-weight:700;font-size:0.9rem;">' + (o.total||0).toFixed(2) + ' ₼</span>'
+    + '<span style="background:#fef2f2;color:#dc2626;padding:3px 10px;border-radius:20px;font-size:0.72rem;font-weight:600;">❌ Ləğv edildi</span>'
+    + '<span style="background:#fef2f2;color:#dc2626;padding:4px 10px;border-radius:8px;font-size:0.73rem;font-weight:600;white-space:nowrap;">🔒 Müştəri ləğv etdi</span>'
+    + '</div>'
+
+    + '<div style="margin-bottom:0.85rem;">'
+    + '<div style="font-size:0.68rem;font-weight:600;color:var(--muted);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:0.4rem;">📦 Məhsullar (' + items.length + ')</div>'
+    + (itemsHTML || '<div style="font-size:0.78rem;color:var(--muted);">Məhsul məlumatı yoxdur</div>')
+    + '</div>'
+
+    + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0.75rem;padding-top:0.75rem;border-top:1px solid #fecaca;">'
+
+    + '<div style="background:#f8f8f8;border-radius:8px;padding:0.65rem 0.85rem;">'
+    + '<div style="font-size:0.68rem;font-weight:600;color:var(--muted);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:0.45rem;">👤 Müştəri</div>'
+    + (buyerName ? '<div style="font-size:0.8rem;font-weight:500;margin-bottom:2px;">' + buyerName + '</div>' : '<div style="font-size:0.78rem;color:var(--muted);">Ad məlumatı yoxdur</div>')
+    + (buyerPhone ? '<div style="font-size:0.76rem;color:#555;display:flex;align-items:center;gap:4px;margin-top:2px;">📞 ' + buyerPhone + '</div>' : '')
+    + (buyerEmail ? '<div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">✉️ ' + buyerEmail + '</div>' : '')
+    + '</div>'
+
+    + '<div style="background:#f8f8f8;border-radius:8px;padding:0.65rem 0.85rem;">'
+    + '<div style="font-size:0.68rem;font-weight:600;color:var(--muted);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:0.45rem;">📍 Çatdırılma ünvanı</div>'
+    + (addressStr ? '<div style="font-size:0.76rem;color:#555;line-height:1.5;">' + addressStr + '</div>' : '<div style="font-size:0.78rem;color:var(--muted);">Ünvan məlumatı yoxdur</div>')
+    + '</div>'
+
+    + '<div style="background:#fff3cd;border-radius:8px;padding:0.65rem 0.85rem;">'
+    + '<div style="font-size:0.68rem;font-weight:600;color:#856404;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:0.45rem;">📅 Ləğvetmə tarixi</div>'
+    + '<div style="font-size:0.8rem;font-weight:600;color:#856404;">' + cancelledDate + '</div>'
+    + cancelReasonHTML
+    + '</div>'
+
+    + '<div style="background:#fef2f2;border-radius:8px;padding:0.65rem 0.85rem;">'
+    + '<div style="font-size:0.68rem;font-weight:600;color:#922b21;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:0.45rem;">💳 İadə bank kartı</div>'
+    + '<div style="font-size:0.82rem;font-weight:600;font-family:monospace;color:#922b21;letter-spacing:0.08em;">' + bankCard + '</div>'
+    + '<div style="font-size:0.7rem;color:var(--muted);margin-top:3px;">İadə üçün kart nömrəsi</div>'
+    + '</div>'
+
+    + '</div>'
+    + '</div>';
+}
+
 /* ════════════════════════════════════════════════
    STATUS MODALI
 ════════════════════════════════════════════════ */
@@ -621,6 +744,13 @@ const STATUS_FLOW = [
 ];
 
 function vdOpenStatusModal(orderId, currentStatus) {
+  // Müştəri tərəfindən ləğv edilmiş sifarişin statusu dəyişdirilə bilməz
+  const ord = _vdOrders.find(o => o.id === orderId);
+  if (ord && ord.cancelledByCustomer) {
+    showToast('⚠️ Bu sifariş müştəri tərəfindən ləğv edilib. Status dəyişdirilə bilməz.');
+    return;
+  }
+
   const old = document.getElementById('vdStatusModal');
   if (old) old.remove();
 
@@ -680,6 +810,13 @@ async function vdUpdateOrderStatus(orderId, newStatus) {
     const orderData     = orderSnap.data();
     const prevStatus    = orderData.status || 'pending';
     const stockDeducted = orderData.stockDeducted === true;
+
+    // Müştəri tərəfindən ləğv edilmiş sifarişin statusunu dəyişmək qadağandır
+    if (orderData.cancelledByCustomer === true) {
+      document.getElementById('vdStatusModal')?.remove();
+      showToast('⚠️ Bu sifariş müştəri tərəfindən ləğv edilib. Status dəyişdirilə bilməz.');
+      return;
+    }
 
     if (prevStatus === newStatus) {
       document.getElementById('vdStatusModal')?.remove();
