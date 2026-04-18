@@ -25,14 +25,23 @@
     .cat-subheader-inner {
       display: flex;
       align-items: stretch;
-      overflow-x: auto;
-      scroll-behavior: smooth;
-      scrollbar-width: none;
-      -ms-overflow-style: none;
+      overflow-x: hidden;
       padding: 0 var(--page-x);
       gap: 0;
     }
     .cat-subheader-inner::-webkit-scrollbar { display: none; }
+
+    /* Hər kateqoriya düyməsi bərabər genişlik alır */
+    .cat-item {
+      flex: 1 1 0 !important;
+      min-width: 0 !important;
+    }
+    .cat-item-label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100%;
+    }
 
     .cat-item {
       display: inline-flex;
@@ -40,14 +49,11 @@
       align-items: center;
       justify-content: center;
       gap: 0.28rem;
-      padding: 1rem 1.05rem 0.9rem;
-      min-width: 76px;
+      padding: 1rem 0.5rem 0.9rem;
       border: none;
       background: none;
       font-family: var(--font-body);
       cursor: pointer;
-      white-space: nowrap;
-      flex-shrink: 0;
       position: relative;
       transition: background 0.18s;
       border-bottom: 2px solid transparent;
@@ -188,8 +194,8 @@
     
     @media (max-width: 768px) {
   .cat-item-icon { display: none; }
-  .cat-item { padding: 0.45rem 0.7rem; min-width: auto; gap: 0; }
-  .cat-item-label { font-size: 0.72rem; max-width: none; }
+  .cat-item { padding: 0.45rem 0.3rem; gap: 0; }
+  .cat-item-label { font-size: 0.72rem; }
 }
 
     /* ══ KAMPANİYA SLİDER ══ */
@@ -440,11 +446,25 @@
   /* ────────────────────────────────────────
      Kateqoriya bar-ını qur
   ──────────────────────────────────────── */
+  function getVisibleCatCount() {
+    const w = window.innerWidth;
+    if (w <= 360) return 5;
+    if (w <= 480) return 6;
+    if (w <= 600) return 7;
+    if (w <= 768) return 9;
+    if (w <= 900) return 11;
+    if (w <= 1100) return 13;
+    return 15;
+  }
+
   function buildCategoryBar() {
     const inner = document.getElementById('catBarInner');
     if (!inner) return;
 
-    inner.innerHTML = CATEGORIES.map(cat => `
+    const visibleCount = getVisibleCatCount();
+    const visibleCats  = CATEGORIES.slice(0, visibleCount);
+
+    inner.innerHTML = visibleCats.map(cat => `
       <button
         class="cat-item${cat.id === activeCategoryId ? ' active' : ''}"
         data-cat="${cat.id}"
@@ -454,9 +474,17 @@
       </button>
     `).join('');
 
-    inner.addEventListener('scroll', updateArrows, { passive: true });
-    setTimeout(updateArrows, 50);
+    // Ox düymələri artıq lazım deyil (overflow yoxdur), gizlət
+    document.getElementById('catArrowLeft')?.classList.add('hidden');
+    document.getElementById('catArrowRight')?.classList.add('hidden');
   }
+
+  // Ekran ölçüsü dəyişəndə yenidən qur
+  let _catResizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(_catResizeTimer);
+    _catResizeTimer = setTimeout(buildCategoryBar, 150);
+  });
 
   function updateArrows() {
     const inner = document.getElementById('catBarInner');
