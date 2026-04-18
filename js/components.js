@@ -190,6 +190,13 @@ function initSearchPopup() {
 
   input.addEventListener('keydown', e => {
     if (e.key === 'Escape') { closeSearchPopup(); input.blur(); }
+    if (e.key === 'Enter') {
+      const q = input.value.trim();
+      if (q) {
+        closeSearchPopup();
+        window.location.href = 'search.html?q=' + encodeURIComponent(q);
+      }
+    }
   });
 }
 
@@ -264,6 +271,28 @@ function renderSearchPopup(query, results) {
       html += nameMatches.map(p => searchResultCard(p)).join('');
     }
     body.innerHTML = html;
+
+    // "Bütün nəticələrə bax" linki
+    const seeAll = document.createElement('a');
+    seeAll.href = 'search.html?q=' + encodeURIComponent(query);
+    seeAll.style.cssText = `
+      display:flex;align-items:center;justify-content:center;gap:6px;
+      margin-top:10px;padding:10px;border-radius:10px;
+      background:var(--bg,#f7f4f0);border:1.5px solid var(--border,#e5e0d8);
+      font-size:0.82rem;font-weight:600;color:var(--text,#1a1a1a);
+      text-decoration:none;transition:border-color .18s;
+    `;
+    seeAll.innerHTML = `
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+      </svg>
+      "<strong>${query}</strong>" üzrə bütün nəticələrə bax
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="9 18 15 12 9 6"/>
+      </svg>`;
+    seeAll.addEventListener('mouseenter', () => { seeAll.style.borderColor = 'var(--accent,#c9a86c)'; });
+    seeAll.addEventListener('mouseleave', () => { seeAll.style.borderColor = 'var(--border,#e5e0d8)'; });
+    body.appendChild(seeAll);
 
     // ── DÜZƏLİŞ: yalnız cart.add() — stopPropagation artıq HTML-dədir ──
     body.querySelectorAll('.search-result-cart').forEach(btn => {
