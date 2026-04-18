@@ -268,9 +268,55 @@
 
     <!-- ORDERS -->
     <div id="tab-orders" style="display:none">
-      <div class="section-card">
-        <div class="section-title" data-i18n="nav.orders">Sifarişlərim</div>
-        <div id="allOrders"><div class="spinner" style="margin:1rem auto;"></div></div>
+      <div class="section-card" id="ordersCard" style="display:flex;flex-direction:column;overflow:hidden;">
+        <!-- Başlıq + filter tablar -->
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;margin-bottom:1.25rem;flex-shrink:0;">
+          <div class="section-title" style="margin-bottom:0;" data-i18n="nav.orders">Sifarişlərim</div>
+          <div id="orderFilterTabs" style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+            <button class="ord-filter-btn active" data-filter="all" onclick="filterOrders('all',this)">Hamısı</button>
+            <button class="ord-filter-btn" data-filter="pending"   onclick="filterOrders('pending',this)">Gözləyənlər</button>
+            <button class="ord-filter-btn" data-filter="preparing" onclick="filterOrders('preparing',this)">Hazırlananlar</button>
+            <button class="ord-filter-btn" data-filter="shipped"   onclick="filterOrders('shipped',this)">Yolda</button>
+            <button class="ord-filter-btn" data-filter="cancelled" onclick="filterOrders('cancelled',this)">Ləğv edilənlər</button>
+          </div>
+        </div>
+        <!-- Aktiv sifarişlər — scroll burada olur -->
+        <div id="allOrders" style="overflow-y:auto;flex:1;padding-right:4px;">
+          <div class="spinner" style="margin:1rem auto;"></div>
+        </div>
+        <!-- Öncəki sifarişlər düyməsi -->
+        <div id="prevOrdersRow" style="display:none;flex-shrink:0;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);">
+          <button onclick="openPrevOrdersPopup()" style="
+            width:100%;padding:0.65rem;border:1.5px dashed var(--border);border-radius:10px;
+            background:none;color:var(--muted);font-size:0.85rem;cursor:pointer;
+            display:flex;align-items:center;justify-content:center;gap:0.5rem;
+            transition:border-color .2s,color .2s;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20" transform="rotate(45 12 12)"/><path d="M3 9l-1-6 6 1M21 15l1 6-6-1"/></svg>
+            Öncəki Sifarişlərim (<span id="prevOrdersCount">0</span>)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ÖNCƏKİ SİFARİŞLƏR POPUP -->
+    <div id="prevOrdersModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:1rem;">
+      <div style="background:var(--card);border-radius:16px;width:100%;max-width:640px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.25);">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);flex-shrink:0;">
+          <span style="font-weight:600;font-size:1rem;">Öncəki Sifarişlərim</span>
+          <button onclick="closePrevOrdersPopup()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--muted);line-height:1;">✕</button>
+        </div>
+        <div id="prevOrdersList" style="overflow-y:auto;padding:1rem 1.5rem;flex:1;"></div>
+      </div>
+    </div>
+
+    <!-- SİFARİŞ DETAY POPUP -->
+    <div id="orderDetailModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1001;align-items:center;justify-content:center;padding:1rem;">
+      <div style="background:var(--card);border-radius:16px;width:100%;max-width:600px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.25);">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);flex-shrink:0;">
+          <span id="orderDetailTitle" style="font-weight:600;font-size:1rem;">Sifariş Detayları</span>
+          <button onclick="closeOrderDetail()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--muted);line-height:1;">✕</button>
+        </div>
+        <div id="orderDetailBody" style="overflow-y:auto;padding:1.5rem;flex:1;"></div>
       </div>
     </div>
 
