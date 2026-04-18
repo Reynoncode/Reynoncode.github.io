@@ -335,9 +335,29 @@ function closeSearchPopup() {
 }
 
 /* ══════════════════════════════
+/* ══════════════════════════════
    FOOTER — dinamik render
    ══════════════════════════════ */
-function renderFooter() {
+async function renderFooter() {
+  // Footer mağazalarını Firebase-dən yüklə
+  let footerStores = [];
+  try {
+    const snap = await fbDb.collection('settings').doc('footerStores').get();
+    if (snap.exists && Array.isArray(snap.data().items)) {
+      footerStores = snap.data().items;
+    }
+  } catch(e) {
+    // Firebase oxunmadısa boş siyahı ilə davam et
+  }
+
+  // Mağazalar bölümü — maks 4 ədəd
+  const storesHTML = footerStores.length
+    ? footerStores.slice(0, 4).map(s => {
+        const name = s.storeName || 'Mağaza';
+        return `<li><a href="store.html?uid=${s.uid}">${name}</a></li>`;
+      }).join('')
+    : '';
+
   const footerHTML = `
     <div class="footer-grid">
       <div class="footer-brand">
@@ -345,12 +365,9 @@ function renderFooter() {
         <p>${t('footer.tagline')}</p>
       </div>
       <div class="footer-col">
-        <h4>${t('footer.cats')}</h4>
+        <h4>Mağazalar</h4>
         <ul>
-          <li><a href="#">${t('footer.women')}</a></li>
-          <li><a href="#">${t('footer.men')}</a></li>
-          <li><a href="#">${t('footer.kids')}</a></li>
-          <li><a href="#">${t('footer.acc')}</a></li>
+          ${storesHTML || '<li style="color:var(--muted);font-size:0.82rem;">Tezliklə...</li>'}
         </ul>
       </div>
       <div class="footer-col">
