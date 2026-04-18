@@ -517,6 +517,46 @@
 
         </div><!-- /platform-grid -->
 
+        <!-- ══ FOOTER MAĞAZALARI ══ -->
+        <div class="setting-group" style="margin-bottom:1.25rem;">
+          <div class="setting-group-header">
+            <div style="display:flex;align-items:center;gap:0.6rem;flex:1;">
+              <div class="setting-group-icon" style="background:#1a1a1a;">🏪</div>
+              <div>
+                <div class="setting-group-title">Footer Mağazaları</div>
+                <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">Ana səhifənin alt hissəsindəki "Mağazalar" bölümündə görünəcək (maks. 4 ədəd)</div>
+              </div>
+            </div>
+          </div>
+          <div class="setting-group-body">
+
+            <!-- Axtarış -->
+            <div style="position:relative;margin-bottom:0.75rem;">
+              <input type="text" id="footerStoreSearch"
+                class="setting-input setting-input-full"
+                placeholder="Mağaza adı və ya email ilə axtar..."
+                oninput="searchFooterStore(this.value)"
+                autocomplete="off"
+                style="padding-right:2.5rem;"/>
+              <div id="footerStoreSpinner" style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);">
+                <div class="spinner-sm"></div>
+              </div>
+            </div>
+
+            <!-- Axtarış nəticələri -->
+            <div id="footerStoreResults" style="display:flex;flex-direction:column;gap:0.4rem;margin-bottom:0.75rem;"></div>
+
+            <!-- Seçilmiş mağazalar siyahısı -->
+            <div id="footerStoresList" style="display:flex;flex-direction:column;gap:0.5rem;">
+              <!-- JS ilə doldurulur -->
+            </div>
+            <div id="footerStoresEmpty" style="font-size:0.8rem;color:var(--muted);padding:0.5rem 0;display:none;">
+              Hələ mağaza seçilməyib
+            </div>
+
+          </div>
+        </div>
+
         <!-- ══ KATEQORİYA İDARƏETMƏSİ — TAM GENİŞLƏNDİRİLMİŞ ══ -->
         <div class="setting-group" style="margin-bottom:1.25rem;">
           <div class="setting-group-header">
