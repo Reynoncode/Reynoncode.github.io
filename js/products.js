@@ -318,20 +318,33 @@ async function renderProducts(products, containerId = 'productGrid') {
     } catch (e) {}
   }
 
-  // Ana productGrid üçün: ilk 14, araya mağaza kartı, sonra qalan
+  // Ana productGrid üçün: ilk N məhsul, araya mağaza kartı, sonra qalan
   if (containerId !== 'productGrid' || products.length === 0) {
     grid.innerHTML = products.map(p => createProductCard(p, favIds)).join('');
     return;
   }
 
-  const INITIAL   = 14;  // 2 sıra × 7 = 14
-  const INSERT_AT = 7;   // 1-ci sıranın sonundan sonra mağaza kartı
+  // Ekran eninə görə bir sıradakı sütun sayını hesabla (CSS breakpoint-lərlə eyni)
+  function getColumnsPerRow() {
+    const w = window.innerWidth;
+    if (w <= 360)  return 2;
+    if (w <= 600)  return 2;
+    if (w <= 700)  return 3;
+    if (w <= 900)  return 4;
+    if (w <= 1100) return 5;
+    if (w <= 1400) return 6;
+    return 7;
+  }
+
+  const COLS      = getColumnsPerRow();   // bir sıradakı məhsul sayı
+  const INSERT_AT = COLS;                 // 1-ci sıranın sonundan sonra mağaza kartı
+  const INITIAL   = COLS * 2;            // 2 sıra = cari sütun × 2
 
   const featuredStore = await loadFeaturedStore();
-  const first14 = products.slice(0, INITIAL);
-  const rest    = products.slice(INITIAL);
-  const before  = first14.slice(0, INSERT_AT);
-  const after   = first14.slice(INSERT_AT);
+  const first2rows = products.slice(0, INITIAL);
+  const rest       = products.slice(INITIAL);
+  const before     = first2rows.slice(0, INSERT_AT);
+  const after      = first2rows.slice(INSERT_AT);
 
   let html = before.map(p => createProductCard(p, favIds)).join('');
   if (featuredStore) html += createFeaturedStoreCard(featuredStore);
