@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="css/components.css" />
   <style>
 
-    /* ══ CATEGORY BAR (index.html-dən eyni) ══ */
+    /* ══ CATEGORY BAR ══ */
     .cat-subheader {
       background: var(--surface);
       border-bottom: 1px solid var(--border);
@@ -124,7 +124,7 @@
       background: var(--surface);
       border-right: 1px solid var(--border);
       position: sticky;
-      top: 128px;           /* header(64) + cat-bar(64) */
+      top: 128px;
       height: calc(100vh - 128px);
       overflow-y: auto;
       flex-shrink: 0;
@@ -168,6 +168,19 @@
     }
     .sf-reset-btn:hover { color: var(--danger); }
 
+    /* ── Kateqoriya scroll konteyner (maks 8 görünür) ── */
+    .sf-subcats-scroll {
+      max-height: calc(8 * 2.1rem); /* ~8 item */
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+      margin-right: -0.25rem;
+      padding-right: 0.25rem;
+    }
+    .sf-subcats-scroll::-webkit-scrollbar { width: 3px; }
+    .sf-subcats-scroll::-webkit-scrollbar-track { background: transparent; }
+    .sf-subcats-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
     .sf-check {
       display: flex;
       align-items: center;
@@ -177,6 +190,7 @@
       font-size: 0.8rem;
       color: var(--text);
       transition: color 0.15s;
+      min-height: 2.1rem;
     }
     .sf-check input[type="checkbox"] {
       accent-color: var(--accent);
@@ -185,42 +199,68 @@
       flex-shrink: 0;
     }
     .sf-check:hover { color: var(--accent-dark); }
+    .sf-check-icon {
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+      color: var(--muted);
+    }
+    .sf-check-icon svg {
+      width: 13px; height: 13px;
+      stroke: currentColor;
+    }
+    .sf-check:hover .sf-check-icon { color: var(--accent); }
+    .sf-check-label {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
     .sf-count {
       color: var(--muted);
       font-size: 0.72rem;
       margin-left: auto;
       white-space: nowrap;
+      flex-shrink: 0;
     }
 
-    /* Sort buttons */
-    .sf-sort-btn {
-      display: flex;
-      align-items: center;
+    /* ── Sıralama Dropdown ── */
+    .sf-sort-wrap {
+      position: relative;
+    }
+    .sf-sort-select {
       width: 100%;
-      padding: 0.42rem 0.65rem;
-      text-align: left;
-      background: none;
+      padding: 0.52rem 2.2rem 0.52rem 0.75rem;
       border: 1.5px solid var(--border);
       border-radius: var(--radius-sm);
       font-size: 0.78rem;
       font-family: var(--font-body);
       color: var(--text);
+      background: var(--bg);
       cursor: pointer;
-      margin-bottom: 0.38rem;
-      transition: border-color 0.18s, background 0.18s;
-      gap: 0.5rem;
+      appearance: none;
+      -webkit-appearance: none;
+      transition: border-color 0.18s, box-shadow 0.18s;
+      outline: none;
     }
-    .sf-sort-btn:hover {
+    .sf-sort-select:hover,
+    .sf-sort-select:focus {
       border-color: var(--accent);
-      background: rgba(201,168,108,0.05);
+      box-shadow: 0 0 0 3px rgba(201,168,108,0.12);
     }
-    .sf-sort-btn.active {
-      border-color: var(--accent);
-      background: rgba(201,168,108,0.1);
-      color: var(--accent-dark);
-      font-weight: 600;
+    .sf-sort-chevron {
+      position: absolute;
+      right: 0.6rem;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
     }
-    .sf-sort-btn:last-child { margin-bottom: 0; }
+    .sf-sort-chevron svg {
+      width: 14px; height: 14px;
+    }
 
     /* Price range */
     .sp-price-row {
@@ -298,37 +338,6 @@
       margin-top: 3px;
     }
 
-    .sp-active-filters {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.4rem;
-      margin-top: 0.5rem;
-    }
-
-    .sp-filter-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
-      background: rgba(201,168,108,0.12);
-      border: 1px solid rgba(201,168,108,0.4);
-      color: var(--accent-dark);
-      padding: 0.2rem 0.6rem;
-      border-radius: var(--radius-full);
-      font-size: 0.72rem;
-      font-weight: 600;
-    }
-    .sp-filter-pill button {
-      background: none;
-      border: none;
-      color: var(--accent-dark);
-      font-size: 0.8rem;
-      cursor: pointer;
-      padding: 0;
-      line-height: 1;
-      opacity: 0.7;
-    }
-    .sp-filter-pill button:hover { opacity: 1; }
-
     /* Loading / empty */
     .sp-loading, .sp-empty {
       grid-column: 1 / -1;
@@ -336,10 +345,13 @@
       padding: 4rem 1rem;
       color: var(--muted);
     }
-    .sp-empty-icon { font-size: 3rem; margin-bottom: 0.75rem; }
+    .sp-empty-icon {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 0.75rem;
+    }
     .sp-empty p { font-size: 0.9rem; line-height: 1.6; }
 
-    /* Mobile */
     @media (max-width: 768px) {
       .sp-sidebar { display: none; }
       .sp-main { padding: 1rem; }
@@ -364,7 +376,7 @@
   </div>
 </nav>
 
-<!-- SEARCH SƏHIFƏSI -->
+<!-- SEARCH SƏHİFƏSİ -->
 <div class="search-page-wrap">
 
   <!-- ════ SOL SIDEBAR ════ -->
@@ -376,7 +388,8 @@
         <div class="sp-sidebar-title">Kateqoriyalar</div>
         <button class="sf-reset-btn" onclick="resetSubCats()">Sıfırla</button>
       </div>
-      <div id="sidebarSubCats">
+      <!-- Scrollable konteyner, maks 8 item görünür -->
+      <div class="sf-subcats-scroll" id="sidebarSubCats">
         <div style="color:var(--muted);font-size:0.78rem;">Yüklənir...</div>
       </div>
     </div>
@@ -410,35 +423,45 @@
       <button class="sp-price-btn" onclick="setPriceFilter()">Tətbiq et</button>
     </div>
 
-    <!-- SIRALAMA -->
+    <!-- SIRALAMA — Dropdown -->
     <div class="sp-sidebar-section" style="border-bottom:none;">
-      <div class="sp-section-head" style="margin-bottom:0.75rem;">
+      <div class="sp-section-head" style="margin-bottom:0.65rem;">
         <div class="sp-sidebar-title">Sıralama</div>
       </div>
-      <button class="sf-sort-btn active" data-sort="newest"     onclick="setSortOrder('newest')">
-        🆕 Ən yenilər
-      </button>
-      <button class="sf-sort-btn"        data-sort="oldest"     onclick="setSortOrder('oldest')">
-        📅 Ən köhnələr
-      </button>
-      <button class="sf-sort-btn"        data-sort="price-asc"  onclick="setSortOrder('price-asc')">
-        💰 Qiymət: Artan
-      </button>
-      <button class="sf-sort-btn"        data-sort="price-desc" onclick="setSortOrder('price-desc')">
-        💰 Qiymət: Azalan
-      </button>
-      <button class="sf-sort-btn"        data-sort="rating"     onclick="setSortOrder('rating')">
-        ⭐ Ən yüksək puan
-      </button>
+      <div class="sf-sort-wrap">
+        <select id="sfSortSelect" class="sf-sort-select"
+                onchange="setSortOrder(this.value)">
+          <option value="newest">
+            Ən yenilər
+          </option>
+          <option value="oldest">
+            Ən köhnələr
+          </option>
+          <option value="price-asc">
+            Qiymət: Artan
+          </option>
+          <option value="price-desc">
+            Qiymət: Azalan
+          </option>
+          <option value="rating">
+            Ən yüksək puan
+          </option>
+        </select>
+        <!-- Lucide ChevronDown icon -->
+        <span class="sf-sort-chevron">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </span>
+      </div>
     </div>
 
   </aside>
-  <!-- ════════════════════ -->
 
   <!-- ════ ANA İÇƏRİK ════ -->
   <main class="sp-main">
 
-    <!-- Başlıq + Sayğac -->
     <div class="sp-header">
       <div>
         <div class="sp-query-title" id="spQueryTitle">Axtarış nəticələri</div>
@@ -448,18 +471,21 @@
       </div>
     </div>
 
-    <!-- Məhsul grid -->
     <div class="product-grid" id="searchResultsGrid">
       <div class="sp-loading">
-        <div style="font-size:2.5rem;margin-bottom:0.6rem;">🔍</div>
+        <div style="display:flex;justify-content:center;margin-bottom:0.6rem;opacity:0.3;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </div>
         <div style="font-size:0.9rem;">Məhsullar axtarılır...</div>
       </div>
     </div>
 
   </main>
-  <!-- ════════════════════ -->
 
-</div><!-- /.search-page-wrap -->
+</div>
 
 <footer></footer>
 
@@ -467,7 +493,7 @@
 <div class="overlay" id="authModal"></div>
 <!-- Cart Modal -->
 <div class="overlay" id="cartModal"></div>
-<!-- Listing Modal (eyni kartların işləməsi üçün) -->
+<!-- Listing Modal -->
 <div class="overlay" id="listingModal">
   <div class="modal listing-modal">
     <div class="modal-header">
@@ -518,10 +544,7 @@
 <script src="js/search.js"></script>
 
 <script>
-/* ══════════════════════════════════════
-   KATEQORİYA NAVİQASİYA BAR
-   — Klik ediləndə index.html-ə yönləndirir
-   ══════════════════════════════════════ */
+/* ══ KATEQORİYA NAVİQASİYA BAR ══ */
 let CATEGORIES = [{ id: 'all', icon: '🛍️', label: 'Hamısı' }];
 
 async function loadCategoriesFromFirebase() {
