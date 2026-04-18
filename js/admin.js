@@ -636,6 +636,7 @@ function renderFooterStoresList() {
 /* ════════════════════════════════════════════════════════
    ÖNCÜ MAĞAZA
 ════════════════════════════════════════════════════════ */
+async function searchFeaturedStore(query) {
   const resultsEl = document.getElementById('featuredStoreResults');
   const spinner   = document.getElementById('featuredStoreSpinner');
   if (!resultsEl) return;
