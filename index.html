@@ -308,6 +308,23 @@
     </div>
   </div>
   <div class="product-grid" id="productGrid"></div>
+  <div id="showMoreWrap" style="display:none; text-align:center; padding: 24px 0 32px;">
+    <button id="showMoreBtn" style="
+      background: var(--primary, #7c3aed);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 36px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .2s, transform .15s;
+      box-shadow: 0 2px 12px rgba(124,58,237,.25);
+    "
+    onmouseover="this.style.opacity='.85';this.style.transform='translateY(-1px)'"
+    onmouseout="this.style.opacity='1';this.style.transform='translateY(0)'"
+    >Daha çox göstər</button>
+  </div>
 </main>
 
 <footer></footer>
