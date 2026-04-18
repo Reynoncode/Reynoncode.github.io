@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="css/layout.css" />
   <link rel="stylesheet" href="css/components.css" />
   <style>
-    main { padding: var(--page-y) var(--page-x); }
+    main { padding: var(--page-y) var(--page-x); padding-top: clamp(12px, 2vw, 24px); }
 
     /* ══════════════════════════════
        KATEQORİYA SUB-HEADER
@@ -25,13 +25,16 @@
     .cat-subheader-inner {
       display: flex;
       align-items: stretch;
-      overflow-x: hidden;
+      overflow-x: auto;
+      scroll-behavior: smooth;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
       padding: 0 var(--page-x);
       gap: 0;
     }
     .cat-subheader-inner::-webkit-scrollbar { display: none; }
 
-    /* Hər kateqoriya düyməsi bərabər genişlik alır */
+    /* Hər kateqoriya düyməsi bərabər genişlik alır — yalnız görünən itemlər üçün */
     .cat-item {
       flex: 1 1 0 !important;
       min-width: 0 !important;
@@ -270,7 +273,7 @@
 
 <main>
   <!-- ══ KAMPANİYA SLİDER ══ -->
-  <div id="campaignSliderWrap" style="display:none;margin-bottom:1.5rem;">
+  <div id="campaignSliderWrap" style="display:none;margin-bottom:0.75rem;">
     <div id="campaignSlider" style="position:relative;width:100%;overflow:hidden;border-radius:12px;background:var(--surface);">
       <!-- Track -->
       <div id="campaignTrack"
@@ -300,19 +303,7 @@
     </div>
   </div>
 
-  <div class="section-header">
-    <h1 class="section-title" id="mainSectionTitle">Yeni Kolleksiya</h1>
-    <div style="display:flex;align-items:center;gap:1rem;">
-      <span class="section-count" id="productCount"></span>
-      <button class="btn-add-listing" onclick="listing.open()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
-          <line x1="12" y1="5" x2="12" y2="19"/>
-          <line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
-        Elan əlavə et
-      </button>
-    </div>
-  </div>
+
   <div class="product-grid" id="productGrid"></div>
   <div id="showMoreWrap" style="display:none; text-align:center; padding: 24px 0 32px;">
     <button id="showMoreBtn" style="
@@ -462,9 +453,9 @@
     if (!inner) return;
 
     const visibleCount = getVisibleCatCount();
-    const visibleCats  = CATEGORIES.slice(0, visibleCount);
 
-    inner.innerHTML = visibleCats.map(cat => `
+    // Bütün kateqoriyaları render et
+    inner.innerHTML = CATEGORIES.map(cat => `
       <button
         class="cat-item${cat.id === activeCategoryId ? ' active' : ''}"
         data-cat="${cat.id}"
@@ -474,16 +465,26 @@
       </button>
     `).join('');
 
-    // Ox düymələri artıq lazım deyil (overflow yoxdur), gizlət
-    document.getElementById('catArrowLeft')?.classList.add('hidden');
-    document.getElementById('catArrowRight')?.classList.add('hidden');
+    // Görünən itemlərə bərabər genişlik ver, qalanları scroll ilə əlçatan olsun
+    const items = inner.querySelectorAll('.cat-item');
+    const containerW = inner.clientWidth || window.innerWidth;
+    const itemW = Math.floor(containerW / visibleCount);
+    items.forEach(btn => {
+      btn.style.flex = 'none';
+      btn.style.width = itemW + 'px';
+    });
+
+    inner.addEventListener('scroll', updateArrows, { passive: true });
+    setTimeout(updateArrows, 50);
   }
 
   // Ekran ölçüsü dəyişəndə yenidən qur
   let _catResizeTimer;
   window.addEventListener('resize', () => {
     clearTimeout(_catResizeTimer);
-    _catResizeTimer = setTimeout(buildCategoryBar, 150);
+    _catResizeTimer = setTimeout(() => {
+      buildCategoryBar();
+    }, 150);
   });
 
   function updateArrows() {
