@@ -434,3 +434,104 @@ textarea { resize: vertical; min-height: 80px; }
 @media (min-width: 769px) {
   #mobileMenuBar { display: none; }
 }
+
+/* ══════════════════════════════
+   SİFARİŞLƏR YENİ DİZAYN
+   ══════════════════════════════ */
+
+/* Orders card — sidebar ilə eyni hündürlük */
+#ordersCard {
+  height: calc(100vh - var(--header-h) - 6rem);
+  min-height: 400px;
+}
+
+/* Filter tab düymələri */
+.ord-filter-btn {
+  padding: 0.35rem 0.85rem;
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  background: none;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all .18s;
+  white-space: nowrap;
+}
+.ord-filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+.ord-filter-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg);
+}
+
+/* Sifariş kartı */
+.order-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background .15s;
+  border-radius: 8px;
+}
+.order-item:last-child { border-bottom: none; }
+.order-item:hover { background: rgba(0,0,0,.025); }
+
+/* Detay popup içi */
+.ord-detail-section { margin-bottom: 1.25rem; }
+.ord-detail-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-bottom: 0.4rem;
+}
+.ord-detail-value {
+  font-size: 0.88rem;
+  color: var(--text);
+  line-height: 1.5;
+}
+.ord-timeline { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.35rem; }
+.ord-timeline-item {
+  display: flex; align-items: center; gap: 0.6rem;
+  font-size: 0.82rem; color: var(--text);
+}
+.ord-timeline-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent); flex-shrink: 0;
+}
+.ord-store-btn {
+  display: inline-flex; align-items: center; gap: 0.6rem;
+  padding: 0.6rem 1rem; border: 1.5px solid var(--border);
+  border-radius: 10px; text-decoration: none;
+  color: var(--text); font-size: 0.85rem; font-weight: 500;
+  transition: border-color .18s, background .18s;
+  margin-top: 0.25rem;
+}
+.ord-store-btn:hover { border-color: var(--accent); background: rgba(0,0,0,.025); }
+.ord-store-logo {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: var(--tag-bg); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; overflow: hidden; flex-shrink: 0;
+}
+.ord-store-logo img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Ləğv et düyməsi */
+.ord-cancel-btn {
+  width: 100%; padding: 0.75rem;
+  border: 1.5px solid #e74c3c;
+  border-radius: 10px; background: none;
+  color: #e74c3c; font-size: 0.85rem;
+  font-weight: 600; cursor: pointer;
+  transition: background .18s, color .18s;
+  margin-top: 0.5rem;
+}
+.ord-cancel-btn:hover { background: #e74c3c; color: #fff; }
+
+/* Popup overlay display fix */
+#prevOrdersModal.open,
+#orderDetailModal.open { display: flex !important; }
