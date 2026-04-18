@@ -357,83 +357,297 @@ async function changePassword() {
 /* ══════════════════════════════
    SİFARİŞLƏR
    ══════════════════════════════ */
+let _allOrders = [];   // bütün sifarişlər cache
+let _activeOrderFilter = 'all';
+
+const STATUS_CONFIG = {
+  pending:   { lbl: 'Gözlənilir',   cls: 'badge-pending',  az: 'pending'   },
+  preparing: { lbl: 'Hazırlanır',   cls: 'badge-pending',  az: 'preparing' },
+  shipped:   { lbl: 'Yolda',        cls: 'badge-shipped',  az: 'shipped'   },
+  delivered: { lbl: 'Çatdırıldı',   cls: 'badge-success',  az: 'delivered' },
+  cancelled: { lbl: 'Ləğv edildi',  cls: 'badge-pending',  az: 'cancelled' },
+};
+
+function _fmtDate(ts) {
+  if (!ts) return '—';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleDateString('az-AZ', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
 async function loadOrders(uid) {
-  const STATUS_MAP = {
-    delivered: { lbl: t('order.delivered'), cls: 'badge-success' },
-    shipped:   { lbl: t('order.shipped'),   cls: 'badge-shipped' },
-    pending:   { lbl: t('order.pending'),   cls: 'badge-pending' },
-    cancelled: { lbl: t('order.cancelled'), cls: 'badge-pending' },
-  };
   try {
     const snap = await fbDb.collection('orders')
       .where('buyerId', '==', uid)
       .orderBy('createdAt', 'desc')
-      .limit(30)
+      .limit(50)
       .get();
 
-    const allOrdersEl  = document.getElementById('allOrders');
-    const recentOrdEl  = document.getElementById('recentOrders');
+    _allOrders = snap.docs.map(doc => ({ _id: doc.id, ...doc.data() }));
+
     const statOrdersEl = document.getElementById('statOrders');
     const statSpentEl  = document.getElementById('statSpent');
-    if (!allOrdersEl || !recentOrdEl) return;
-
-    allOrdersEl.innerHTML = '';
-    recentOrdEl.innerHTML = '';
-    if (statOrdersEl) statOrdersEl.textContent = snap.size;
-
-    if (snap.empty) {
-      const emptyMsg = `<p style="color:var(--muted);font-size:.875rem;">${t('p.noOrders')}</p>`;
-      allOrdersEl.innerHTML = emptyMsg; recentOrdEl.innerHTML = emptyMsg;
-      if (statSpentEl) statSpentEl.textContent = '0 ₼';
-      return;
+    if (statOrdersEl) statOrdersEl.textContent = _allOrders.length;
+    if (statSpentEl) {
+      const total = _allOrders.reduce((s, o) => s + (o.total || 0), 0);
+      statSpentEl.textContent = total.toFixed(0) + ' ₼';
     }
 
-    let totalSpent = 0, rendered = 0;
-    snap.forEach(doc => {
-      const o  = doc.data();
-      const st = STATUS_MAP[o.status] || { lbl: o.status || '—', cls: 'badge-pending' };
-      const date = o.createdAt?.toDate
-        ? o.createdAt.toDate().toLocaleDateString('az-AZ', { day: 'numeric', month: 'long', year: 'numeric' })
-        : '—';
-      totalSpent += o.total || 0;
-      const itemNames = (o.items || []).map(i => i.name).join(', ');
-      const shortName = itemNames.length > 50 ? itemNames.substring(0, 50) + '…' : (itemNames || 'Sifariş');
-      const firstImg  = (o.items || [])[0]?.img || '';
-      const imgHTML   = firstImg ? `<img src="${firstImg}" alt="${shortName}" style="width:100%;height:100%;object-fit:cover;">` : '🛍️';
-      const orderNum  = o.orderNumber ? `#${o.orderNumber}` : `#${doc.id.slice(-5).toUpperCase()}`;
-      const addr = o.address;
-      let addrLabel = '';
-      if (addr) {
-        const parts = [];
-        if (addr.label)     parts.push(addr.label.substring(0, 50) + (addr.label.length > 50 ? '…' : ''));
-        if (addr.building)  parts.push(`Bina: ${addr.building}`);
-        if (addr.apartment) parts.push(`Mənzil: ${addr.apartment}`);
-        addrLabel = parts.join(' · ');
+    // Son sifarişlər (icmal tab-ı üçün)
+    const recentOrdEl = document.getElementById('recentOrders');
+    if (recentOrdEl) {
+      const recent = _allOrders.filter(o => o.status !== 'delivered').slice(0, 3);
+      if (recent.length === 0) {
+        recentOrdEl.innerHTML = `<p style="color:var(--muted);font-size:.875rem;">${t('p.noOrders')}</p>`;
+      } else {
+        recentOrdEl.innerHTML = recent.map(o => _buildOrderCard(o)).join('');
       }
-      const html = `
-        <div class="order-item">
-          <div class="order-img">${imgHTML}</div>
-          <div class="order-info">
-            <div class="order-name">${shortName}</div>
-            <div class="order-meta">
-              <span style="font-family:monospace;font-weight:600;">${orderNum}</span> · ${date}
-              ${addrLabel ? `<br><span style="font-size:0.75rem;color:var(--muted);">📍 ${addrLabel}</span>` : ''}
-            </div>
-          </div>
-          <div class="order-right">
-            <div class="order-price">${(o.total || 0).toFixed(2)} ₼</div>
-            <div class="badge ${st.cls}">${st.lbl}</div>
-          </div>
-        </div>`;
-      allOrdersEl.innerHTML += html;
-      if (rendered < 3) recentOrdEl.innerHTML += html;
-      rendered++;
-    });
-    if (statSpentEl) statSpentEl.textContent = totalSpent.toFixed(0) + ' ₼';
+    }
+
+    filterOrders(_activeOrderFilter);
   } catch (err) {
     console.warn('Sifarişlər yüklənmədi:', err.message);
     const el = document.getElementById('allOrders');
     if (el) el.innerHTML = `<p style="color:var(--muted);font-size:.875rem;">${t('p.noOrders')}</p>`;
+  }
+}
+
+function filterOrders(filter, btnEl) {
+  _activeOrderFilter = filter;
+
+  // düymə aktiv stili
+  document.querySelectorAll('.ord-filter-btn').forEach(b => b.classList.remove('active'));
+  const activeBtn = btnEl || document.querySelector(`.ord-filter-btn[data-filter="${filter}"]`);
+  if (activeBtn) activeBtn.classList.add('active');
+
+  const active   = _allOrders.filter(o => o.status !== 'delivered');
+  const previous = _allOrders.filter(o => o.status === 'delivered');
+
+  let filtered;
+  if (filter === 'all') {
+    filtered = active;
+  } else {
+    filtered = active.filter(o => o.status === filter);
+  }
+
+  const el = document.getElementById('allOrders');
+  if (!el) return;
+
+  if (filtered.length === 0) {
+    el.innerHTML = `<p style="color:var(--muted);font-size:.875rem;padding:1rem 0;">${t('p.noOrders')}</p>`;
+  } else {
+    el.innerHTML = filtered.map(o => _buildOrderCard(o)).join('');
+  }
+
+  // Öncəki sifarişlər düyməsi
+  const prevRow = document.getElementById('prevOrdersRow');
+  const prevCount = document.getElementById('prevOrdersCount');
+  if (prevRow) prevRow.style.display = previous.length > 0 ? '' : 'none';
+  if (prevCount) prevCount.textContent = previous.length;
+}
+
+function _buildOrderCard(o) {
+  const st = STATUS_CONFIG[o.status] || { lbl: o.status || '—', cls: 'badge-pending' };
+  const date = _fmtDate(o.createdAt);
+  const itemNames = (o.items || []).map(i => i.name).join(', ');
+  const shortName = itemNames.length > 55 ? itemNames.substring(0, 55) + '…' : (itemNames || 'Sifariş');
+  const firstImg  = (o.items || [])[0]?.img || '';
+  const imgHTML   = firstImg
+    ? `<img src="${firstImg}" alt="" style="width:100%;height:100%;object-fit:cover;">`
+    : '🛍️';
+  const orderNum = o.orderNumber ? `#${o.orderNumber}` : `#${o._id.slice(-5).toUpperCase()}`;
+
+  return `
+    <div class="order-item" onclick="openOrderDetail('${o._id}')">
+      <div class="order-img">${imgHTML}</div>
+      <div class="order-info" style="flex:1;min-width:0;">
+        <div class="order-name">${shortName}</div>
+        <div class="order-meta">
+          <span style="font-family:monospace;font-weight:600;">${orderNum}</span> · ${date}
+        </div>
+      </div>
+      <div class="order-right" style="flex-shrink:0;text-align:right;">
+        <div class="order-price">${(o.total || 0).toFixed(2)} ₼</div>
+        <div class="badge ${st.cls}" style="margin-top:4px;">${st.lbl}</div>
+      </div>
+    </div>`;
+}
+
+/* ── Öncəki Sifarişlər Popup ── */
+function openPrevOrdersPopup() {
+  const modal = document.getElementById('prevOrdersModal');
+  if (!modal) return;
+  const listEl = document.getElementById('prevOrdersList');
+  const prev = _allOrders.filter(o => o.status === 'delivered');
+  listEl.innerHTML = prev.length
+    ? prev.map(o => _buildOrderCard(o)).join('')
+    : `<p style="color:var(--muted);font-size:.875rem;">${t('p.noOrders')}</p>`;
+  modal.classList.add('open');
+  modal.addEventListener('click', _prevModalBg);
+}
+function _prevModalBg(e) {
+  if (e.target === document.getElementById('prevOrdersModal')) closePrevOrdersPopup();
+}
+function closePrevOrdersPopup() {
+  const modal = document.getElementById('prevOrdersModal');
+  if (modal) { modal.classList.remove('open'); modal.removeEventListener('click', _prevModalBg); }
+}
+
+/* ── Sifariş Detay Popup ── */
+async function openOrderDetail(orderId) {
+  const o = _allOrders.find(x => x._id === orderId);
+  if (!o) return;
+
+  const modal = document.getElementById('orderDetailModal');
+  const body  = document.getElementById('orderDetailBody');
+  const title = document.getElementById('orderDetailTitle');
+  if (!modal || !body) return;
+
+  const st = STATUS_CONFIG[o.status] || { lbl: o.status || '—', cls: 'badge-pending' };
+  const orderNum = o.orderNumber ? `#${o.orderNumber}` : `#${o._id.slice(-5).toUpperCase()}`;
+  if (title) title.textContent = `Sifariş ${orderNum}`;
+
+  // Tarix/status cədvəli
+  const timeline = [];
+  if (o.createdAt)   timeline.push({ lbl: 'Sifariş verildi',  date: _fmtDate(o.createdAt) });
+  if (o.preparedAt)  timeline.push({ lbl: 'Hazırlanmağa başladı', date: _fmtDate(o.preparedAt) });
+  if (o.shippedAt)   timeline.push({ lbl: 'Yola çıxdı',       date: _fmtDate(o.shippedAt) });
+  if (o.deliveredAt) timeline.push({ lbl: 'Çatdırıldı',        date: _fmtDate(o.deliveredAt) });
+  if (o.cancelledAt) timeline.push({ lbl: 'Ləğv edildi',       date: _fmtDate(o.cancelledAt) });
+
+  // Məhsul detayları
+  const items = o.items || [];
+  const itemsHTML = items.map(item => {
+    const img = item.img || item.image || '';
+    const details = [];
+    if (item.size)  details.push(`Ölçü: <strong>${item.size}</strong>`);
+    if (item.color) details.push(`Rəng: <strong>${item.color}</strong>`);
+    return `
+      <div style="display:flex;gap:0.75rem;align-items:flex-start;padding:0.6rem 0;border-bottom:1px solid var(--border);">
+        <div style="width:52px;height:52px;border-radius:8px;overflow:hidden;flex-shrink:0;background:var(--tag-bg);display:flex;align-items:center;justify-content:center;font-size:1.2rem;">
+          ${img ? `<img src="${img}" style="width:100%;height:100%;object-fit:cover;">` : '🛍️'}
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:0.875rem;font-weight:500;line-height:1.3;">${item.name || '—'}</div>
+          ${details.length ? `<div style="font-size:0.78rem;color:var(--muted);margin-top:3px;">${details.join(' &nbsp;·&nbsp; ')}</div>` : ''}
+          <div style="font-size:0.82rem;margin-top:2px;">${(item.price || 0).toFixed(2)} ₼${item.qty > 1 ? ` × ${item.qty}` : ''}</div>
+        </div>
+      </div>`;
+  }).join('');
+
+  // Mağaza keçid buttonu
+  let storeHTML = '';
+  try {
+    const vendorId = o.vendorId || (items[0] && items[0].vendorId) || '';
+    if (vendorId) {
+      const vSnap = await fbDb.collection('vendors').doc(vendorId).get();
+      const vData = vSnap.exists ? vSnap.data() : {};
+      const storeName = vData.storeName || 'Mağaza';
+      const storeLogo = vData.logoURL || vData.logo || '';
+      const storeUrl  = `store.html?uid=${vendorId}`;
+      storeHTML = `
+        <a href="${storeUrl}" class="ord-store-btn" target="_blank">
+          <div class="ord-store-logo">
+            ${storeLogo ? `<img src="${storeLogo}" alt="${storeName}">` : '🏪'}
+          </div>
+          <span>${storeName}</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>`;
+    }
+  } catch(e) {}
+
+  // Çatdırılma ünvanı
+  const addr = o.address;
+  let addrText = '';
+  if (addr) {
+    const parts = [];
+    if (addr.label)     parts.push(addr.label);
+    if (addr.building)  parts.push(`Bina: ${addr.building}`);
+    if (addr.apartment) parts.push(`Mənzil: ${addr.apartment}`);
+    addrText = parts.join(', ');
+  }
+
+  // Ləğv etmə düyməsi (yalnız pending/preparing)
+  const canCancel = ['pending', 'preparing'].includes(o.status);
+  const cancelHTML = canCancel ? `
+    <button class="ord-cancel-btn" onclick="cancelOrder('${o._id}')">
+      Sifarişi Ləğv Et
+    </button>` : '';
+
+  body.innerHTML = `
+    <div class="ord-detail-section">
+      <div class="ord-detail-label">Məhsullar</div>
+      ${itemsHTML || '<div style="color:var(--muted);font-size:.875rem;">Məhsul tapılmadı</div>'}
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem;">
+      <div>
+        <div class="ord-detail-label">Sifariş tarixi</div>
+        <div class="ord-detail-value">${_fmtDate(o.createdAt)}</div>
+      </div>
+      <div>
+        <div class="ord-detail-label">Status</div>
+        <div><span class="badge ${st.cls}">${st.lbl}</span></div>
+      </div>
+      <div>
+        <div class="ord-detail-label">Ümumi məbləğ</div>
+        <div class="ord-detail-value" style="font-weight:600;">${(o.total || 0).toFixed(2)} ₼</div>
+      </div>
+      ${addrText ? `<div>
+        <div class="ord-detail-label">Çatdırılma ünvanı</div>
+        <div class="ord-detail-value" style="font-size:0.82rem;">📍 ${addrText}</div>
+      </div>` : ''}
+    </div>
+
+    ${timeline.length ? `
+    <div class="ord-detail-section">
+      <div class="ord-detail-label">Sifariş Tarixi</div>
+      <div class="ord-timeline">
+        ${timeline.map(t => `
+          <div class="ord-timeline-item">
+            <div class="ord-timeline-dot"></div>
+            <span style="color:var(--muted);min-width:110px;font-size:0.78rem;">${t.date}</span>
+            <span>${t.lbl}</span>
+          </div>`).join('')}
+      </div>
+    </div>` : ''}
+
+    ${storeHTML ? `
+    <div class="ord-detail-section">
+      <div class="ord-detail-label">Mağaza</div>
+      ${storeHTML}
+    </div>` : ''}
+
+    ${cancelHTML}
+  `;
+
+  modal.classList.add('open');
+  modal.addEventListener('click', _detailModalBg);
+}
+
+function _detailModalBg(e) {
+  if (e.target === document.getElementById('orderDetailModal')) closeOrderDetail();
+}
+function closeOrderDetail() {
+  const modal = document.getElementById('orderDetailModal');
+  if (modal) { modal.classList.remove('open'); modal.removeEventListener('click', _detailModalBg); }
+}
+
+/* ── Sifarişi Ləğv Et ── */
+async function cancelOrder(orderId) {
+  const confirmed = confirm(
+    'Sifarişi ləğv etmək istəyirsiniz?\n\nÖdəniş 2-10 iş günü ərzində kartınıza qaytarılacaq.'
+  );
+  if (!confirmed) return;
+  try {
+    await fbDb.collection('orders').doc(orderId).update({
+      status: 'cancelled',
+      cancelledAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    showToast('Sifariş ləğv edildi. Ödəniş 2-10 gün ərzində qaytarılacaq.');
+    closeOrderDetail();
+    if (currentUser) await loadOrders(currentUser.uid);
+  } catch (err) {
+    showToast('Xəta: ' + err.message);
   }
 }
 
