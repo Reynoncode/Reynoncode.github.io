@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Axtarış — ALMODA</title>
+  <link rel="stylesheet" href="css/global.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <style>
+
+    /* ══ CATEGORY BAR (index.html-dən eyni) ══ */
+    .cat-subheader {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 64px;
+      z-index: 90;
+      padding: 0;
+    }
+    .cat-subheader-inner {
+      display: flex;
+      align-items: stretch;
+      overflow-x: auto;
+      scroll-behavior: smooth;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      padding: 0 var(--page-x);
+    }
+    .cat-subheader-inner::-webkit-scrollbar { display: none; }
+    .cat-item {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.28rem;
+      padding: 1rem 0.5rem 0.9rem;
+      border: none;
+      background: none;
+      font-family: var(--font-body);
+      cursor: pointer;
+      position: relative;
+      transition: background 0.18s;
+      border-bottom: 2px solid transparent;
+      text-decoration: none;
+    }
+    .cat-item:hover { background: rgba(0,0,0,0.03); }
+    .cat-item:hover::after { transform: scaleX(1); }
+    .cat-item::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 10%; right: 10%;
+      height: 2px;
+      background: var(--accent);
+      border-radius: 2px 2px 0 0;
+      transform: scaleX(0);
+      transition: transform 0.22s cubic-bezier(.4,0,.2,1);
+    }
+    .cat-item-icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.18s, border-color 0.18s, transform 0.18s;
+    }
+    .cat-item-icon svg {
+      width: 18px; height: 18px;
+      stroke: rgba(26,26,26,0.55);
+      transition: stroke 0.18s;
+    }
+    .cat-item:hover .cat-item-icon {
+      border-color: rgba(201,168,108,0.6);
+      transform: translateY(-2px);
+    }
+    .cat-item:hover .cat-item-icon svg { stroke: rgba(201,168,108,1); }
+    .cat-item-label {
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.2;
+      max-width: 72px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      transition: color 0.18s;
+    }
+    .cat-item:hover .cat-item-label { color: var(--text); }
+    .cat-arrow {
+      position: absolute;
+      top: 0; bottom: 0;
+      width: 40px;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(to right, var(--surface) 60%, transparent);
+      border: none; cursor: pointer; z-index: 2;
+      color: var(--muted); transition: color 0.2s; flex-shrink: 0;
+    }
+    .cat-arrow:hover { color: var(--text); }
+    .cat-arrow.right { right: 0; background: linear-gradient(to left, var(--surface) 60%, transparent); }
+    .cat-arrow.left  { left: 0; }
+    .cat-arrow.hidden { display: none; }
+    @media (max-width: 768px) {
+      .cat-item-icon { display: none; }
+      .cat-item { padding: 0.45rem 0.3rem; gap: 0; }
+      .cat-item-label { font-size: 0.72rem; }
+    }
+
+    /* ══ SEARCH PAGE LAYOUT ══ */
+    body { background: var(--bg); }
+
+    .search-page-wrap {
+      display: flex;
+      align-items: flex-start;
+      min-height: calc(100vh - 128px);
+    }
+
+    /* ── Sol Sidebar ── */
+    .sp-sidebar {
+      width: 15%;
+      min-width: 168px;
+      max-width: 252px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      position: sticky;
+      top: 128px;           /* header(64) + cat-bar(64) */
+      height: calc(100vh - 128px);
+      overflow-y: auto;
+      flex-shrink: 0;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .sp-sidebar::-webkit-scrollbar { width: 4px; }
+    .sp-sidebar::-webkit-scrollbar-track { background: transparent; }
+    .sp-sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    .sp-sidebar-section {
+      padding: 1rem 1rem 0.9rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sp-section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.7rem;
+    }
+
+    .sp-sidebar-title {
+      font-family: var(--font-display);
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: 0.01em;
+      text-transform: uppercase;
+    }
+
+    .sf-reset-btn {
+      font-size: 0.7rem;
+      color: var(--muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-decoration: underline;
+      padding: 0;
+      font-family: var(--font-body);
+    }
+    .sf-reset-btn:hover { color: var(--danger); }
+
+    .sf-check {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.3rem 0;
+      cursor: pointer;
+      font-size: 0.8rem;
+      color: var(--text);
+      transition: color 0.15s;
+    }
+    .sf-check input[type="checkbox"] {
+      accent-color: var(--accent);
+      width: 14px; height: 14px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .sf-check:hover { color: var(--accent-dark); }
+    .sf-count {
+      color: var(--muted);
+      font-size: 0.72rem;
+      margin-left: auto;
+      white-space: nowrap;
+    }
+
+    /* Sort buttons */
+    .sf-sort-btn {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      padding: 0.42rem 0.65rem;
+      text-align: left;
+      background: none;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 0.78rem;
+      font-family: var(--font-body);
+      color: var(--text);
+      cursor: pointer;
+      margin-bottom: 0.38rem;
+      transition: border-color 0.18s, background 0.18s;
+      gap: 0.5rem;
+    }
+    .sf-sort-btn:hover {
+      border-color: var(--accent);
+      background: rgba(201,168,108,0.05);
+    }
+    .sf-sort-btn.active {
+      border-color: var(--accent);
+      background: rgba(201,168,108,0.1);
+      color: var(--accent-dark);
+      font-weight: 600;
+    }
+    .sf-sort-btn:last-child { margin-bottom: 0; }
+
+    /* Price range */
+    .sp-price-row {
+      display: flex;
+      gap: 0.4rem;
+      align-items: center;
+      margin-bottom: 0.6rem;
+    }
+    .sp-price-input {
+      flex: 1;
+      padding: 0.38rem 0.45rem;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 0.78rem;
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text);
+      width: 0;
+      min-width: 0;
+      transition: border-color 0.18s;
+    }
+    .sp-price-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .sp-price-sep {
+      color: var(--muted);
+      font-size: 0.8rem;
+      flex-shrink: 0;
+    }
+    .sp-price-btn {
+      width: 100%;
+      padding: 0.45rem;
+      background: var(--text);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 0.78rem;
+      font-family: var(--font-body);
+      cursor: pointer;
+      transition: opacity 0.18s;
+      font-weight: 500;
+    }
+    .sp-price-btn:hover { opacity: 0.82; }
+
+    /* ── Ana içərik ── */
+    .sp-main {
+      flex: 1;
+      min-width: 0;
+      padding: 1.25rem var(--page-x);
+    }
+
+    .sp-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.85rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sp-query-title {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.3;
+    }
+
+    .sp-query-count {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    .sp-active-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-top: 0.5rem;
+    }
+
+    .sp-filter-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      background: rgba(201,168,108,0.12);
+      border: 1px solid rgba(201,168,108,0.4);
+      color: var(--accent-dark);
+      padding: 0.2rem 0.6rem;
+      border-radius: var(--radius-full);
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .sp-filter-pill button {
+      background: none;
+      border: none;
+      color: var(--accent-dark);
+      font-size: 0.8rem;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+      opacity: 0.7;
+    }
+    .sp-filter-pill button:hover { opacity: 1; }
+
+    /* Loading / empty */
+    .sp-loading, .sp-empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 4rem 1rem;
+      color: var(--muted);
+    }
+    .sp-empty-icon { font-size: 3rem; margin-bottom: 0.75rem; }
+    .sp-empty p { font-size: 0.9rem; line-height: 1.6; }
+
+    /* Mobile */
+    @media (max-width: 768px) {
+      .sp-sidebar { display: none; }
+      .sp-main { padding: 1rem; }
+    }
+
+  </style>
+</head>
+<body>
+
+<header></header>
+
+<!-- KATEQORİYA NAVİQASİYA BAR -->
+<nav class="cat-subheader" id="categoryBar">
+  <div style="position:relative;">
+    <button class="cat-arrow left hidden" id="catArrowLeft" onclick="scrollCatBar(-200)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="cat-subheader-inner" id="catBarInner"></div>
+    <button class="cat-arrow right hidden" id="catArrowRight" onclick="scrollCatBar(200)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+  </div>
+</nav>
+
+<!-- SEARCH SƏHIFƏSI -->
+<div class="search-page-wrap">
+
+  <!-- ════ SOL SIDEBAR ════ -->
+  <aside class="sp-sidebar">
+
+    <!-- KATEQORİYALAR -->
+    <div class="sp-sidebar-section">
+      <div class="sp-section-head">
+        <div class="sp-sidebar-title">Kateqoriyalar</div>
+        <button class="sf-reset-btn" onclick="resetSubCats()">Sıfırla</button>
+      </div>
+      <div id="sidebarSubCats">
+        <div style="color:var(--muted);font-size:0.78rem;">Yüklənir...</div>
+      </div>
+    </div>
+
+    <!-- MAĞAZALAR -->
+    <div class="sp-sidebar-section">
+      <div class="sp-section-head">
+        <div class="sp-sidebar-title">Mağazalar</div>
+        <button class="sf-reset-btn" onclick="resetStores()">Sıfırla</button>
+      </div>
+      <div id="sidebarStores">
+        <div style="color:var(--muted);font-size:0.78rem;">Yüklənir...</div>
+      </div>
+    </div>
+
+    <!-- QİYMƏT ARALIĞI -->
+    <div class="sp-sidebar-section">
+      <div class="sp-section-head">
+        <div class="sp-sidebar-title">Qiymət aralığı</div>
+        <button class="sf-reset-btn" onclick="resetPrice()">Sıfırla</button>
+      </div>
+      <div class="sp-price-row">
+        <input type="number" id="priceMin" class="sp-price-input"
+               placeholder="Min ₼" min="0" step="0.01"
+               onkeydown="if(event.key==='Enter')setPriceFilter()">
+        <span class="sp-price-sep">—</span>
+        <input type="number" id="priceMax" class="sp-price-input"
+               placeholder="Maks ₼" min="0" step="0.01"
+               onkeydown="if(event.key==='Enter')setPriceFilter()">
+      </div>
+      <button class="sp-price-btn" onclick="setPriceFilter()">Tətbiq et</button>
+    </div>
+
+    <!-- SIRALAMA -->
+    <div class="sp-sidebar-section" style="border-bottom:none;">
+      <div class="sp-section-head" style="margin-bottom:0.75rem;">
+        <div class="sp-sidebar-title">Sıralama</div>
+      </div>
+      <button class="sf-sort-btn active" data-sort="newest"     onclick="setSortOrder('newest')">
+        🆕 Ən yenilər
+      </button>
+      <button class="sf-sort-btn"        data-sort="oldest"     onclick="setSortOrder('oldest')">
+        📅 Ən köhnələr
+      </button>
+      <button class="sf-sort-btn"        data-sort="price-asc"  onclick="setSortOrder('price-asc')">
+        💰 Qiymət: Artan
+      </button>
+      <button class="sf-sort-btn"        data-sort="price-desc" onclick="setSortOrder('price-desc')">
+        💰 Qiymət: Azalan
+      </button>
+      <button class="sf-sort-btn"        data-sort="rating"     onclick="setSortOrder('rating')">
+        ⭐ Ən yüksək puan
+      </button>
+    </div>
+
+  </aside>
+  <!-- ════════════════════ -->
+
+  <!-- ════ ANA İÇƏRİK ════ -->
+  <main class="sp-main">
+
+    <!-- Başlıq + Sayğac -->
+    <div class="sp-header">
+      <div>
+        <div class="sp-query-title" id="spQueryTitle">Axtarış nəticələri</div>
+        <div class="sp-query-count">
+          <span id="searchResultCount">—</span> məhsul tapıldı
+        </div>
+      </div>
+    </div>
+
+    <!-- Məhsul grid -->
+    <div class="product-grid" id="searchResultsGrid">
+      <div class="sp-loading">
+        <div style="font-size:2.5rem;margin-bottom:0.6rem;">🔍</div>
+        <div style="font-size:0.9rem;">Məhsullar axtarılır...</div>
+      </div>
+    </div>
+
+  </main>
+  <!-- ════════════════════ -->
+
+</div><!-- /.search-page-wrap -->
+
+<footer></footer>
+
+<!-- Auth Modal -->
+<div class="overlay" id="authModal"></div>
+<!-- Cart Modal -->
+<div class="overlay" id="cartModal"></div>
+<!-- Listing Modal (eyni kartların işləməsi üçün) -->
+<div class="overlay" id="listingModal">
+  <div class="modal listing-modal">
+    <div class="modal-header">
+      <h2 class="modal-title">Elan Əlavə Et</h2>
+      <button class="modal-close" aria-label="Bağla">✕</button>
+    </div>
+    <form id="listingForm" onsubmit="return false">
+      <div class="form-group">
+        <label class="form-label">Şəkillər <span class="muted">(maksimum 5)</span></label>
+        <input type="file" id="imgInput" accept="image/*" multiple style="display:none"
+               onchange="listing.handleImages(this.files); this.value='';" />
+        <div id="imgPreviews" class="img-previews"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="lBrand">Marka</label>
+        <input class="form-input" type="text" id="lBrand" placeholder="Zara, H&M, Nike..." maxlength="40" />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="lName">Məhsul adı</label>
+        <input class="form-input" type="text" id="lName" placeholder="Məs: Yay midi donu" maxlength="80" />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="lPrice">Qiymət (₼)</label>
+        <input class="form-input" type="number" id="lPrice" placeholder="0.00" min="0" step="0.01" />
+      </div>
+      <button type="button" class="btn-submit" id="listingSubmitBtn" onclick="listing.submit()">
+        Elanı Yayımla
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+<script src="js/icon-library.js"></script>
+<script src="js/lang.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/products.js"></script>
+<script src="js/product-detail.js"></script>
+<script src="js/wishlist.js"></script>
+<script src="js/reviews.js"></script>
+<script src="js/components.js"></script>
+<script src="js/store.js"></script>
+<script src="js/search.js"></script>
+
+<script>
+/* ══════════════════════════════════════
+   KATEQORİYA NAVİQASİYA BAR
+   — Klik ediləndə index.html-ə yönləndirir
+   ══════════════════════════════════════ */
+let CATEGORIES = [{ id: 'all', icon: '🛍️', label: 'Hamısı' }];
+
+async function loadCategoriesFromFirebase() {
+  let cats = null;
+  try {
+    const snap = await fbDb.collection('settings').doc('categories').get();
+    if (snap.exists) cats = snap.data().items || null;
+  } catch(e) {}
+
+  if (!cats) {
+    try {
+      const snap2 = await fbDb.collection('admin').doc('platformSettings').get();
+      if (snap2.exists) {
+        const d = snap2.data();
+        cats = d.mainCategories || d.categories || null;
+      }
+    } catch(e) {}
+  }
+
+  if (Array.isArray(cats) && cats.length) {
+    CATEGORIES = [
+      { id: 'all', icon: '🛍️', label: 'Hamısı' },
+      ...cats.map(c => ({
+        id:    c.id    || (c.label || '').toLowerCase().replace(/\s+/g,'-'),
+        icon:  c.icon  || '📁',
+        label: c.label || c.name || 'Kateqoriya',
+      }))
+    ];
+  }
+  buildCategoryBar();
+}
+
+function getVisibleCatCount() {
+  const w = window.innerWidth;
+  if (w <= 360)  return 5;
+  if (w <= 480)  return 6;
+  if (w <= 600)  return 7;
+  if (w <= 768)  return 9;
+  if (w <= 900)  return 11;
+  if (w <= 1100) return 13;
+  return 15;
+}
+
+function buildCategoryBar() {
+  const inner = document.getElementById('catBarInner');
+  if (!inner) return;
+  const visibleCount = getVisibleCatCount();
+  inner.innerHTML = CATEGORIES.map(cat => `
+    <a class="cat-item" href="index.html"
+       onclick="event.preventDefault(); window.location.href='index.html';"
+       data-cat="${cat.id}">
+      <div class="cat-item-icon">${typeof getLucideIcon === 'function' ? getLucideIcon(cat.icon || '📁') : cat.icon}</div>
+      <span class="cat-item-label">${cat.label}</span>
+    </a>
+  `).join('');
+
+  const items = inner.querySelectorAll('.cat-item');
+  const containerW = inner.clientWidth || window.innerWidth;
+  const itemW = Math.floor(containerW / visibleCount);
+  items.forEach(btn => { btn.style.flex = 'none'; btn.style.width = itemW + 'px'; });
+  inner.addEventListener('scroll', updateArrows, { passive: true });
+  setTimeout(updateArrows, 50);
+}
+
+function updateArrows() {
+  const inner = document.getElementById('catBarInner');
+  const left  = document.getElementById('catArrowLeft');
+  const right = document.getElementById('catArrowRight');
+  if (!inner) return;
+  left?.classList.toggle('hidden',  inner.scrollLeft <= 0);
+  right?.classList.toggle('hidden', inner.scrollLeft + inner.clientWidth >= inner.scrollWidth - 2);
+}
+
+function scrollCatBar(delta) {
+  const inner = document.getElementById('catBarInner');
+  if (inner) inner.scrollBy({ left: delta, behavior: 'smooth' });
+}
+
+let _catResizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(_catResizeTimer);
+  _catResizeTimer = setTimeout(buildCategoryBar, 150);
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadCategoriesFromFirebase();
+});
+</script>
+</body>
+</html>
