@@ -419,12 +419,15 @@ function filterOrders(filter, btnEl) {
   const activeBtn = btnEl || document.querySelector(`.ord-filter-btn[data-filter="${filter}"]`);
   if (activeBtn) activeBtn.classList.add('active');
 
-  const active   = _allOrders.filter(o => o.status !== 'delivered');
-  const previous = _allOrders.filter(o => o.status === 'delivered');
+  const active    = _allOrders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled');
+  const cancelled = _allOrders.filter(o => o.status === 'cancelled');
+  const previous  = _allOrders.filter(o => o.status === 'delivered');
 
   let filtered;
   if (filter === 'all') {
     filtered = active;
+  } else if (filter === 'cancelled') {
+    filtered = cancelled;
   } else {
     filtered = active.filter(o => o.status === filter);
   }
@@ -765,9 +768,10 @@ async function confirmCancelOrder() {
       showToast('Seçilmiş məhsullar ləğv edildi. Ödəniş 2-10 gün ərzində qaytarılacaq.');
     } else {
       await fbDb.collection('orders').doc(_cancelOrderId).update({
-        status:       'cancelled',
-        cancelReason:  reason || null,
-        cancelledAt:  firebase.firestore.FieldValue.serverTimestamp()
+        status:              'cancelled',
+        cancelReason:         reason || null,
+        cancelledByCustomer:  true,
+        cancelledAt:         firebase.firestore.FieldValue.serverTimestamp()
       });
       showToast('Sifariş ləğv edildi. Ödəniş 2-10 gün ərzində qaytarılacaq.');
     }
