@@ -320,6 +320,59 @@
       </div>
     </div>
 
+    <!-- LƏĞVETMƏ POPUP -->
+    <div id="cancelOrderModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1002;align-items:center;justify-content:center;padding:1rem;">
+      <div style="background:var(--card);border-radius:16px;width:100%;max-width:520px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+        <!-- Header -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);flex-shrink:0;">
+          <span style="font-weight:600;font-size:1rem;color:#e74c3c;">Sifarişi Ləğv Et</span>
+          <button onclick="closeCancelModal()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--muted);line-height:1;">✕</button>
+        </div>
+        <!-- Body -->
+        <div style="overflow-y:auto;padding:1.5rem;flex:1;">
+
+          <!-- Məhsul seçim bölümü (JS tərəfindən doldurulur) -->
+          <div id="cancelItemSection"></div>
+
+          <!-- Səbəb -->
+          <div style="margin-top:1.25rem;">
+            <div class="ord-detail-label">Ləğvetmə səbəbi <span style="font-weight:400;color:var(--muted);">(istəyə bağlı)</span></div>
+            <textarea id="cancelReason" rows="3" placeholder="Məs: Səhv ölçü seçdim, fikrim dəyişdi..." style="width:100%;margin-top:0.4rem;padding:0.65rem 0.85rem;border:1.5px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);font-size:0.85rem;resize:none;font-family:inherit;box-sizing:border-box;transition:border-color .18s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+          </div>
+
+          <!-- İadə məlumatları -->
+          <div style="margin-top:1.25rem;padding:1rem;background:rgba(52,152,219,.07);border:1px solid rgba(52,152,219,.2);border-radius:10px;">
+            <div style="font-size:0.82rem;font-weight:600;color:#2980b9;margin-bottom:0.5rem;">💳 Ödəniş İadəsi Haqqında</div>
+            <ul style="margin:0;padding-left:1.2rem;font-size:0.8rem;color:var(--text);line-height:1.7;">
+              <li>Ödəniş <strong>2-10 iş günü</strong> ərzində bank kartınıza qaytarılacaq</li>
+              <li>Qismən ləğvdə yalnız ləğv edilən məhsulların məbləği iadə olunur</li>
+              <li>Çatdırılma haqqı iadə edilmir (əgər tətbiq olunubsa)</li>
+              <li>İadə müddəti bankınıza görə dəyişə bilər</li>
+            </ul>
+          </div>
+
+          <!-- Şərtlər checkbox -->
+          <label style="display:flex;align-items:flex-start;gap:0.65rem;margin-top:1.25rem;cursor:pointer;">
+            <input type="checkbox" id="cancelAgree" style="width:16px;height:16px;margin-top:2px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;">
+            <span style="font-size:0.82rem;color:var(--text);line-height:1.5;">
+              Yuxarıda göstərilən ödəniş iadəsi şərtlərini oxudum və <strong>qəbul edirəm</strong>. Ləğvetmə əməliyyatının geri alına bilməyəcəyini anlayıram.
+            </span>
+          </label>
+
+          <!-- Təsdiq düyməsi -->
+          <button id="cancelConfirmBtn" onclick="confirmCancelOrder()" disabled style="
+            width:100%;margin-top:1.25rem;padding:0.85rem;
+            border:none;border-radius:10px;
+            background:#e74c3c;color:#fff;
+            font-size:0.9rem;font-weight:600;
+            cursor:not-allowed;opacity:0.45;
+            transition:opacity .2s,background .2s;
+          ">Ləğvetməni Təsdiq Et</button>
+
+        </div>
+      </div>
+    </div>
+
     <!-- WISHLIST -->
     <div id="tab-wishlist" style="display:none">
       <div class="section-card">
