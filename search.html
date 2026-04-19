@@ -471,6 +471,29 @@
       </div>
     </div>
 
+    <!-- ── Fuzzy düzəliş banneri (avtomatik göstərilir/gizlənir) ── -->
+    <div id="spFuzzyBanner" style="
+      display:none;
+      align-items:center;
+      gap:10px;
+      padding:10px 14px;
+      margin-bottom:14px;
+      background:var(--bg, #f7f4f0);
+      border:1.5px solid var(--accent, #c9a86c);
+      border-radius:12px;
+      font-size:0.83rem;
+      color:var(--text, #1a1a1a);
+      line-height:1.4;
+    ">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+           stroke="var(--accent, #c9a86c)" stroke-width="2.5"
+           stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M12 8v4m0 4h.01"/>
+      </svg>
+      <span id="spFuzzyBannerText"></span>
+    </div>
+
     <div class="product-grid" id="searchResultsGrid">
       <div class="sp-loading">
         <div style="display:flex;justify-content:center;margin-bottom:0.6rem;opacity:0.3;">
@@ -539,6 +562,8 @@
 <script src="js/product-detail.js"></script>
 <script src="js/wishlist.js"></script>
 <script src="js/reviews.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"></script>
+<script src="js/fuse-search.js"></script>
 <script src="js/components.js"></script>
 <script src="js/store.js"></script>
 <script src="js/search.js"></script>
