@@ -36,17 +36,48 @@ function applyFilter() { runSearch(); }
 function runSearch() {
   if (!_searchQuery) {
     _allSearchProducts = [...PRODUCTS];
+    _hideFuzzyBanner();
   } else {
-    const q = _searchQuery.toLowerCase();
-    _allSearchProducts = PRODUCTS.filter(p => {
-      return (p.category  && p.category.toLowerCase().includes(q))  ||
-             (p.brand     && p.brand.toLowerCase().includes(q))     ||
-             (p.name      && p.name.toLowerCase().includes(q))      ||
-             (p.storeName && p.storeName.toLowerCase().includes(q));
-    });
+    /* ── Fuzzy axtarış (fuse-search.js) ── */
+    if (typeof fuzzySearchProducts === 'function') {
+      const result = fuzzySearchProducts(_searchQuery);
+      _allSearchProducts = [
+        ...result.catMatches,
+        ...result.brandMatches,
+        ...result.nameMatches,
+      ];
+      if (result.wasCorrected) {
+        _showFuzzyBanner(_searchQuery);
+      } else {
+        _hideFuzzyBanner();
+      }
+    } else {
+      /* Fallback: köhnə dəqiq axtarış */
+      const q = _searchQuery.toLowerCase();
+      _allSearchProducts = PRODUCTS.filter(p =>
+        (p.category  && p.category.toLowerCase().includes(q))  ||
+        (p.brand     && p.brand.toLowerCase().includes(q))     ||
+        (p.name      && p.name.toLowerCase().includes(q))      ||
+        (p.storeName && p.storeName.toLowerCase().includes(q))
+      );
+      _hideFuzzyBanner();
+    }
   }
   buildSidebar();
   applySearchFilters();
+}
+
+function _showFuzzyBanner(query) {
+  let banner = document.getElementById('spFuzzyBanner');
+  if (!banner) return;
+  banner.style.display = 'flex';
+  const span = banner.querySelector('#spFuzzyBannerText');
+  if (span) span.innerHTML = `«<strong>${query}</strong>» üzrə dəqiq nəticə tapılmadı — oxşar məhsullar göstərilir`;
+}
+
+function _hideFuzzyBanner() {
+  const banner = document.getElementById('spFuzzyBanner');
+  if (banner) banner.style.display = 'none';
 }
 
 /* ══ SIDEBAR ══ */

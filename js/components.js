@@ -201,6 +201,22 @@ function initSearchPopup() {
 }
 
 function performSearch(query) {
+  /* ── Fuzzy axtarış (fuse-search.js) ── */
+  const result = (typeof fuzzySearchProducts === 'function')
+    ? fuzzySearchProducts(query)
+    : _exactSearchFallback(query);
+
+  renderSearchPopup(query, {
+    catMatches:   result.catMatches,
+    brandMatches: result.brandMatches,
+    nameMatches:  result.nameMatches,
+    stores:       Object.values(result.storeMap || {}),
+    wasCorrected: result.wasCorrected,
+  });
+}
+
+/* Fuse-search.js yüklənməyibsə köhnə dəqiq axtarış */
+function _exactSearchFallback(query) {
   const q = query.toLowerCase();
   const catMatches = [], brandMatches = [], nameMatches = [];
   const storeMap = {};
@@ -226,11 +242,11 @@ function performSearch(query) {
     }
   });
 
-  renderSearchPopup(query, { catMatches, brandMatches, nameMatches, stores: Object.values(storeMap) });
+  return { catMatches, brandMatches, nameMatches, storeMap, wasCorrected: false };
 }
 
 function renderSearchPopup(query, results) {
-  const { catMatches, brandMatches, nameMatches, stores = [] } = results;
+  const { catMatches, brandMatches, nameMatches, stores = [], wasCorrected = false } = results;
   const total = catMatches.length + brandMatches.length + nameMatches.length;
 
   const titleEl = document.getElementById('searchPopupTitle');
@@ -254,6 +270,22 @@ function renderSearchPopup(query, results) {
       </div>`;
   } else {
     let html = '';
+
+    /* ── Fuzzy düzəliş banneri ── */
+    if (wasCorrected) {
+      html += `<div style="
+        display:flex;align-items:center;gap:7px;
+        padding:7px 10px;margin-bottom:8px;
+        background:var(--bg,#f7f4f0);border:1.5px solid var(--accent,#c9a86c);
+        border-radius:9px;font-size:0.78rem;color:var(--text,#1a1a1a);
+      ">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent,#c9a86c)" stroke-width="2.5">
+          <circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/>
+        </svg>
+        <span>«<strong>${query}</strong>» üzrə nəticə tapılmadı — oxşar məhsullar göstərilir</span>
+      </div>`;
+    }
+
     if (stores.length > 0) {
       html += `<div class="search-result-group-label">${t('search.stores')}</div>`;
       html += `<div class="search-store-row">${stores.map(s => searchStoreCard(s)).join('')}</div>`;
@@ -267,7 +299,7 @@ function renderSearchPopup(query, results) {
       html += brandMatches.map(p => searchResultCard(p)).join('');
     }
     if (nameMatches.length > 0) {
-      html += `<div class="search-result-group-label">${t('search.byName')}</div>`;
+      html += `<div class="search-result-group-label">${wasCorrected ? 'Oxşar məhsullar' : t('search.byName')}</div>`;
       html += nameMatches.map(p => searchResultCard(p)).join('');
     }
     body.innerHTML = html;
