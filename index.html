@@ -334,19 +334,20 @@
   <div class="product-grid" id="productGrid"></div>
   <div id="showMoreWrap" style="display:none; text-align:center; padding: 24px 0 32px;">
     <button id="showMoreBtn" style="
-      background: var(--primary, #7c3aed);
-      color: #fff;
+      background: var(--accent, #c9a86c);
+      color: #1a1a1a;
       border: none;
       border-radius: 12px;
       padding: 12px 36px;
       font-size: 15px;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
-      transition: opacity .2s, transform .15s;
-      box-shadow: 0 2px 12px rgba(124,58,237,.25);
+      transition: opacity .2s, transform .15s, background .2s;
+      box-shadow: 0 2px 12px rgba(201,168,108,.30);
+      letter-spacing: 0.02em;
     "
-    onmouseover="this.style.opacity='.85';this.style.transform='translateY(-1px)'"
-    onmouseout="this.style.opacity='1';this.style.transform='translateY(0)'"
+    onmouseover="this.style.opacity='.85';this.style.transform='translateY(-1px)';this.style.background='#1a1a1a';this.style.color='var(--accent,#c9a86c)'"
+    onmouseout="this.style.opacity='1';this.style.transform='translateY(0)';this.style.background='var(--accent,#c9a86c)';this.style.color='#1a1a1a'"
     >Daha çox göstər</button>
   </div>
 </main>
