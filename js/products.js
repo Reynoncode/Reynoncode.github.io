@@ -238,7 +238,7 @@ function createFeaturedStoreCard(s) {
           ${logoHTML}
         </div>
         <!-- Məlumat -->
-        <div style="flex:1;min-width:0;">
+        <div class="fsc-info" style="flex:1;min-width:0;">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
             <div class="fsc-name" style="font-size:1.4rem;font-weight:800;color:#fff;letter-spacing:-0.01em;">
               ${s.storeName || 'Mağaza'}
@@ -275,8 +275,9 @@ function createFeaturedStoreCard(s) {
           padding: 14px 14px 14px 14px !important;
           gap: 12px !important;
           min-height: unset !important;
-          flex-wrap: wrap;
-          align-items: flex-start !important;
+          flex-wrap: nowrap !important;
+          align-items: center !important;
+          justify-content: flex-start !important;
         }
         .fsc-logo {
           width: 48px !important;
@@ -287,6 +288,7 @@ function createFeaturedStoreCard(s) {
         .fsc-stat-num { font-size: 0.85rem !important; }
         .fsc-stat-lbl { font-size: 0.55rem !important; }
         .fsc-inner > div:nth-child(3) { gap: 14px !important; }
+        .fsc-inner > div.fsc-info { padding-right: 70px !important; }
         .fsc-follow-btn {
           position: absolute !important;
           top: 10px !important;
