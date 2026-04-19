@@ -221,6 +221,8 @@ fbAuth.onAuthStateChanged(async (user) => {
     if (userDoc.exists && userDoc.data().role === 'admin') {
       const adminSection = document.getElementById('adminMenuSection');
       if (adminSection) adminSection.style.display = '';
+      const mobAdmin = document.getElementById('mobAdminItem');
+      if (mobAdmin) mobAdmin.style.display = '';
     }
 
     await loadUserData(user);
@@ -927,7 +929,8 @@ async function logout() {
    ══════════════════════════════ */
 function switchTab(name, el) {
   document.querySelectorAll('[id^="tab-"]').forEach(t => t.style.display = 'none');
-  document.getElementById('tab-' + name).style.display = '';
+  const targetTab = document.getElementById('tab-' + name);
+  if (targetTab) targetTab.style.display = 'block';
 
   document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
   const sidebarItem = document.querySelector(`.menu-item[data-tab="${name}"]`);
@@ -941,7 +944,7 @@ function switchTab(name, el) {
     const sidebar = document.querySelector('.sidebar');
     const mobBar  = document.getElementById('mobileMenuBar');
     if (name === 'overview') {
-      if (sidebar) sidebar.classList.remove('mobile-hidden');
+      if (sidebar) { sidebar.classList.remove('mobile-hidden'); sidebar.style.display = ''; }
       if (mobBar)  mobBar.style.display = 'none';
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
