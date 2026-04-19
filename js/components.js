@@ -70,7 +70,7 @@ async function renderHeader() {
       </button>
 
       ${user
-        ? `<button class="btn-user" id="userBtn" style="background:none; height:40px;">
+        ? `<button class="btn-user" id="userBtn">
              <div class="avatar">${avatarHTML}</div>
              <span>${user.name.split(' ')[0]}</span>
            </button>`
