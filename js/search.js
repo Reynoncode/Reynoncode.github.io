@@ -208,9 +208,7 @@ async function buildSidebar() {
         return '<label class="sf-check">' +
           '<input type="checkbox" value="' + _esc(item.key) + '"' +
           ' onchange="toggleSubCat(\'' + _esc(item.key) + '\', this.checked)">' +
-          '<span class="sf-check-icon">' + iconSvg + '</span>' +
           '<span class="sf-check-label">' + _esc(item.subLabel) + '</span>' +
-          '<span class="sf-count">(' + cnt + ')</span>' +
         '</label>';
       }).join('');
     }
@@ -257,7 +255,6 @@ async function buildSidebar() {
           '<div style="width:22px;height:22px;border-radius:50%;overflow:hidden;background:var(--text);' +
           'display:flex;align-items:center;justify-content:center;flex-shrink:0;">' + avatarHTML + '</div>' +
           '<span class="sf-check-label">' + _esc(s.name) + '</span>' +
-          '<span class="sf-count">(' + s.count + ')</span>' +
         '</label>';
       }).join('');
     }
