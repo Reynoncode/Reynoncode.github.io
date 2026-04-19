@@ -557,26 +557,61 @@
           </div>
         </div>
 
-        <!-- ══ KATEQORİYA İDARƏETMƏSİ — TAM GENİŞLƏNDİRİLMİŞ ══ -->
+        <!-- ══ KATEQORİYA İDARƏETMƏSİ — 3 BÖLÜMLÜ ══ -->
         <div class="setting-group" style="margin-bottom:1.25rem;">
           <div class="setting-group-header">
             <div style="display:flex;align-items:center;gap:0.6rem;flex:1;">
               <div class="setting-group-icon success">🗂️</div>
               <div>
                 <div class="setting-group-title">Kateqoriya İdarəetməsi</div>
-                <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">Ana kateqoriyalar həm header filtrdə, həm mağaza seçimində, həm elan formunda eyni görünür</div>
+                <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">3 səviyyəli kateqoriya sistemi: Mağaza tipləri · Ümumi kateqoriyalar · Alt kateqoriya &amp; markalar</div>
               </div>
             </div>
-            <button class="btn btn-dark btn-sm" onclick="openAddMcat()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              Yeni kateqoriya
-            </button>
           </div>
-          <div class="setting-group-body">
-            <div class="mcat-topbar">
-              <span class="mcat-topbar-title">Hər kateqoriyanın yanındakı oxu klikləyin — alt kateqoriyaları görün/əlavə edin</span>
+          <div class="setting-group-body" style="padding-top:0;">
+
+            <!-- ── TAB naviqasiyası ── -->
+            <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:1rem;">
+              <button id="catTab1Btn" onclick="switchCatTab(1)"
+                style="flex:1;padding:.55rem .5rem;border:none;background:none;cursor:pointer;font-size:.8rem;font-weight:600;border-bottom:2.5px solid transparent;margin-bottom:-2px;color:var(--accent);border-bottom-color:var(--accent);">
+                🏪 Mağaza Kateqoriyaları
+              </button>
+              <button id="catTab2Btn" onclick="switchCatTab(2)"
+                style="flex:1;padding:.55rem .5rem;border:none;background:none;cursor:pointer;font-size:.8rem;font-weight:600;border-bottom:2.5px solid transparent;margin-bottom:-2px;color:var(--muted);border-bottom-color:transparent;">
+                🗂️ Kateqoriyalar
+              </button>
             </div>
-            <div id="mainCatContainer"></div>
+
+            <!-- ── TAB 1: Mağaza Kateqoriyaları ── -->
+            <div id="catTab1" style="display:block;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.65rem;">
+                <span style="font-size:.76rem;color:var(--muted);">Mağazaların özü üçün seçdiyi tip — nə satdıqlarını göstərir</span>
+                <button class="btn btn-dark btn-sm" onclick="openAddMcat()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Yeni kateqoriya
+                </button>
+              </div>
+              <div class="mcat-topbar">
+                <span class="mcat-topbar-title">Hər kateqoriyanın yanındakı oxu klikləyin — alt kateqoriyaları görün/əlavə edin</span>
+              </div>
+              <div id="mainCatContainer"></div>
+            </div>
+
+            <!-- ── TAB 2: Platforma Kateqoriyaları ── -->
+            <div id="catTab2" style="display:none;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.65rem;">
+                <span style="font-size:.76rem;color:var(--muted);">Elan əlavə edəndə seçilən ümumi kateqoriyalar. Hər qrupun altında alt kateqoriya, alt kateqoriyanın altında markalar olur.</span>
+                <button class="btn btn-dark btn-sm" onclick="openAddPlatCat()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Yeni qrup
+                </button>
+              </div>
+              <div class="mcat-topbar">
+                <span class="mcat-topbar-title">Qrupu açmaq üçün oxu klikləyin → alt kateqoriya əlavə edin → markaları əlavə edin</span>
+              </div>
+              <div id="platCatContainer"></div>
+            </div>
+
           </div>
         </div>
 
@@ -748,7 +783,59 @@
   </div>
 </div>
 
+<!-- ══ PLATFORMA KATEQORİYA MODALI ══ -->
+<div class="mcat-modal-overlay" id="platCatModal">
+  <div class="mcat-modal-box">
+    <button class="modal-close" onclick="closePlatCatModal()" style="position:absolute;top:1rem;right:1rem;">✕</button>
+    <div class="mcat-modal-box-title" id="platCatModalTitle">Yeni Kateqoriya Qrupu</div>
+
+    <div class="form-group">
+      <label>Qrup adı <span style="color:var(--danger)">*</span></label>
+      <input type="text" id="platCatLabelInput" placeholder="məs. Kişi Geyimləri" maxlength="40"/>
+    </div>
+
+    <div class="icon-preview-row">
+      <div class="icon-preview-big" id="platCatIconDisplay"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
+      <div class="icon-preview-info">
+        <div style="font-size:0.82rem;font-weight:500;margin-bottom:2px;">Seçilmiş icon</div>
+        <small>Aşağıdan seçin və ya özünüz yazın</small>
+      </div>
+    </div>
+    <input type="hidden" id="platCatSelectedIcon" value="📁"/>
+
+    <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.4rem;font-weight:500;">Hazır iconlar:</div>
+    <div class="icon-picker-grid" id="platCatIconGrid"></div>
+
+    <div class="custom-icon-row">
+      <input type="text" class="custom-icon-inp" id="platCatCustomIconInput"
+        placeholder="Özünüz emoji yazın (məs. 👔)"
+        oninput="applyPlatCustomIcon()">
+      <button class="btn btn-outline btn-sm" onclick="applyPlatCustomIcon()">Tətbiq et</button>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closePlatCatModal()">Ləğv et</button>
+      <button class="btn btn-dark" onclick="savePlatCat()">Saxla</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
+
+<script>
+function switchCatTab(n) {
+  document.getElementById('catTab1').style.display = n===1 ? 'block' : 'none';
+  document.getElementById('catTab2').style.display = n===2 ? 'block' : 'none';
+  const accent = 'var(--accent)';
+  const muted  = 'var(--muted)';
+  const b1 = document.getElementById('catTab1Btn');
+  const b2 = document.getElementById('catTab2Btn');
+  b1.style.color = n===1 ? accent : muted;
+  b1.style.borderBottomColor = n===1 ? accent : 'transparent';
+  b2.style.color = n===2 ? accent : muted;
+  b2.style.borderBottomColor = n===2 ? accent : 'transparent';
+}
+</script>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
