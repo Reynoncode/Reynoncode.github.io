@@ -1304,7 +1304,10 @@ function closeVendorSettings() {
    ═══════════════════════════════════════════ */
 function collapseSidebarForVendor() {
   document.querySelector('.page')?.classList.add('vendor-mode');
-  document.querySelector('.sidebar')?.classList.add('collapsed');
+  // Yalnız mobil ekranda collapse et
+  if (window.innerWidth <= 768) {
+    document.querySelector('.sidebar')?.classList.add('collapsed');
+  }
 }
 
 function expandSidebar() {
