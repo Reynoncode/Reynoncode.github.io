@@ -944,8 +944,13 @@ function switchTab(name, el) {
     const sidebar = document.querySelector('.sidebar');
     const mobBar  = document.getElementById('mobileMenuBar');
     if (name === 'overview') {
-      if (sidebar) { sidebar.classList.remove('mobile-hidden'); sidebar.style.display = ''; }
+      if (sidebar) {
+        sidebar.classList.remove('mobile-hidden');
+        sidebar.classList.remove('collapsed');
+        sidebar.style.display = '';
+      }
       if (mobBar)  mobBar.style.display = 'none';
+      document.querySelector('.page')?.classList.remove('vendor-mode');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
       if (sidebar) sidebar.classList.add('mobile-hidden');
