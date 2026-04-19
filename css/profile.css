@@ -429,6 +429,8 @@ textarea { resize: vertical; min-height: 80px; }
   #mobileMenuBar .mob-item svg { width: 20px; height: 20px; }
   #mobileMenuBar .mob-item.active { color: var(--accent); border-bottom-color: var(--accent); }
   #mobileMenuBar .mob-item.logout-mob svg { stroke: #c0392b; }
+  #mobileMenuBar .mob-item--admin { color: var(--accent); }
+  #mobileMenuBar .mob-item--admin svg { stroke: var(--accent); }
 }
 
 @media (min-width: 769px) {
