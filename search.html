@@ -113,7 +113,7 @@
     .search-page-wrap {
       display: flex;
       align-items: flex-start;
-      min-height: calc(100vh - 128px);
+      min-height: calc(100vh - 64px);
     }
 
     /* ── Sol Sidebar ── */
@@ -124,8 +124,8 @@
       background: var(--surface);
       border-right: 1px solid var(--border);
       position: sticky;
-      top: 128px;
-      height: calc(100vh - 128px);
+      top: 64px;
+      height: calc(100vh - 64px);
       overflow-y: auto;
       flex-shrink: 0;
       scrollbar-width: thin;
@@ -363,8 +363,8 @@
 
 <header></header>
 
-<!-- KATEQORİYA NAVİQASİYA BAR -->
-<nav class="cat-subheader" id="categoryBar">
+<!-- KATEQORİYA NAVİQASİYA BAR — search səhifəsində gizlidir -->
+<nav class="cat-subheader" id="categoryBar" style="display:none;">
   <div style="position:relative;">
     <button class="cat-arrow left hidden" id="catArrowLeft" onclick="scrollCatBar(-200)">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
