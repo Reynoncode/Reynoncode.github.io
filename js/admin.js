@@ -69,6 +69,42 @@ let platformMainCategories = JSON.parse(JSON.stringify(DEFAULT_MAIN_CATEGORIES))
 let platformCommissions    = JSON.parse(JSON.stringify(DEFAULT_COMMISSIONS));
 let editMcatIdx = null;
 
+/* ════════════════════════════════════════════════════════
+   PLATFORMA KATEQORİYALARI (2 səviyyəli: qrup → alt)
+   Struktur: [{ id, label, icon, subCats: [{id, label, brands:[]}] }]
+════════════════════════════════════════════════════════ */
+const DEFAULT_PLATFORM_CATEGORIES = [
+  { id:'kat_geyim_kisi',   icon:'👔', label:'Kişi Geyimləri',   subCats:[
+    { id:'sub_kisi_casual', label:'Casual Geyim',   brands:[] },
+    { id:'sub_kisi_idman',  label:'İdman Geyimi',   brands:[] },
+    { id:'sub_kisi_kostyum',label:'Kostyum & Smokinq', brands:[] },
+  ]},
+  { id:'kat_geyim_qadin',  icon:'👗', label:'Qadın Geyimləri',  subCats:[
+    { id:'sub_qadin_don',   label:'Don & Ətəklər',  brands:[] },
+    { id:'sub_qadin_kofta', label:'Kofta & Bluza',  brands:[] },
+    { id:'sub_qadin_idman', label:'İdman Geyimi',   brands:[] },
+  ]},
+  { id:'kat_elektronika',  icon:'📱', label:'Elektronika',       subCats:[
+    { id:'sub_smartfon',    label:'Smartfonlar',    brands:['Apple','Samsung','Xiaomi','Honor','Huawei','Realme','OnePlus'] },
+    { id:'sub_noutbuk',     label:'Noutbuklar',     brands:['Apple','Lenovo','HP','Dell','Asus','Acer','MSI'] },
+    { id:'sub_planset',     label:'Planşetlər',     brands:['Apple','Samsung','Lenovo','Huawei'] },
+    { id:'sub_qulaqliq',    label:'Qulaqlıqlar',    brands:['Apple','Sony','Samsung','JBL','Bose'] },
+    { id:'sub_smartwatch',  label:'Smartwatch',     brands:['Apple','Samsung','Huawei','Xiaomi','Garmin'] },
+  ]},
+  { id:'kat_ev',           icon:'🏠', label:'Ev & Yaşam',        subCats:[
+    { id:'sub_mebel',       label:'Mebel',          brands:[] },
+    { id:'sub_mətbəx',      label:'Mətbəx Avadanlığı', brands:[] },
+    { id:'sub_dekor',       label:'Dekor',          brands:[] },
+  ]},
+  { id:'kat_gozellik',     icon:'💄', label:'Gözəllik & Baxım',  subCats:[
+    { id:'sub_parfum',      label:'Parfüm',         brands:['Chanel','Dior','Versace','Hugo Boss','Armani'] },
+    { id:'sub_kosmetika',   label:'Kosmetika',      brands:['MAC','NYX','Maybelline','L\'Oreal'] },
+  ]},
+];
+let platformCategories = JSON.parse(JSON.stringify(DEFAULT_PLATFORM_CATEGORIES));
+let editPlatCatIdx  = null;
+let editPlatSubIdx  = null;
+
 /* ════════════════════════════════════════
    Admin yoxlaması
 ════════════════════════════════════════ */
@@ -836,6 +872,10 @@ async function loadPlatformSettings() {
       else if (Array.isArray(d.categories) && d.categories.length)
         platformMainCategories = d.categories; // köhnə format fallback
 
+      // Platforma kateqoriyalarını yüklə (yeni 2-səviyyəli sistem)
+      if (Array.isArray(d.platformCategories) && d.platformCategories.length)
+        platformCategories = d.platformCategories;
+
       // Kampaniyaları yüklə
       platformCampaigns = Array.isArray(d.campaigns) ? d.campaigns : [];
 
@@ -860,6 +900,7 @@ async function loadPlatformSettings() {
     } else {
       platformMainCategories = JSON.parse(JSON.stringify(DEFAULT_MAIN_CATEGORIES));
       platformCommissions    = JSON.parse(JSON.stringify(DEFAULT_COMMISSIONS));
+      platformCategories     = JSON.parse(JSON.stringify(DEFAULT_PLATFORM_CATEGORIES));
     }
   } catch(e) {
     console.warn('Platforma ayarları yüklənmədi:', e.message);
@@ -867,6 +908,7 @@ async function loadPlatformSettings() {
   }
 
   renderMainCategoryList();
+  renderPlatformCategoryList();
   renderCommissionTable();
   renderCampaignPreviews();
   renderFeaturedStorePreview();
@@ -893,8 +935,9 @@ async function savePlatformSettings() {
       wishlist:       document.getElementById('cfg-wishlist').checked,
       reviews:        document.getElementById('cfg-reviews').checked,
       maxImages:      parseInt(document.getElementById('cfg-maxImages').value) || 8,
-      mainCategories: platformMainCategories,   // ← yeni format
-      categories:     platformMainCategories,   // ← köhnə uyğunluq
+      mainCategories:     platformMainCategories,   // ← yeni format
+      categories:         platformMainCategories,   // ← köhnə uyğunluq
+      platformCategories: platformCategories,       // ← 3-cü tip (qruplaşdırılmış)
       commissions:    platformCommissions,
       campaigns:      platformCampaigns,
       featuredStore:  featuredStoreObj || null,
@@ -910,6 +953,13 @@ async function savePlatformSettings() {
     //    Firestore rules-da: match /settings/{doc} { allow read: if true; allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'; }
     await fbDb.collection('settings').doc('categories').set({
       items: platformMainCategories,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedBy: currentAdmin?.uid || 'admin'
+    });
+
+    // 2b. Platforma kateqoriyalarını public collection-a yaz
+    await fbDb.collection('settings').doc('platformCategories').set({
+      items: platformCategories,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
       updatedBy: currentAdmin?.uid || 'admin'
     });
@@ -1493,3 +1543,231 @@ function escAttr(str) {
 document.getElementById('userSearchInput')?.addEventListener('keydown',    e => { if(e.key==='Enter') searchUsers(); });
 document.getElementById('listingSearchInput')?.addEventListener('keydown', e => { if(e.key==='Enter') searchListings(); });
 document.getElementById('newCommissionName')?.addEventListener('keydown',  e => { if(e.key==='Enter') confirmAddCommission(); });
+
+/* ════════════════════════════════════════════════════════
+   PLATFORMA KATEQORİYALARI — RENDER & CRUD
+   Struktur: [{ id, icon, label, subCats:[{id,label,brands:[]}] }]
+════════════════════════════════════════════════════════ */
+
+function renderPlatformCategoryList() {
+  const container = document.getElementById('platCatContainer');
+  if (!container) return;
+
+  if (!platformCategories.length) {
+    container.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:0.82rem;">Kateqoriya yoxdur</div>';
+    return;
+  }
+
+  container.innerHTML = platformCategories.map((cat, ci) => `
+    <div class="mcat-item" id="platcat-${ci}">
+      <div class="mcat-header">
+        <div class="mcat-left">
+          <span class="mcat-icon-badge">${getLucideIcon(cat.icon || '📁')}</span>
+          <span class="mcat-name-text">${escHtml(cat.label)}</span>
+          <span class="mcat-sub-count">${(cat.subCats||[]).length} qrup</span>
+        </div>
+        <div class="mcat-btns">
+          <button class="mcat-expand-btn" onclick="togglePlatCat(${ci})" title="Alt kateqoriyaları göstər">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <button class="cat-action-btn" onclick="openEditPlatCat(${ci})" title="Düzəlt" style="font-size:0.8rem;">✎</button>
+          <button class="cat-action-btn del" onclick="deletePlatCat(${ci})" title="Sil">✕</button>
+        </div>
+      </div>
+
+      <div class="mcat-subs-panel" id="platcat-subs-${ci}" style="display:none;">
+        <div id="platcat-sublist-${ci}">
+          ${renderPlatSubGroups(ci)}
+        </div>
+        <div class="add-sub-row" style="margin-top:0.6rem;">
+          <input type="text" class="add-sub-input" id="platsub-input-${ci}"
+            placeholder="Yeni kateqoriya (məs: Smartfonlar)..."
+            onkeydown="if(event.key==='Enter')addPlatSub(${ci})">
+          <button class="btn btn-dark btn-sm" onclick="addPlatSub(${ci})">+ Əlavə et</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderPlatSubGroups(ci) {
+  const subs = (platformCategories[ci] || {}).subCats || [];
+  if (!subs.length) return '<p style="font-size:0.78rem;color:var(--muted);margin:.25rem 0 .5rem;">Kateqoriya yoxdur</p>';
+  return subs.map((sub, si) => `
+    <div class="platsub-group" style="margin-bottom:0.75rem;border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.75rem;background:var(--bg-soft,#fafafa);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem;">
+        <span style="font-size:0.82rem;font-weight:600;">${escHtml(sub.label)}</span>
+        <div style="display:flex;gap:0.35rem;">
+          <button class="cat-action-btn del" onclick="deletePlatSub(${ci},${si})" title="Sil" style="font-size:0.72rem;">✕</button>
+        </div>
+      </div>
+      <div class="sub-chip-wrap" id="platbrand-list-${ci}-${si}">
+        ${renderPlatBrandChips(ci, si)}
+      </div>
+      <div class="add-sub-row" style="margin-top:0.4rem;">
+        <input type="text" class="add-sub-input" id="platbrand-input-${ci}-${si}"
+          placeholder="Marka əlavə et (məs: Apple)..."
+          onkeydown="if(event.key==='Enter')addPlatBrand(${ci},${si})">
+        <button class="btn btn-dark btn-sm" style="font-size:0.72rem;padding:0.3rem 0.6rem;" onclick="addPlatBrand(${ci},${si})">+ Əlavə et</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderPlatBrandChips(ci, si) {
+  const brands = ((platformCategories[ci]?.subCats||[])[si]?.brands) || [];
+  if (!brands.length) return '<p style="font-size:0.75rem;color:var(--muted);margin:0.2rem 0;">Marka yoxdur</p>';
+  return `<div class="sub-chip-wrap">${brands.map((b, bi) => `
+    <div class="sub-chip">
+      <span>${escHtml(b)}</span>
+      <button class="sub-chip-rm" onclick="deletePlatBrand(${ci},${si},${bi})" title="Sil">✕</button>
+    </div>
+  `).join('')}</div>`;
+}
+
+function togglePlatCat(ci) {
+  const panel = document.getElementById(`platcat-subs-${ci}`);
+  const btn   = document.querySelector(`#platcat-${ci} .mcat-expand-btn svg`);
+  if (!panel) return;
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  if (btn) btn.style.transform = isOpen ? '' : 'rotate(180deg)';
+}
+
+function addPlatSub(ci) {
+  const inp = document.getElementById(`platsub-input-${ci}`);
+  const val = inp.value.trim();
+  if (!val) { showToast('Kateqoriya adını daxil edin', 'error'); return; }
+  if (!platformCategories[ci].subCats) platformCategories[ci].subCats = [];
+  if (platformCategories[ci].subCats.find(s => s.label.toLowerCase() === val.toLowerCase())) {
+    showToast('Bu kateqoriya artıq var', 'error'); return;
+  }
+  const id = 'sub_' + Date.now();
+  platformCategories[ci].subCats.push({ id, label: val, brands: [] });
+  inp.value = '';
+  document.getElementById(`platcat-sublist-${ci}`).innerHTML = renderPlatSubGroups(ci);
+  document.querySelector(`#platcat-${ci} .mcat-sub-count`).textContent = `${platformCategories[ci].subCats.length} qrup`;
+  showToast(`"${val}" əlavə edildi`, 'success');
+}
+
+function deletePlatSub(ci, si) {
+  const name = platformCategories[ci].subCats[si].label;
+  if (!confirm(`"${name}" kateqoriyası silinsin?`)) return;
+  platformCategories[ci].subCats.splice(si, 1);
+  document.getElementById(`platcat-sublist-${ci}`).innerHTML = renderPlatSubGroups(ci);
+  document.querySelector(`#platcat-${ci} .mcat-sub-count`).textContent = `${platformCategories[ci].subCats.length} qrup`;
+  showToast(`"${name}" silindi`, 'success');
+}
+
+function addPlatBrand(ci, si) {
+  const inp = document.getElementById(`platbrand-input-${ci}-${si}`);
+  const val = inp.value.trim();
+  if (!val) { showToast('Marka adını daxil edin', 'error'); return; }
+  if (!platformCategories[ci].subCats[si].brands) platformCategories[ci].subCats[si].brands = [];
+  if (platformCategories[ci].subCats[si].brands.map(b=>b.toLowerCase()).includes(val.toLowerCase())) {
+    showToast('Bu marka artıq var', 'error'); return;
+  }
+  platformCategories[ci].subCats[si].brands.push(val);
+  inp.value = '';
+  document.getElementById(`platbrand-list-${ci}-${si}`).innerHTML = renderPlatBrandChips(ci, si);
+  showToast(`"${val}" əlavə edildi`, 'success');
+}
+
+function deletePlatBrand(ci, si, bi) {
+  const name = platformCategories[ci].subCats[si].brands[bi];
+  if (!confirm(`"${name}" markası silinsin?`)) return;
+  platformCategories[ci].subCats[si].brands.splice(bi, 1);
+  document.getElementById(`platbrand-list-${ci}-${si}`).innerHTML = renderPlatBrandChips(ci, si);
+  showToast(`"${name}" silindi`, 'success');
+}
+
+function deletePlatCat(ci) {
+  const cat = platformCategories[ci];
+  if (!cat) return;
+  if (!confirm(`"${cat.label}" qrupu silinsin?`)) return;
+  platformCategories.splice(ci, 1);
+  renderPlatformCategoryList();
+  showToast(`"${cat.label}" silindi`, 'success');
+}
+
+/* ── Platforma Kateqoriya Modalı ── */
+let _editPlatCatIdx = null;
+
+function openAddPlatCat() {
+  _editPlatCatIdx = null;
+  document.getElementById('platCatModalTitle').textContent = 'Yeni Kateqoriya Qrupu';
+  document.getElementById('platCatLabelInput').value = '';
+  const display = document.getElementById('platCatIconDisplay');
+  if (display) { display.innerHTML = getLucideIcon('📁'); display.dataset.iconId = '📁'; }
+  document.getElementById('platCatSelectedIcon').value = '📁';
+  document.getElementById('platCatCustomIconInput').value = '';
+  renderPlatIconGrid('📁');
+  document.getElementById('platCatModal').classList.add('open');
+}
+
+function openEditPlatCat(ci) {
+  _editPlatCatIdx = ci;
+  const cat = platformCategories[ci];
+  document.getElementById('platCatModalTitle').textContent = 'Qrupu Düzəlt';
+  document.getElementById('platCatLabelInput').value = cat.label;
+  const display = document.getElementById('platCatIconDisplay');
+  if (display) { display.innerHTML = getLucideIcon(cat.icon); display.dataset.iconId = cat.icon; }
+  document.getElementById('platCatSelectedIcon').value = cat.icon;
+  document.getElementById('platCatCustomIconInput').value = '';
+  renderPlatIconGrid(cat.icon);
+  document.getElementById('platCatModal').classList.add('open');
+}
+
+function closePlatCatModal() {
+  document.getElementById('platCatModal').classList.remove('open');
+  _editPlatCatIdx = null;
+}
+
+function savePlatCat() {
+  const label = document.getElementById('platCatLabelInput').value.trim();
+  const icon  = document.getElementById('platCatSelectedIcon').value || '📁';
+  if (!label) { showToast('Kateqoriya adını daxil edin', 'error'); return; }
+
+  if (_editPlatCatIdx !== null) {
+    platformCategories[_editPlatCatIdx].label = label;
+    platformCategories[_editPlatCatIdx].icon  = icon;
+    showToast(`"${label}" yeniləndi`, 'success');
+  } else {
+    const id = 'kat_' + Date.now();
+    platformCategories.push({ id, icon, label, subCats: [] });
+    showToast(`"${label}" əlavə edildi`, 'success');
+  }
+
+  renderPlatformCategoryList();
+  closePlatCatModal();
+}
+
+function renderPlatIconGrid(selected) {
+  const grid = document.getElementById('platCatIconGrid');
+  if (!grid) return;
+  grid.innerHTML = ICON_OPTIONS.map(ic => `
+    <button type="button"
+      class="icon-opt${ic === selected ? ' icon-opt-selected' : ''}"
+      onclick="selectPlatCatIcon('${ic}')"
+      title="${ic}">
+      ${getLucideIcon(ic)}
+    </button>
+  `).join('');
+}
+
+function selectPlatCatIcon(ic) {
+  const display = document.getElementById('platCatIconDisplay');
+  if (display) { display.innerHTML = getLucideIcon(ic); display.dataset.iconId = ic; }
+  document.getElementById('platCatSelectedIcon').value = ic;
+  document.getElementById('platCatCustomIconInput').value = ic;
+  document.querySelectorAll('#platCatIconGrid .icon-opt').forEach(b => {
+    b.classList.toggle('icon-opt-selected', b.title === ic);
+  });
+}
+
+function applyPlatCustomIcon() {
+  const val = document.getElementById('platCatCustomIconInput').value.trim();
+  if (!val) return;
+  const ic = LUCIDE_ICONS && LUCIDE_ICONS[val] ? val : ([...val][0] || val);
+  selectPlatCatIcon(ic);
+}
