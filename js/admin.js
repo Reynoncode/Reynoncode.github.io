@@ -908,7 +908,7 @@ async function loadPlatformSettings() {
   }
 
   renderMainCategoryList();
-  renderPlatformCategoryList();
+  // renderPlatformCategoryList() — platCatContainer mcat-subs içindədir, toggleMcat açanda render edilir
   renderCommissionTable();
   renderCampaignPreviews();
   renderFeaturedStorePreview();
@@ -1008,7 +1008,10 @@ async function savePlatformSettings() {
 }
  
 /* ════════════════════════════════════════════════════════
-   ANA KATEQORİYA — RENDER
+   MAĞAZA KATEQORİYALARI — 3 SƏVİYYƏLİ RENDER
+   Səviyyə 1: Mağaza Kateqoriyası  (platformMainCategories)
+   Səviyyə 2: Məhsul Kateqoriyası  (platformCategories)
+   Səviyyə 3: Alt Kateqoriyalar     (platformCategories[ci].subCats)
 ════════════════════════════════════════════════════════ */
 function renderMainCategoryList() {
   const container = document.getElementById('mainCatContainer');
@@ -1025,10 +1028,10 @@ function renderMainCategoryList() {
         <div class="mcat-left">
           <span class="mcat-icon-badge">${getLucideIcon(cat.icon || '📁')}</span>
           <span class="mcat-name-text">${escHtml(cat.label)}</span>
-          <span class="mcat-sub-count">${(cat.subCats||[]).length} alt</span>
+          <span class="mcat-sub-count" id="mcat-prodcount-${i}">${(platformCategories||[]).length} məhsul kat.</span>
         </div>
         <div class="mcat-btns">
-          <button class="mcat-expand-btn" onclick="toggleMcat(${i})" title="Alt kateqoriyalar göstər">
+          <button class="mcat-expand-btn" onclick="toggleMcat(${i})" title="Məhsul Kateqoriyaları göstər">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
           <button class="cat-action-btn" onclick="openEditMcat(${i})" title="Düzəlt" style="font-size:0.8rem;">✎</button>
@@ -1036,30 +1039,24 @@ function renderMainCategoryList() {
         </div>
       </div>
 
+      <!-- Səviyyə 2: Məhsul Kateqoriyaları bölümü -->
       <div class="mcat-subs-panel" id="mcat-subs-${i}" style="display:none;">
-        <div id="sub-list-${i}" class="sub-chips-list">
-          ${renderSubCatChips(i)}
+
+        <!-- Məhsul Kateqoriyaları başlıq -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:0.55rem 0.6rem;background:var(--bg-soft,#f8f8f8);border-radius:7px;margin-bottom:0.5rem;border:1px solid var(--border);">
+          <span style="font-size:0.78rem;font-weight:700;color:var(--text);">🗂️ Məhsul Kateqoriyaları</span>
+          <button class="btn btn-dark btn-sm" style="font-size:0.72rem;padding:0.28rem 0.65rem;" onclick="openAddPlatCat()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Yeni
+          </button>
         </div>
-        <div class="add-sub-row">
-          <input type="text" class="add-sub-input" id="sub-input-${i}"
-            placeholder="Yeni alt kateqoriya..."
-            onkeydown="if(event.key==='Enter')addSubCat(${i})">
-          <button class="btn btn-dark btn-sm" onclick="addSubCat(${i})">+ Əlavə et</button>
-        </div>
+
+        <!-- platCatContainer bu mcat-in içindəki wrapper -->
+        <div id="platCatContainer" style="padding-left:0.5rem;"></div>
+
       </div>
     </div>
   `).join('');
-}
-
-function renderSubCatChips(catIdx) {
-  const subs = (platformMainCategories[catIdx] || {}).subCats || [];
-  if (!subs.length) return '<p style="font-size:0.78rem;color:var(--muted);margin:.25rem 0;">Alt kateqoriya yoxdur</p>';
-  return `<div class="sub-chip-wrap">${subs.map((sub, si) => `
-    <div class="sub-chip">
-      <span>${escHtml(sub)}</span>
-      <button class="sub-chip-rm" onclick="deleteSubCat(${catIdx},${si})" title="Sil">✕</button>
-    </div>
-  `).join('')}</div>`;
 }
 
 function toggleMcat(i) {
@@ -1069,41 +1066,14 @@ function toggleMcat(i) {
   const isOpen = panel.style.display !== 'none';
   panel.style.display = isOpen ? 'none' : 'block';
   if (btn) btn.style.transform = isOpen ? '' : 'rotate(180deg)';
-}
-
-function addSubCat(catIdx) {
-  const inp = document.getElementById(`sub-input-${catIdx}`);
-  const val = inp.value.trim();
-  if (!val) { showToast('Alt kateqoriya adını daxil edin', 'error'); return; }
-  if (!platformMainCategories[catIdx].subCats) platformMainCategories[catIdx].subCats = [];
-  if (platformMainCategories[catIdx].subCats.map(s => s.toLowerCase()).includes(val.toLowerCase())) {
-    showToast('Bu alt kateqoriya artıq var', 'error'); return;
-  }
-  platformMainCategories[catIdx].subCats.push(val);
-  inp.value = '';
-  document.getElementById(`sub-list-${catIdx}`).innerHTML = renderSubCatChips(catIdx);
-  updateSubCount(catIdx);
-  showToast(`"${val}" əlavə edildi`, 'success');
-}
-
-function deleteSubCat(catIdx, subIdx) {
-  const name = platformMainCategories[catIdx].subCats[subIdx];
-  if (!confirm(`"${name}" silinsin?`)) return;
-  platformMainCategories[catIdx].subCats.splice(subIdx, 1);
-  document.getElementById(`sub-list-${catIdx}`).innerHTML = renderSubCatChips(catIdx);
-  updateSubCount(catIdx);
-  showToast(`"${name}" silindi`, 'success');
-}
-
-function updateSubCount(catIdx) {
-  const el = document.querySelector(`#mcat-${catIdx} .mcat-sub-count`);
-  if (el) el.textContent = `${(platformMainCategories[catIdx].subCats||[]).length} alt`;
+  // platCatContainer yalnız bir yer olduğundan render et
+  if (!isOpen) renderPlatformCategoryList();
 }
 
 function deleteMainCategory(i) {
   const cat = platformMainCategories[i];
   if (!cat) return;
-  if (!confirm(`"${cat.label}" kateqoriyası və bütün alt kateqoriyaları silinsin?`)) return;
+  if (!confirm(`"${cat.label}" kateqoriyası silinsin?`)) return;
   platformMainCategories.splice(i, 1);
   renderMainCategoryList();
   showToast(`"${cat.label}" silindi`, 'success');
@@ -1114,7 +1084,7 @@ function deleteMainCategory(i) {
 ════════════════════════════════════════════════════════ */
 function openAddMcat() {
   editMcatIdx = null;
-  document.getElementById('mcatModalTitle').textContent = 'Yeni Ana Kateqoriya';
+  document.getElementById('mcatModalTitle').textContent = 'Yeni Mağaza Kateqoriyası';
   document.getElementById('mcatLabelInput').value = '';
   const display = document.getElementById('mcatIconDisplay');
   if (display) { display.innerHTML = getLucideIcon('📁'); display.dataset.iconId = '📁'; }
@@ -1127,7 +1097,7 @@ function openAddMcat() {
 function openEditMcat(i) {
   editMcatIdx = i;
   const cat = platformMainCategories[i];
-  document.getElementById('mcatModalTitle').textContent = 'Kateqoriyanı Düzəlt';
+  document.getElementById('mcatModalTitle').textContent = 'Mağaza Kateqoriyasını Düzəlt';
   document.getElementById('mcatLabelInput').value = cat.label;
   const display = document.getElementById('mcatIconDisplay');
   if (display) { display.innerHTML = getLucideIcon(cat.icon); display.dataset.iconId = cat.icon; }
@@ -1545,8 +1515,10 @@ document.getElementById('listingSearchInput')?.addEventListener('keydown', e => 
 document.getElementById('newCommissionName')?.addEventListener('keydown',  e => { if(e.key==='Enter') confirmAddCommission(); });
 
 /* ════════════════════════════════════════════════════════
-   PLATFORMA KATEQORİYALARI — RENDER & CRUD
+   MƏHSUL KATEQORİYALARI — RENDER & CRUD  (Səviyyə 2 & 3)
    Struktur: [{ id, icon, label, subCats:[{id,label,brands:[]}] }]
+   • platCat     = Məhsul Kateqoriyası  (Səviyyə 2)
+   • subCat.label = Alt Kateqoriya       (Səviyyə 3)
 ════════════════════════════════════════════════════════ */
 
 function renderPlatformCategoryList() {
@@ -1554,17 +1526,17 @@ function renderPlatformCategoryList() {
   if (!container) return;
 
   if (!platformCategories.length) {
-    container.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:0.82rem;">Kateqoriya yoxdur</div>';
+    container.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--muted);font-size:0.82rem;">Məhsul kateqoriyası yoxdur</div>';
     return;
   }
 
   container.innerHTML = platformCategories.map((cat, ci) => `
-    <div class="mcat-item" id="platcat-${ci}">
+    <div class="mcat-item" id="platcat-${ci}" style="margin-bottom:0.45rem;">
       <div class="mcat-header">
         <div class="mcat-left">
-          <span class="mcat-icon-badge">${getLucideIcon(cat.icon || '📁')}</span>
-          <span class="mcat-name-text">${escHtml(cat.label)}</span>
-          <span class="mcat-sub-count">${(cat.subCats||[]).length} qrup</span>
+          <span class="mcat-icon-badge" style="font-size:0.9rem;">${getLucideIcon(cat.icon || '📁')}</span>
+          <span class="mcat-name-text" style="font-size:0.83rem;">${escHtml(cat.label)}</span>
+          <span class="mcat-sub-count" id="platcat-subcount-${ci}">${(cat.subCats||[]).length} alt</span>
         </div>
         <div class="mcat-btns">
           <button class="mcat-expand-btn" onclick="togglePlatCat(${ci})" title="Alt kateqoriyaları göstər">
@@ -1575,13 +1547,17 @@ function renderPlatformCategoryList() {
         </div>
       </div>
 
-      <div class="mcat-subs-panel" id="platcat-subs-${ci}" style="display:none;">
-        <div id="platcat-sublist-${ci}">
-          ${renderPlatSubGroups(ci)}
+      <!-- Səviyyə 3: Alt Kateqoriyalar -->
+      <div class="mcat-subs-panel" id="platcat-subs-${ci}" style="display:none;padding-left:0.5rem;">
+        <div style="font-size:0.72rem;font-weight:600;color:var(--muted);margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:.04em;">
+          📋 Alt Kateqoriyalar
         </div>
-        <div class="add-sub-row" style="margin-top:0.6rem;">
+        <div id="platcat-sublist-${ci}">
+          ${renderPlatSubAsChips(ci)}
+        </div>
+        <div class="add-sub-row" style="margin-top:0.5rem;">
           <input type="text" class="add-sub-input" id="platsub-input-${ci}"
-            placeholder="Yeni kateqoriya (məs: Smartfonlar)..."
+            placeholder="Yeni alt kateqoriya..."
             onkeydown="if(event.key==='Enter')addPlatSub(${ci})">
           <button class="btn btn-dark btn-sm" onclick="addPlatSub(${ci})">+ Əlavə et</button>
         </div>
@@ -1590,37 +1566,14 @@ function renderPlatformCategoryList() {
   `).join('');
 }
 
-function renderPlatSubGroups(ci) {
+/* Alt kateqoriyaları chip kimi render et (səviyyə 3) */
+function renderPlatSubAsChips(ci) {
   const subs = (platformCategories[ci] || {}).subCats || [];
-  if (!subs.length) return '<p style="font-size:0.78rem;color:var(--muted);margin:.25rem 0 .5rem;">Kateqoriya yoxdur</p>';
-  return subs.map((sub, si) => `
-    <div class="platsub-group" style="margin-bottom:0.75rem;border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.75rem;background:var(--bg-soft,#fafafa);">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem;">
-        <span style="font-size:0.82rem;font-weight:600;">${escHtml(sub.label)}</span>
-        <div style="display:flex;gap:0.35rem;">
-          <button class="cat-action-btn del" onclick="deletePlatSub(${ci},${si})" title="Sil" style="font-size:0.72rem;">✕</button>
-        </div>
-      </div>
-      <div class="sub-chip-wrap" id="platbrand-list-${ci}-${si}">
-        ${renderPlatBrandChips(ci, si)}
-      </div>
-      <div class="add-sub-row" style="margin-top:0.4rem;">
-        <input type="text" class="add-sub-input" id="platbrand-input-${ci}-${si}"
-          placeholder="Marka əlavə et (məs: Apple)..."
-          onkeydown="if(event.key==='Enter')addPlatBrand(${ci},${si})">
-        <button class="btn btn-dark btn-sm" style="font-size:0.72rem;padding:0.3rem 0.6rem;" onclick="addPlatBrand(${ci},${si})">+ Əlavə et</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-function renderPlatBrandChips(ci, si) {
-  const brands = ((platformCategories[ci]?.subCats||[])[si]?.brands) || [];
-  if (!brands.length) return '<p style="font-size:0.75rem;color:var(--muted);margin:0.2rem 0;">Marka yoxdur</p>';
-  return `<div class="sub-chip-wrap">${brands.map((b, bi) => `
+  if (!subs.length) return '<p style="font-size:0.78rem;color:var(--muted);margin:.25rem 0;">Alt kateqoriya yoxdur</p>';
+  return `<div class="sub-chip-wrap">${subs.map((sub, si) => `
     <div class="sub-chip">
-      <span>${escHtml(b)}</span>
-      <button class="sub-chip-rm" onclick="deletePlatBrand(${ci},${si},${bi})" title="Sil">✕</button>
+      <span>${escHtml(sub.label || sub)}</span>
+      <button class="sub-chip-rm" onclick="deletePlatSub(${ci},${si})" title="Sil">✕</button>
     </div>
   `).join('')}</div>`;
 }
@@ -1637,54 +1590,34 @@ function togglePlatCat(ci) {
 function addPlatSub(ci) {
   const inp = document.getElementById(`platsub-input-${ci}`);
   const val = inp.value.trim();
-  if (!val) { showToast('Kateqoriya adını daxil edin', 'error'); return; }
+  if (!val) { showToast('Alt kateqoriya adını daxil edin', 'error'); return; }
   if (!platformCategories[ci].subCats) platformCategories[ci].subCats = [];
-  if (platformCategories[ci].subCats.find(s => s.label.toLowerCase() === val.toLowerCase())) {
-    showToast('Bu kateqoriya artıq var', 'error'); return;
-  }
+  const exists = platformCategories[ci].subCats.find(s =>
+    (s.label||s).toLowerCase() === val.toLowerCase()
+  );
+  if (exists) { showToast('Bu alt kateqoriya artıq var', 'error'); return; }
   const id = 'sub_' + Date.now();
   platformCategories[ci].subCats.push({ id, label: val, brands: [] });
   inp.value = '';
-  document.getElementById(`platcat-sublist-${ci}`).innerHTML = renderPlatSubGroups(ci);
-  document.querySelector(`#platcat-${ci} .mcat-sub-count`).textContent = `${platformCategories[ci].subCats.length} qrup`;
+  document.getElementById(`platcat-sublist-${ci}`).innerHTML = renderPlatSubAsChips(ci);
+  document.getElementById(`platcat-subcount-${ci}`).textContent = `${platformCategories[ci].subCats.length} alt`;
   showToast(`"${val}" əlavə edildi`, 'success');
 }
 
 function deletePlatSub(ci, si) {
-  const name = platformCategories[ci].subCats[si].label;
-  if (!confirm(`"${name}" kateqoriyası silinsin?`)) return;
+  const sub  = platformCategories[ci].subCats[si];
+  const name = sub.label || sub;
+  if (!confirm(`"${name}" alt kateqoriyası silinsin?`)) return;
   platformCategories[ci].subCats.splice(si, 1);
-  document.getElementById(`platcat-sublist-${ci}`).innerHTML = renderPlatSubGroups(ci);
-  document.querySelector(`#platcat-${ci} .mcat-sub-count`).textContent = `${platformCategories[ci].subCats.length} qrup`;
-  showToast(`"${name}" silindi`, 'success');
-}
-
-function addPlatBrand(ci, si) {
-  const inp = document.getElementById(`platbrand-input-${ci}-${si}`);
-  const val = inp.value.trim();
-  if (!val) { showToast('Marka adını daxil edin', 'error'); return; }
-  if (!platformCategories[ci].subCats[si].brands) platformCategories[ci].subCats[si].brands = [];
-  if (platformCategories[ci].subCats[si].brands.map(b=>b.toLowerCase()).includes(val.toLowerCase())) {
-    showToast('Bu marka artıq var', 'error'); return;
-  }
-  platformCategories[ci].subCats[si].brands.push(val);
-  inp.value = '';
-  document.getElementById(`platbrand-list-${ci}-${si}`).innerHTML = renderPlatBrandChips(ci, si);
-  showToast(`"${val}" əlavə edildi`, 'success');
-}
-
-function deletePlatBrand(ci, si, bi) {
-  const name = platformCategories[ci].subCats[si].brands[bi];
-  if (!confirm(`"${name}" markası silinsin?`)) return;
-  platformCategories[ci].subCats[si].brands.splice(bi, 1);
-  document.getElementById(`platbrand-list-${ci}-${si}`).innerHTML = renderPlatBrandChips(ci, si);
+  document.getElementById(`platcat-sublist-${ci}`).innerHTML = renderPlatSubAsChips(ci);
+  document.getElementById(`platcat-subcount-${ci}`).textContent = `${platformCategories[ci].subCats.length} alt`;
   showToast(`"${name}" silindi`, 'success');
 }
 
 function deletePlatCat(ci) {
   const cat = platformCategories[ci];
   if (!cat) return;
-  if (!confirm(`"${cat.label}" qrupu silinsin?`)) return;
+  if (!confirm(`"${cat.label}" məhsul kateqoriyası silinsin?`)) return;
   platformCategories.splice(ci, 1);
   renderPlatformCategoryList();
   showToast(`"${cat.label}" silindi`, 'success');
@@ -1695,7 +1628,7 @@ let _editPlatCatIdx = null;
 
 function openAddPlatCat() {
   _editPlatCatIdx = null;
-  document.getElementById('platCatModalTitle').textContent = 'Yeni Kateqoriya Qrupu';
+  document.getElementById('platCatModalTitle').textContent = 'Yeni Məhsul Kateqoriyası';
   document.getElementById('platCatLabelInput').value = '';
   const display = document.getElementById('platCatIconDisplay');
   if (display) { display.innerHTML = getLucideIcon('📁'); display.dataset.iconId = '📁'; }
@@ -1708,7 +1641,7 @@ function openAddPlatCat() {
 function openEditPlatCat(ci) {
   _editPlatCatIdx = ci;
   const cat = platformCategories[ci];
-  document.getElementById('platCatModalTitle').textContent = 'Qrupu Düzəlt';
+  document.getElementById('platCatModalTitle').textContent = 'Məhsul Kateqoriyasını Düzəlt';
   document.getElementById('platCatLabelInput').value = cat.label;
   const display = document.getElementById('platCatIconDisplay');
   if (display) { display.innerHTML = getLucideIcon(cat.icon); display.dataset.iconId = cat.icon; }

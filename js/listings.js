@@ -74,20 +74,24 @@ function onMainCatChange() {
 }
 
 function onPlatCatChange() {
-  const platCatId   = document.getElementById('lmPlatCategory')?.value;
-  const brandWrap   = document.getElementById('lmBrandCatWrap');
-  const brandSelect = document.getElementById('lmBrandCategory');
-  if (!brandWrap || !brandSelect) return;
-  // Find the subCat object that matches selected id
-  let brands = [];
+  const platCatId = document.getElementById('lmPlatCategory')?.value;
+  const subWrap   = document.getElementById('lmSubCatWrap');
+  const subSelect = document.getElementById('lmSubCategory');
+  if (!subWrap || !subSelect) return;
+
+  // Seçilən platCat-ın subCats-ını tap
+  let subs = [];
   for (const grp of _listingPlatCats) {
+    if (grp.id === platCatId) { subs = grp.subCats || []; break; }
+    // Köhnə format: subCat id-si platCatId-yə uyğun gələ bilər
     const sub = (grp.subCats || []).find(s => s.id === platCatId);
-    if (sub) { brands = sub.brands || []; break; }
+    if (sub) { subs = sub.brands ? sub.brands.map(b => ({id:b, label:b})) : []; break; }
   }
-  if (!brands.length) { brandWrap.style.display = 'none'; brandSelect.innerHTML = ''; return; }
-  brandSelect.innerHTML = `<option value="">— Marka seçin —</option>` +
-    brands.map(b => `<option value="${b}">${b}</option>`).join('');
-  brandWrap.style.display = '';
+
+  if (!subs.length) { subWrap.style.display = 'none'; subSelect.innerHTML = ''; return; }
+  subSelect.innerHTML = `<option value="">— Seçin —</option>` +
+    subs.map(s => `<option value="${s.id || s.label || s}">${s.label || s}</option>`).join('');
+  subWrap.style.display = '';
 }
 
 function buildMainCatSelect() {
@@ -100,19 +104,15 @@ function buildMainCatSelect() {
 function buildPlatCatSelect() {
   const sel = document.getElementById('lmPlatCategory');
   if (!sel) return;
-  // Qruplaşdırılmış <optgroup> formatında göstər
+  // Məhsul kateqoriyalarını birbaşa option kimi göstər (alt kateqoriyalar ayrı selectordan seçilir)
   if (!_listingPlatCats.length) {
     sel.innerHTML = '<option value="">Kateqoriya yoxdur</option>';
     return;
   }
   sel.innerHTML = `<option value="">— Seçin —</option>` +
-    _listingPlatCats.map(grp => {
-      const subs = (grp.subCats || []);
-      if (!subs.length) return '';
-      return `<optgroup label="${grp.icon ? grp.icon + ' ' : ''}${grp.label}">` +
-        subs.map(s => `<option value="${s.id}">${s.label}</option>`).join('') +
-        `</optgroup>`;
-    }).join('');
+    _listingPlatCats.map(grp =>
+      `<option value="${grp.id}">${grp.icon ? grp.icon + ' ' : ''}${grp.label}</option>`
+    ).join('');
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -302,34 +302,26 @@ function injectListingModal() {
             <input type="text" class="lm-input" id="lmStoreName" readonly placeholder="Yüklənir..." style="background:#f8f8f8;cursor:not-allowed;">
           </div>
           <div class="lm-field">
-            <label class="lm-label">Ana Kateqoriya <span style="color:var(--danger)">*</span></label>
+            <label class="lm-label">Mağaza Kateqoriyası <span style="color:var(--danger)">*</span></label>
             <select class="lm-input lm-select" id="lmMainCategory" onchange="onMainCatChange()">
               <option value="">Seçin...</option>
             </select>
           </div>
         </div>
 
-        <!-- Alt Kateqoriya -->
-        <div class="lm-field lm-field-full" id="lmSubCatWrap" style="display:none;margin-bottom:0.75rem;">
-          <label class="lm-label">Alt Kateqoriya</label>
-          <select class="lm-input lm-select" id="lmSubCategory">
-            <option value="">— Seçin —</option>
-          </select>
-        </div>
-
-        <!-- Platforma Kateqoriyası (qruplaşdırılmış) -->
+        <!-- Məhsul Kateqoriyası (platCats — qruplaşdırılmış optgroup) -->
         <div class="lm-field lm-field-full" style="margin-bottom:0.75rem;">
-          <label class="lm-label">Kateqoriya <span style="font-size:0.72rem;color:var(--muted);">(isteğe bağlı)</span></label>
+          <label class="lm-label">Məhsul Kateqoriyası <span style="font-size:0.72rem;color:var(--muted);">(isteğe bağlı)</span></label>
           <select class="lm-input lm-select" id="lmPlatCategory" onchange="onPlatCatChange()">
             <option value="">— Seçin —</option>
           </select>
         </div>
 
-        <!-- Marka (platforma kateqoriyasına bağlı) -->
-        <div class="lm-field lm-field-full" id="lmBrandCatWrap" style="display:none;margin-bottom:0.75rem;">
-          <label class="lm-label">Marka</label>
-          <select class="lm-input lm-select" id="lmBrandCategory">
-            <option value="">— Marka seçin —</option>
+        <!-- Alt Kateqoriya (seçilən Məhsul Kateqoriyasının subCats-ı) -->
+        <div class="lm-field lm-field-full" id="lmSubCatWrap" style="display:none;margin-bottom:0.75rem;">
+          <label class="lm-label">Alt Kateqoriya</label>
+          <select class="lm-input lm-select" id="lmSubCategory">
+            <option value="">— Seçin —</option>
           </select>
         </div>
 
@@ -572,9 +564,7 @@ async function openListingModal(editId = null) {
   document.getElementById('lmSubCatWrap').style.display = 'none';
   const platCatEl = document.getElementById('lmPlatCategory');
   if (platCatEl) platCatEl.value = '';
-  if (document.getElementById('lmBrandCatWrap')) document.getElementById('lmBrandCatWrap').style.display = 'none';
-  const brandCatEl = document.getElementById('lmBrandCategory');
-  if (brandCatEl) brandCatEl.value = '';
+  // lmBrandCatWrap artıq UI-dan silindi
 
   if (_listingMainCats.length === 0) { await loadListingCategories(); }
   buildMainCatSelect();
@@ -601,13 +591,7 @@ async function openListingModal(editId = null) {
       lState.colors = d.colors || [];
       lState.sizes  = d.sizes  || [];
       onMainCatChange();
-      if (d.subCategory) {
-        setTimeout(() => {
-          const subSel = document.getElementById('lmSubCategory');
-          if (subSel) subSel.value = d.subCategory;
-        }, 50);
-      }
-      // Platforma kateqoriyası və markasını bərpa et
+      // Məhsul kateqoriyası və alt kateqoriyanı bərpa et
       if (d.platCategory) {
         setTimeout(() => {
           const platSel = document.getElementById('lmPlatCategory');
@@ -615,9 +599,9 @@ async function openListingModal(editId = null) {
             platSel.value = d.platCategory;
             onPlatCatChange();
             setTimeout(() => {
-              const bSel = document.getElementById('lmBrandCategory');
-              if (bSel && d.brandCategory) bSel.value = d.brandCategory;
-            }, 50);
+              const subSel2 = document.getElementById('lmSubCategory');
+              if (subSel2 && d.subCategory) subSel2.value = d.subCategory;
+            }, 60);
           }
         }, 50);
       }
@@ -1076,7 +1060,7 @@ async function submitListing() {
 
   if (!name)              { showToast('Məhsul adını daxil edin'); return; }
   if (!price || price<=0) { showToast('Düzgün qiymət daxil edin'); return; }
-  if (!mainCatId)         { showToast('Ana kateqoriya seçin'); return; }
+  if (!mainCatId)         { showToast('Mağaza kateqoriyası seçin'); return; }
 
   const btn  = document.getElementById('lmSubmitBtn');
   const span = document.getElementById('lmSubmitText');
@@ -1086,14 +1070,11 @@ async function submitListing() {
   const oldPriceRaw = parseFloat(document.getElementById('lmOldPrice').value);
   const mainCat     = _listingMainCats.find(c => c.id === mainCatId);
 
-  // platCategory label-ini tap
+  // platCategory label-ini tap (platCategory = grp.id)
   let platCatLabel = '';
-  let brandCatLabel = brandCategory;
   if (platCategory) {
-    for (const grp of _listingPlatCats) {
-      const sub = (grp.subCats || []).find(s => s.id === platCategory);
-      if (sub) { platCatLabel = sub.label; break; }
-    }
+    const grp = _listingPlatCats.find(g => g.id === platCategory);
+    if (grp) platCatLabel = grp.label;
   }
 
   const payload = {
@@ -1109,7 +1090,7 @@ async function submitListing() {
     subCategory,
     platCategory,
     platCatLabel,
-    brandCategory:  brandCatLabel,
+    brandCategory:  '',  // artıq UI-da yoxdur
     category:       mainCatId,
     badge:          (oldPriceRaw > price) ? 'Endirim' : 'Yeni',
     imgs:           lState.images,
