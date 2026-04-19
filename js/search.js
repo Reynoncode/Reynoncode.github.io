@@ -84,55 +84,103 @@ function _hideFuzzyBanner() {
 async function buildSidebar() {
   const first3 = _allSearchProducts.slice(0, 3);
 
-  // Birinci 3 məhsulun ana kateqoriya ID-lərini topla
-  const mainCatIds = new Set();
+  // Birinci 3 məhsulun platCategory (Məhsul Kateqoriyası) və ana kateqoriya ID-lərini topla
+  const platCatIds  = new Set();
+  const mainCatIds  = new Set();
   first3.forEach(p => {
-    if (p.category && p.category.trim()) mainCatIds.add(p.category.trim());
+    if (p.platCategory && p.platCategory.trim()) platCatIds.add(p.platCategory.trim());
+    if (p.category     && p.category.trim())     mainCatIds.add(p.category.trim());
     (p.vendorCategories || []).forEach(c => { if (c) mainCatIds.add(c.trim()); });
   });
 
-  // Firebase-dən platforma kateqoriyalarını yüklə
-  let platformCats = [];
+  // ── 1. Əvvəlcə platformCategories-dən platCategory-nin subCats-larını yüklə ──
+  let platCatGroups = [];
+  try {
+    const platSnap = await fbDb.collection('settings').doc('platformCategories').get();
+    if (platSnap.exists) platCatGroups = platSnap.data().items || [];
+  } catch(e) {}
+
+  // Fallback: admin/platformSettings → platformCategories
+  if (!platCatGroups.length) {
+    try {
+      const adminSnap = await fbDb.collection('admin').doc('platformSettings').get();
+      if (adminSnap.exists) platCatGroups = adminSnap.data().platformCategories || [];
+    } catch(e) {}
+  }
+
+  // ── 2. Ana kateqoriya subCats-ları üçün platformSettings yüklə ──
+  let mainPlatformCats = [];
   try {
     const snap = await fbDb.collection('admin').doc('platformSettings').get();
     if (snap.exists) {
       const d = snap.data();
-      platformCats = d.mainCategories || d.categories || [];
+      mainPlatformCats = d.mainCategories || d.categories || [];
     }
   } catch(e) {}
 
-  if (!platformCats.length) {
+  if (!mainPlatformCats.length) {
     try {
       const snap2 = await fbDb.collection('settings').doc('categories').get();
-      if (snap2.exists) platformCats = snap2.data().items || [];
+      if (snap2.exists) mainPlatformCats = snap2.data().items || [];
     } catch(e) {}
   }
 
-  // Həmin ana kateqoriyaların alt kateqoriyalarını topla
+  // ── 3. subCatsToShow-u platCategory-yə görə qur ──
   const subCatsToShow = [];
-  mainCatIds.forEach(catId => {
-    const mainCat = platformCats.find(c =>
-      c.id === catId || (c.label || '').toLowerCase() === catId.toLowerCase()
-    );
-    if (mainCat && Array.isArray(mainCat.subCats) && mainCat.subCats.length) {
-      mainCat.subCats.forEach(sub => {
-        const fullKey = mainCat.id + '::' + sub;
-        if (!subCatsToShow.find(s => s.key === fullKey)) {
-          subCatsToShow.push({
-            key:       fullKey,
-            subLabel:  sub,
-            mainCatId: mainCat.id,
-            icon:      mainCat.icon || '📁'
-          });
-        }
-      });
-    }
-  });
 
-  // Alt kateqoriya yoxdursa, birbaşa məhsulların ana kateqoriyalarını göstər
+  if (platCatIds.size > 0 && platCatGroups.length > 0) {
+    // Məhsul Kateqoriyası (platCategory) varsa — onun subCats-larını göstər
+    platCatIds.forEach(pid => {
+      const grp = platCatGroups.find(g =>
+        g.id === pid || (g.label || '').toLowerCase() === pid.toLowerCase()
+      );
+      if (grp && Array.isArray(grp.subCats) && grp.subCats.length) {
+        grp.subCats.forEach(sub => {
+          const subLabel = typeof sub === 'object' ? (sub.label || sub.id || '') : sub;
+          const subId    = typeof sub === 'object' ? (sub.id || sub.label || '') : sub;
+          const fullKey  = 'plat::' + grp.id + '::' + subId;
+          if (!subCatsToShow.find(s => s.key === fullKey)) {
+            subCatsToShow.push({
+              key:        fullKey,
+              subLabel:   subLabel,
+              mainCatId:  grp.id,
+              icon:       grp.icon || '📁',
+              isPlatCat:  true,
+            });
+          }
+        });
+      }
+    });
+  }
+
+  // platCategory subCats tapılmadısa — köhnə davranış: ana kateqoriya subCats-ları
+  if (subCatsToShow.length === 0) {
+    mainCatIds.forEach(catId => {
+      const mainCat = mainPlatformCats.find(c =>
+        c.id === catId || (c.label || '').toLowerCase() === catId.toLowerCase()
+      );
+      if (mainCat && Array.isArray(mainCat.subCats) && mainCat.subCats.length) {
+        mainCat.subCats.forEach(sub => {
+          const subLabel = typeof sub === 'object' ? (sub.label || sub.id || '') : sub;
+          const subId    = typeof sub === 'object' ? (sub.id || sub.label || '') : sub;
+          const fullKey  = mainCat.id + '::' + subId;
+          if (!subCatsToShow.find(s => s.key === fullKey)) {
+            subCatsToShow.push({
+              key:       fullKey,
+              subLabel:  subLabel,
+              mainCatId: mainCat.id,
+              icon:      mainCat.icon || '📁'
+            });
+          }
+        });
+      }
+    });
+  }
+
+  // Hələ də boşdursa — birbaşa ana kateqoriyaları göstər
   if (subCatsToShow.length === 0) {
     mainCatIds.forEach(cat => {
-      const mainCat = platformCats.find(c => c.id === cat);
+      const mainCat = mainPlatformCats.find(c => c.id === cat);
       subCatsToShow.push({
         key:       'direct::' + cat,
         subLabel:  mainCat ? mainCat.label : cat,
@@ -284,6 +332,14 @@ function applySearchFilters() {
     products = products.filter(p => {
       return _activeSubCats.some(key => {
         const parts = key.split('::');
+        // Yeni format: plat::platCatId::subLabel (Məhsul Kateqoriyası subCats)
+        if (parts[0] === 'plat') {
+          const platCatId = parts[1] || '';
+          const subLabel  = parts[2] || '';
+          return (p.platCategory === platCatId || (p.platCatLabel || '').toLowerCase() === platCatId.toLowerCase()) &&
+                 ((p.subCategory || '') === subLabel || (p.subCategory || '').toLowerCase() === subLabel.toLowerCase());
+        }
+        // Köhnə format: mainCatId::subLabel
         const mainCatId = parts[0];
         const subLabel  = parts[1] || '';
         if (mainCatId === 'direct') return p.category === subLabel;
