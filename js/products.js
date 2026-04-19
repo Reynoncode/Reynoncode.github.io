@@ -232,15 +232,15 @@ function createFeaturedStoreCard(s) {
          onclick="goToStore('${s.uid}')">
       <div style="position:absolute;inset:0;${coverStyle}"></div>
       <div style="position:absolute;inset:0;background:rgba(0,0,0,0.50);"></div>
-      <div style="position:relative;z-index:1;padding:28px 36px;display:flex;align-items:center;gap:32px;min-height:220px;box-sizing:border-box;">
+      <div class="fsc-inner" style="position:relative;z-index:1;padding:28px 36px;display:flex;align-items:center;gap:32px;min-height:220px;box-sizing:border-box;">
         <!-- Logo -->
-        <div style="width:80px;height:80px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;border:3px solid rgba(255,255,255,0.3);">
+        <div class="fsc-logo" style="width:80px;height:80px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;border:3px solid rgba(255,255,255,0.3);">
           ${logoHTML}
         </div>
         <!-- Məlumat -->
         <div style="flex:1;min-width:0;">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
-            <div style="font-size:1.4rem;font-weight:800;color:#fff;letter-spacing:-0.01em;">
+            <div class="fsc-name" style="font-size:1.4rem;font-weight:800;color:#fff;letter-spacing:-0.01em;">
               ${s.storeName || 'Mağaza'}
             </div>
             ${catTag}
@@ -248,25 +248,56 @@ function createFeaturedStoreCard(s) {
           ${desc}
           <div style="display:flex;gap:28px;margin-top:8px;">
             <div style="text-align:center;">
-              <div style="font-size:1.1rem;font-weight:700;color:#fff;">${s.followerCount ?? 0}</div>
-              <div style="font-size:0.65rem;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.05em;">İzləyici</div>
+              <div class="fsc-stat-num" style="font-size:1.1rem;font-weight:700;color:#fff;">${s.followerCount ?? 0}</div>
+              <div class="fsc-stat-lbl" style="font-size:0.65rem;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.05em;">İzləyici</div>
             </div>
             <div style="text-align:center;">
-              <div style="font-size:1.1rem;font-weight:700;color:#fff;">${s.productCount ?? 0}</div>
-              <div style="font-size:0.65rem;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.05em;">Məhsul</div>
+              <div class="fsc-stat-num" style="font-size:1.1rem;font-weight:700;color:#fff;">${s.productCount ?? 0}</div>
+              <div class="fsc-stat-lbl" style="font-size:0.65rem;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.05em;">Məhsul</div>
             </div>
-            ${s.joinYear ? `<div style="text-align:center;"><div style="font-size:1.1rem;font-weight:700;color:#fff;">${s.joinYear}</div><div style="font-size:0.65rem;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.05em;">İldən bəri</div></div>` : ''}
+            ${s.joinYear ? `<div style="text-align:center;"><div class="fsc-stat-num" style="font-size:1.1rem;font-weight:700;color:#fff;">${s.joinYear}</div><div class="fsc-stat-lbl" style="font-size:0.65rem;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.05em;">İldən bəri</div></div>` : ''}
           </div>
         </div>
         <!-- Düymə -->
         <button id="featuredFollowBtn_${s.uid}"
+          class="fsc-follow-btn"
           onclick="event.stopPropagation(); toggleFeaturedFollow('${s.uid}', this)"
           style="flex-shrink:0;padding:0 28px;height:42px;border-radius:var(--radius-sm);border:2px solid rgba(255,255,255,0.6);background:rgba(255,255,255,0.12);color:#fff;font-size:0.85rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;backdrop-filter:blur(6px);transition:background .2s,border-color .2s;white-space:nowrap;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>
           İzlə
         </button>
       </div>
-    </div>`;
+    </div>
+
+    <style>
+      @media (max-width: 768px) {
+        .fsc-inner {
+          padding: 14px 14px 14px 14px !important;
+          gap: 12px !important;
+          min-height: unset !important;
+          flex-wrap: wrap;
+          align-items: flex-start !important;
+        }
+        .fsc-logo {
+          width: 48px !important;
+          height: 48px !important;
+        }
+        .fsc-logo img { width: 100%; height: 100%; object-fit: cover; }
+        .fsc-name { font-size: 0.95rem !important; }
+        .fsc-stat-num { font-size: 0.85rem !important; }
+        .fsc-stat-lbl { font-size: 0.55rem !important; }
+        .fsc-inner > div:nth-child(3) { gap: 14px !important; }
+        .fsc-follow-btn {
+          position: absolute !important;
+          top: 10px !important;
+          right: 10px !important;
+          padding: 0 12px !important;
+          height: 30px !important;
+          font-size: 0.72rem !important;
+          flex-shrink: 0;
+        }
+      }
+    </style>`;
 }
 
 async function toggleFeaturedFollow(storeUid, btn) {
