@@ -23,6 +23,7 @@ const PRESET_COLORS = [
    KATEQORİYA SİSTEMİ — Firebase-dən oxunur
    ════════════════════════════════════════════════════════════ */
 let _listingMainCats = [];
+let _listingPlatCats = [];   // 3-cü tip: qruplaşdırılmış kateqoriyalar
 
 async function loadListingCategories() {
   let cats = null;
@@ -41,6 +42,22 @@ async function loadListingCategories() {
     } catch(e) { console.warn('Admin kateqoriyalar oxunmadı:', e.message); }
   }
   _listingMainCats = Array.isArray(cats) ? cats : [];
+
+  // Platforma kateqoriyalarını yüklə (3-cü tip)
+  try {
+    const platSnap = await fbDb.collection('settings').doc('platformCategories').get();
+    if (platSnap.exists) {
+      _listingPlatCats = platSnap.data().items || [];
+    }
+  } catch(e) {
+    // Fallback: admin/platformSettings-dən oxu
+    try {
+      const adminSnap = await fbDb.collection('admin').doc('platformSettings').get();
+      if (adminSnap.exists) {
+        _listingPlatCats = adminSnap.data().platformCategories || [];
+      }
+    } catch(e2) { console.warn('Platforma kateqoriyaları oxunmadı:', e2.message); }
+  }
 }
 
 function onMainCatChange() {
@@ -56,11 +73,46 @@ function onMainCatChange() {
   subWrap.style.display = '';
 }
 
+function onPlatCatChange() {
+  const platCatId   = document.getElementById('lmPlatCategory')?.value;
+  const brandWrap   = document.getElementById('lmBrandCatWrap');
+  const brandSelect = document.getElementById('lmBrandCategory');
+  if (!brandWrap || !brandSelect) return;
+  // Find the subCat object that matches selected id
+  let brands = [];
+  for (const grp of _listingPlatCats) {
+    const sub = (grp.subCats || []).find(s => s.id === platCatId);
+    if (sub) { brands = sub.brands || []; break; }
+  }
+  if (!brands.length) { brandWrap.style.display = 'none'; brandSelect.innerHTML = ''; return; }
+  brandSelect.innerHTML = `<option value="">— Marka seçin —</option>` +
+    brands.map(b => `<option value="${b}">${b}</option>`).join('');
+  brandWrap.style.display = '';
+}
+
 function buildMainCatSelect() {
   const sel = document.getElementById('lmMainCategory');
   if (!sel) return;
   sel.innerHTML = `<option value="">Seçin...</option>` +
     _listingMainCats.map(c => `<option value="${c.id}">${c.icon || ''} ${c.label}</option>`).join('');
+}
+
+function buildPlatCatSelect() {
+  const sel = document.getElementById('lmPlatCategory');
+  if (!sel) return;
+  // Qruplaşdırılmış <optgroup> formatında göstər
+  if (!_listingPlatCats.length) {
+    sel.innerHTML = '<option value="">Kateqoriya yoxdur</option>';
+    return;
+  }
+  sel.innerHTML = `<option value="">— Seçin —</option>` +
+    _listingPlatCats.map(grp => {
+      const subs = (grp.subCats || []);
+      if (!subs.length) return '';
+      return `<optgroup label="${grp.icon ? grp.icon + ' ' : ''}${grp.label}">` +
+        subs.map(s => `<option value="${s.id}">${s.label}</option>`).join('') +
+        `</optgroup>`;
+    }).join('');
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -124,7 +176,7 @@ function loadListingsTab(uid) {
   injectListingStyles();
   injectListingModal();
   fetchUserListings(uid);
-  loadListingCategories().then(buildMainCatSelect);
+  loadListingCategories().then(() => { buildMainCatSelect(); buildPlatCatSelect(); });
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -262,6 +314,22 @@ function injectListingModal() {
           <label class="lm-label">Alt Kateqoriya</label>
           <select class="lm-input lm-select" id="lmSubCategory">
             <option value="">— Seçin —</option>
+          </select>
+        </div>
+
+        <!-- Platforma Kateqoriyası (qruplaşdırılmış) -->
+        <div class="lm-field lm-field-full" style="margin-bottom:0.75rem;">
+          <label class="lm-label">Kateqoriya <span style="font-size:0.72rem;color:var(--muted);">(isteğe bağlı)</span></label>
+          <select class="lm-input lm-select" id="lmPlatCategory" onchange="onPlatCatChange()">
+            <option value="">— Seçin —</option>
+          </select>
+        </div>
+
+        <!-- Marka (platforma kateqoriyasına bağlı) -->
+        <div class="lm-field lm-field-full" id="lmBrandCatWrap" style="display:none;margin-bottom:0.75rem;">
+          <label class="lm-label">Marka</label>
+          <select class="lm-input lm-select" id="lmBrandCategory">
+            <option value="">— Marka seçin —</option>
           </select>
         </div>
 
@@ -502,9 +570,15 @@ async function openListingModal(editId = null) {
   document.getElementById('lmColorPicker').style.display = 'none';
   document.getElementById('lmSizeInputRow').style.display = 'none';
   document.getElementById('lmSubCatWrap').style.display = 'none';
+  const platCatEl = document.getElementById('lmPlatCategory');
+  if (platCatEl) platCatEl.value = '';
+  if (document.getElementById('lmBrandCatWrap')) document.getElementById('lmBrandCatWrap').style.display = 'none';
+  const brandCatEl = document.getElementById('lmBrandCategory');
+  if (brandCatEl) brandCatEl.value = '';
 
   if (_listingMainCats.length === 0) { await loadListingCategories(); }
   buildMainCatSelect();
+  buildPlatCatSelect();
 
   lmRenderImages();
   lmRenderColors();
@@ -531,6 +605,20 @@ async function openListingModal(editId = null) {
         setTimeout(() => {
           const subSel = document.getElementById('lmSubCategory');
           if (subSel) subSel.value = d.subCategory;
+        }, 50);
+      }
+      // Platforma kateqoriyası və markasını bərpa et
+      if (d.platCategory) {
+        setTimeout(() => {
+          const platSel = document.getElementById('lmPlatCategory');
+          if (platSel) {
+            platSel.value = d.platCategory;
+            onPlatCatChange();
+            setTimeout(() => {
+              const bSel = document.getElementById('lmBrandCategory');
+              if (bSel && d.brandCategory) bSel.value = d.brandCategory;
+            }, 50);
+          }
         }, 50);
       }
       lmRenderImages();
@@ -979,10 +1067,12 @@ function lmStepStock(i, delta) {
    SUBMIT
    ════════════════════════════════════════════════════════════ */
 async function submitListing() {
-  const name        = document.getElementById('lmName').value.trim();
-  const price       = parseFloat(document.getElementById('lmPrice').value);
-  const mainCatId   = document.getElementById('lmMainCategory').value;
-  const subCategory = document.getElementById('lmSubCategory')?.value || '';
+  const name         = document.getElementById('lmName').value.trim();
+  const price        = parseFloat(document.getElementById('lmPrice').value);
+  const mainCatId    = document.getElementById('lmMainCategory').value;
+  const subCategory  = document.getElementById('lmSubCategory')?.value || '';
+  const platCategory = document.getElementById('lmPlatCategory')?.value || '';
+  const brandCategory= document.getElementById('lmBrandCategory')?.value || '';
 
   if (!name)              { showToast('Məhsul adını daxil edin'); return; }
   if (!price || price<=0) { showToast('Düzgün qiymət daxil edin'); return; }
@@ -996,26 +1086,39 @@ async function submitListing() {
   const oldPriceRaw = parseFloat(document.getElementById('lmOldPrice').value);
   const mainCat     = _listingMainCats.find(c => c.id === mainCatId);
 
+  // platCategory label-ini tap
+  let platCatLabel = '';
+  let brandCatLabel = brandCategory;
+  if (platCategory) {
+    for (const grp of _listingPlatCats) {
+      const sub = (grp.subCats || []).find(s => s.id === platCategory);
+      if (sub) { platCatLabel = sub.label; break; }
+    }
+  }
+
   const payload = {
     name,
-    brand:         document.getElementById('lmBrand').value.trim(),
+    brand:          document.getElementById('lmBrand').value.trim(),
     price,
-    oldPrice:      (oldPriceRaw > price) ? oldPriceRaw : null,
-    desc:          document.getElementById('lmDesc').value.trim(),
-    material:      document.getElementById('lmMaterial').value.trim(),
-    condition:     document.getElementById('lmCondition').value,
-    mainCategory:  mainCatId,
-    categoryLabel: mainCat ? mainCat.label : '',
+    oldPrice:       (oldPriceRaw > price) ? oldPriceRaw : null,
+    desc:           document.getElementById('lmDesc').value.trim(),
+    material:       document.getElementById('lmMaterial').value.trim(),
+    condition:      document.getElementById('lmCondition').value,
+    mainCategory:   mainCatId,
+    categoryLabel:  mainCat ? mainCat.label : '',
     subCategory,
-    category:      mainCatId,
-    badge:         (oldPriceRaw > price) ? 'Endirim' : 'Yeni',
-    imgs:          lState.images,
-    colors:        lState.colors,
-    sizes:         lState.sizes,
-    userId:        fbAuth.currentUser.uid,
-    userEmail:     fbAuth.currentUser.email,
-    storeName:     document.getElementById('lmStoreName').value,
-    updatedAt:     firebase.firestore.FieldValue.serverTimestamp(),
+    platCategory,
+    platCatLabel,
+    brandCategory:  brandCatLabel,
+    category:       mainCatId,
+    badge:          (oldPriceRaw > price) ? 'Endirim' : 'Yeni',
+    imgs:           lState.images,
+    colors:         lState.colors,
+    sizes:          lState.sizes,
+    userId:         fbAuth.currentUser.uid,
+    userEmail:      fbAuth.currentUser.email,
+    storeName:      document.getElementById('lmStoreName').value,
+    updatedAt:      firebase.firestore.FieldValue.serverTimestamp(),
   };
 
   try {
