@@ -1750,3 +1750,15 @@ function toggleSettingAccordion(triggerEl) {
   body.style.display = isOpen ? 'none' : 'block';
   triggerEl.classList.toggle('open', !isOpen);
 }
+
+/* ══════════════════════════════════════════════
+   INNER ACCORDION — Ümumi Sayt Ayarları içindəki
+   açılıb bağlanan bölümlər üçün
+   ══════════════════════════════════════════════ */
+function toggleInnerAccordion(triggerEl) {
+  const body = triggerEl.nextElementSibling;
+  if (!body) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  triggerEl.classList.toggle('open', !isOpen);
+}
