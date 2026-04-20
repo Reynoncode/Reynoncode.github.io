@@ -303,3 +303,23 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--a
   .recent-grid { grid-template-columns: 1fr; }
   .form-row2 { grid-template-columns: 1fr; }
 }
+
+/* ── Accordion kartlar (Platforma Ayarları) ── */
+.setting-group-accordion .setting-accordion-trigger {
+  cursor: pointer;
+  user-select: none;
+  transition: background .18s;
+}
+.setting-group-accordion .setting-accordion-trigger:hover {
+  background: var(--hover, rgba(0,0,0,.03));
+}
+.setting-accordion-body {
+  overflow: hidden;
+  transition: none;
+}
+.accordion-chevron {
+  transition: transform .25s cubic-bezier(.4,0,.2,1);
+}
+.setting-accordion-trigger.open .accordion-chevron {
+  transform: rotate(180deg);
+}
