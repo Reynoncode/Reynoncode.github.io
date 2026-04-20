@@ -323,3 +323,33 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--a
 .setting-accordion-trigger.open .accordion-chevron {
   transform: rotate(180deg);
 }
+
+/* ── Inner Accordion (Ümumi Sayt Ayarları içi) ── */
+.inner-accordion {
+  border-bottom: 1px solid var(--border);
+}
+.inner-accordion:last-child {
+  border-bottom: none;
+}
+.inner-accordion-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 0;
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text);
+  transition: color .18s;
+  gap: 0.5rem;
+}
+.inner-accordion-trigger:hover {
+  color: var(--accent, #c9a86c);
+}
+.inner-accordion-trigger.open .inner-chevron {
+  transform: rotate(180deg);
+}
+.inner-accordion-body {
+  padding-bottom: 0.85rem;
+}
