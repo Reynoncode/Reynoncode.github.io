@@ -518,8 +518,8 @@
         </div><!-- /platform-grid -->
 
         <!-- ══ FOOTER MAĞAZALARI ══ -->
-        <div class="setting-group" style="margin-bottom:1.25rem;">
-          <div class="setting-group-header">
+        <div class="setting-group setting-group-accordion" style="margin-bottom:1.25rem;">
+          <div class="setting-group-header setting-accordion-trigger" onclick="toggleSettingAccordion(this)">
             <div style="display:flex;align-items:center;gap:0.6rem;flex:1;">
               <div class="setting-group-icon" style="background:#1a1a1a;">🏪</div>
               <div>
@@ -527,10 +527,9 @@
                 <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">Ana səhifənin alt hissəsindəki "Mağazalar" bölümündə görünəcək (maks. 4 ədəd)</div>
               </div>
             </div>
+            <svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;flex-shrink:0;color:var(--muted);transition:transform .25s;"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
-          <div class="setting-group-body">
-
-            <!-- Axtarış -->
+          <div class="setting-group-body setting-accordion-body" style="display:none;">
             <div style="position:relative;margin-bottom:0.75rem;">
               <input type="text" id="footerStoreSearch"
                 class="setting-input setting-input-full"
@@ -542,24 +541,15 @@
                 <div class="spinner-sm"></div>
               </div>
             </div>
-
-            <!-- Axtarış nəticələri -->
             <div id="footerStoreResults" style="display:flex;flex-direction:column;gap:0.4rem;margin-bottom:0.75rem;"></div>
-
-            <!-- Seçilmiş mağazalar siyahısı -->
-            <div id="footerStoresList" style="display:flex;flex-direction:column;gap:0.5rem;">
-              <!-- JS ilə doldurulur -->
-            </div>
-            <div id="footerStoresEmpty" style="font-size:0.8rem;color:var(--muted);padding:0.5rem 0;display:none;">
-              Hələ mağaza seçilməyib
-            </div>
-
+            <div id="footerStoresList" style="display:flex;flex-direction:column;gap:0.5rem;"><!-- JS ilə doldurulur --></div>
+            <div id="footerStoresEmpty" style="font-size:0.8rem;color:var(--muted);padding:0.5rem 0;display:none;">Hələ mağaza seçilməyib</div>
           </div>
         </div>
 
         <!-- ══ KATEQORİYA İDARƏETMƏSİ — 3 SƏVİYYƏLİ ══ -->
-        <div class="setting-group" style="margin-bottom:1.25rem;">
-          <div class="setting-group-header">
+        <div class="setting-group setting-group-accordion" style="margin-bottom:1.25rem;">
+          <div class="setting-group-header setting-accordion-trigger" onclick="toggleSettingAccordion(this)">
             <div style="display:flex;align-items:center;gap:0.6rem;flex:1;">
               <div class="setting-group-icon success">🗂️</div>
               <div>
@@ -567,10 +557,9 @@
                 <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">3 səviyyəli: Mağaza Kateqoriyaları → Məhsul Kateqoriyaları → Alt Kateqoriyalar</div>
               </div>
             </div>
+            <svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;flex-shrink:0;color:var(--muted);transition:transform .25s;"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
-          <div class="setting-group-body" style="padding-top:0;">
-
-            <!-- Mağaza Kateqoriyaları başlıq + əlavə düyməsi -->
+          <div class="setting-group-body setting-accordion-body" style="display:none;padding-top:0;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.65rem;">
               <div style="display:flex;align-items:center;gap:0.5rem;">
                 <span style="font-size:0.82rem;font-weight:700;color:var(--text);">🏪 Mağaza Kateqoriyaları</span>
@@ -585,17 +574,19 @@
               <span class="mcat-topbar-title">Oxu klikləyin → Məhsul Kateqoriyaları açılır → onları da açın → Alt Kateqoriyalar görünür</span>
             </div>
             <div id="mainCatContainer"></div>
-
           </div>
         </div>
 
         <!-- Xüsusiyyətlər -->
-        <div class="setting-group" style="margin-bottom:1.25rem;">
-          <div class="setting-group-header">
+        <div class="setting-group setting-group-accordion" style="margin-bottom:1.25rem;">
+          <div class="setting-group-header setting-accordion-trigger" onclick="toggleSettingAccordion(this)">
             <div class="setting-group-icon danger">🔔</div>
-            <div class="setting-group-title">Bildiriş & Xüsusiyyətlər</div>
+            <div style="flex:1;">
+              <div class="setting-group-title">Bildiriş & Xüsusiyyətlər</div>
+            </div>
+            <svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;flex-shrink:0;color:var(--muted);transition:transform .25s;"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
-          <div class="setting-group-body">
+          <div class="setting-group-body setting-accordion-body" style="display:none;">
             <div class="setting-row">
               <div class="setting-row-info"><div class="setting-row-label">Şərh moderasiyası</div><div class="setting-row-sub">Şərhlər admin təsdiqi tələb etsin</div></div>
               <label class="toggle"><input type="checkbox" id="cfg-reviewMod"><span class="toggle-slider"></span></label>
@@ -707,7 +698,7 @@
   <div class="modal-box" style="max-width:360px;">
     <button class="modal-close" onclick="closeModal('commissionModal')">✕</button>
     <div class="modal-title">Yeni Komissiya Sətri</div>
-    <div class="form-group"><label>Kateqoriya adı</label><input type="text" id="newCommissionName" placeholder="məs. Bijuteriya" maxlength="50"/></div>
+    <div class="form-group"><label>Kateqoriya</label><select id="newCommissionName" style="width:100%;padding:.55rem .75rem;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.875rem;background:var(--bg);color:var(--text);outline:none;"></select></div>
     <div class="form-group"><label>Komissiya faizi (%)</label><input type="number" id="newCommissionRate" value="10" min="0" max="100" step="0.5"/></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('commissionModal')">Ləğv et</button>
