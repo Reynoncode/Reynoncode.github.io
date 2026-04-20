@@ -435,63 +435,85 @@
                 <div style="display:flex;align-items:center;gap:0.3rem;"><input type="number" class="setting-input" id="cfg-minOrder" value="5" min="0"/><span style="font-size:0.82rem;color:var(--muted);">₼</span></div>
               </div>
 
-              <!-- ══ KAMPANİYA ŞƏKİLLƏRİ ══ -->
-              <div class="setting-row" style="flex-direction:column;align-items:flex-start;gap:0.75rem;padding-top:1rem;border-top:1px solid var(--border);margin-top:0.25rem;">
-                <div>
-                  <div class="setting-row-label">🎯 Kampaniya Şəkilləri</div>
-                  <div class="setting-row-sub">Ana səhifədə kateqoriyanın altında göstəriləcək banner şəkillər (maks. 10 ədəd)</div>
+              <!-- ══ INNER ACCORDION: KAMPANİYA ŞƏKİLLƏRİ ══ -->
+              <div class="inner-accordion" style="border-top:1px solid var(--border);margin-top:0.5rem;">
+                <div class="inner-accordion-trigger" onclick="toggleInnerAccordion(this)">
+                  <span>🎯 Kampaniya Şəkilləri</span>
+                  <svg class="inner-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;flex-shrink:0;color:var(--muted);transition:transform .22s;"><polyline points="6 9 12 15 18 9"/></svg>
                 </div>
-
-                <!-- Upload zone -->
-                <div id="campaignDropzone"
-                  style="width:100%;border:2px dashed var(--border);border-radius:10px;padding:1.1rem;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;box-sizing:border-box;"
-                  onclick="document.getElementById('campaignFileInput').click()"
-                  ondragover="event.preventDefault();this.style.borderColor='var(--accent)';this.style.background='rgba(var(--accent-rgb,0,0,0),.04)'"
-                  ondragleave="this.style.borderColor='';this.style.background=''"
-                  ondrop="handleCampaignDrop(event)">
-                  <input type="file" id="campaignFileInput" accept="image/*" multiple style="display:none"
-                         onchange="handleCampaignFiles(this.files);this.value=''"/>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-                       style="width:28px;height:28px;color:var(--muted);display:block;margin:0 auto 0.4rem;">
-                    <rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/>
-                    <polyline points="21 15 16 10 5 21"/>
-                  </svg>
-                  <div style="font-size:0.8rem;color:var(--muted);">Şəkil yükləmək üçün klikləyin və ya sürükleyin</div>
-                  <div id="campaignCount" style="font-size:0.73rem;color:var(--muted);margin-top:0.2rem;">0 / 10</div>
-                </div>
-
-                <!-- Preview grid -->
-                <div id="campaignPreviews"
-                  style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:0.6rem;width:100%;">
-                </div>
-              </div>
-
-              <!-- ══ ÖNCÜ MAĞAZA REKLAMİ ══ -->
-              <div class="setting-row" style="flex-direction:column;align-items:flex-start;gap:0.75rem;padding-top:1rem;border-top:1px solid var(--border);margin-top:0.25rem;">
-                <div>
-                  <div class="setting-row-label">🏪 Öncü Mağaza Reklamı</div>
-                  <div class="setting-row-sub">Ana səhifədə məhsul kartları arasında göstəriləcək mağaza reklamı (1 mağaza)</div>
-                </div>
-
-                <!-- Axtarış -->
-                <div style="width:100%;position:relative;">
-                  <input type="text" id="featuredStoreSearch"
-                    class="setting-input setting-input-full"
-                    placeholder="Mağaza adı və ya email ilə axtar..."
-                    oninput="searchFeaturedStore(this.value)"
-                    autocomplete="off"
-                    style="padding-right:2.5rem;"/>
-                  <div id="featuredStoreSpinner" style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);">
-                    <div class="spinner-sm"></div>
+                <div class="inner-accordion-body" style="display:none;">
+                  <div style="font-size:0.76rem;color:var(--muted);margin-bottom:0.6rem;">Ana səhifədə kateqoriyanın altında göstəriləcək banner şəkillər (maks. 10 ədəd)</div>
+                  <div id="campaignDropzone"
+                    style="width:100%;border:2px dashed var(--border);border-radius:10px;padding:1.1rem;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;box-sizing:border-box;"
+                    onclick="document.getElementById('campaignFileInput').click()"
+                    ondragover="event.preventDefault();this.style.borderColor='var(--accent)';this.style.background='rgba(var(--accent-rgb,0,0,0),.04)'"
+                    ondragleave="this.style.borderColor='';this.style.background=''"
+                    ondrop="handleCampaignDrop(event)">
+                    <input type="file" id="campaignFileInput" accept="image/*" multiple style="display:none"
+                           onchange="handleCampaignFiles(this.files);this.value=''"/>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                         style="width:28px;height:28px;color:var(--muted);display:block;margin:0 auto 0.4rem;">
+                      <rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/>
+                      <polyline points="21 15 16 10 5 21"/>
+                    </svg>
+                    <div style="font-size:0.8rem;color:var(--muted);">Şəkil yükləmək üçün klikləyin və ya sürükleyin</div>
+                    <div id="campaignCount" style="font-size:0.73rem;color:var(--muted);margin-top:0.2rem;">0 / 10</div>
+                  </div>
+                  <div id="campaignPreviews"
+                    style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:0.6rem;width:100%;margin-top:0.6rem;">
                   </div>
                 </div>
-
-                <!-- Nəticələr -->
-                <div id="featuredStoreResults" style="width:100%;display:flex;flex-direction:column;gap:0.4rem;"></div>
-
-                <!-- Seçilmiş mağaza -->
-                <div id="featuredStoreSelected" style="display:none;width:100%;border-radius:10px;overflow:hidden;border:1.5px solid var(--accent);"></div>
               </div>
+
+              <!-- ══ INNER ACCORDION: ÖNCÜ MAĞAZA REKLAMİ ══ -->
+              <div class="inner-accordion">
+                <div class="inner-accordion-trigger" onclick="toggleInnerAccordion(this)">
+                  <span>🏪 Öncü Mağaza Reklamı</span>
+                  <svg class="inner-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;flex-shrink:0;color:var(--muted);transition:transform .22s;"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <div class="inner-accordion-body" style="display:none;">
+                  <div style="font-size:0.76rem;color:var(--muted);margin-bottom:0.6rem;">Ana səhifədə məhsul kartları arasında göstəriləcək mağaza reklamı (1 mağaza)</div>
+                  <div style="width:100%;position:relative;margin-bottom:0.5rem;">
+                    <input type="text" id="featuredStoreSearch"
+                      class="setting-input setting-input-full"
+                      placeholder="Mağaza adı və ya email ilə axtar..."
+                      oninput="searchFeaturedStore(this.value)"
+                      autocomplete="off"
+                      style="padding-right:2.5rem;"/>
+                    <div id="featuredStoreSpinner" style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);">
+                      <div class="spinner-sm"></div>
+                    </div>
+                  </div>
+                  <div id="featuredStoreResults" style="width:100%;display:flex;flex-direction:column;gap:0.4rem;"></div>
+                  <div id="featuredStoreSelected" style="display:none;width:100%;border-radius:10px;overflow:hidden;border:1.5px solid var(--accent);margin-top:0.4rem;"></div>
+                </div>
+              </div>
+
+              <!-- ══ INNER ACCORDION: FOOTER MAĞAZALARI ══ -->
+              <div class="inner-accordion">
+                <div class="inner-accordion-trigger" onclick="toggleInnerAccordion(this)">
+                  <span>🏬 Footer Mağazaları</span>
+                  <svg class="inner-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;flex-shrink:0;color:var(--muted);transition:transform .22s;"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <div class="inner-accordion-body" style="display:none;">
+                  <div style="font-size:0.76rem;color:var(--muted);margin-bottom:0.6rem;">Ana səhifənin alt hissəsindəki "Mağazalar" bölümündə görünəcək (maks. 4 ədəd)</div>
+                  <div style="position:relative;margin-bottom:0.6rem;">
+                    <input type="text" id="footerStoreSearch"
+                      class="setting-input setting-input-full"
+                      placeholder="Mağaza adı və ya email ilə axtar..."
+                      oninput="searchFooterStore(this.value)"
+                      autocomplete="off"
+                      style="padding-right:2.5rem;"/>
+                    <div id="footerStoreSpinner" style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);">
+                      <div class="spinner-sm"></div>
+                    </div>
+                  </div>
+                  <div id="footerStoreResults" style="display:flex;flex-direction:column;gap:0.4rem;margin-bottom:0.6rem;"></div>
+                  <div id="footerStoresList" style="display:flex;flex-direction:column;gap:0.5rem;"></div>
+                  <div id="footerStoresEmpty" style="font-size:0.8rem;color:var(--muted);padding:0.5rem 0;display:none;">Hələ mağaza seçilməyib</div>
+                </div>
+              </div>
+
             </div>
           </div>
 
@@ -502,10 +524,12 @@
               <div class="setting-group-title">Komissiya Nisbətləri</div>
             </div>
             <div class="setting-group-body" style="padding:0;">
-              <table class="commission-table">
-                <thead><tr><th>Kateqoriya</th><th style="text-align:center;">Komissiya %</th><th style="text-align:center;">Aktiv</th><th style="text-align:center;">Sil</th></tr></thead>
-                <tbody id="commissionTableBody"></tbody>
-              </table>
+              <div style="max-height:420px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent;">
+                <table class="commission-table" style="width:100%;">
+                  <thead style="position:sticky;top:0;z-index:1;background:var(--bg,#f7f4f0);"><tr><th>Kateqoriya</th><th style="text-align:center;">Komissiya %</th><th style="text-align:center;">Aktiv</th><th style="text-align:center;">Sil</th></tr></thead>
+                  <tbody id="commissionTableBody"></tbody>
+                </table>
+              </div>
               <div style="padding:0.85rem 1rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;">
                 <button class="btn btn-outline btn-sm" onclick="addCommissionRow()">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -517,35 +541,7 @@
 
         </div><!-- /platform-grid -->
 
-        <!-- ══ FOOTER MAĞAZALARI ══ -->
-        <div class="setting-group setting-group-accordion" style="margin-bottom:1.25rem;">
-          <div class="setting-group-header setting-accordion-trigger" onclick="toggleSettingAccordion(this)">
-            <div style="display:flex;align-items:center;gap:0.6rem;flex:1;">
-              <div class="setting-group-icon" style="background:#1a1a1a;">🏪</div>
-              <div>
-                <div class="setting-group-title">Footer Mağazaları</div>
-                <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">Ana səhifənin alt hissəsindəki "Mağazalar" bölümündə görünəcək (maks. 4 ədəd)</div>
-              </div>
-            </div>
-            <svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;flex-shrink:0;color:var(--muted);transition:transform .25s;"><polyline points="6 9 12 15 18 9"/></svg>
-          </div>
-          <div class="setting-group-body setting-accordion-body" style="display:none;">
-            <div style="position:relative;margin-bottom:0.75rem;">
-              <input type="text" id="footerStoreSearch"
-                class="setting-input setting-input-full"
-                placeholder="Mağaza adı və ya email ilə axtar..."
-                oninput="searchFooterStore(this.value)"
-                autocomplete="off"
-                style="padding-right:2.5rem;"/>
-              <div id="footerStoreSpinner" style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);">
-                <div class="spinner-sm"></div>
-              </div>
-            </div>
-            <div id="footerStoreResults" style="display:flex;flex-direction:column;gap:0.4rem;margin-bottom:0.75rem;"></div>
-            <div id="footerStoresList" style="display:flex;flex-direction:column;gap:0.5rem;"><!-- JS ilə doldurulur --></div>
-            <div id="footerStoresEmpty" style="font-size:0.8rem;color:var(--muted);padding:0.5rem 0;display:none;">Hələ mağaza seçilməyib</div>
-          </div>
-        </div>
+
 
         <!-- ══ KATEQORİYA İDARƏETMƏSİ — 3 SƏVİYYƏLİ ══ -->
         <div class="setting-group setting-group-accordion" style="margin-bottom:1.25rem;">
