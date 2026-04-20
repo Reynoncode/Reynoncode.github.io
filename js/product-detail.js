@@ -73,7 +73,15 @@ function injectProductDetailModal() {
       <!-- ── ANA BÖLÜM ── -->
       <div class="pd-main" id="pdMain">
 
-        <!-- Sol: Şəkil qalereyası -->
+        <!-- Sol: Tövsiyə olunan məhsullar -->
+        <div class="pd-suggested-col" id="pdSuggestedCol">
+          <div class="pd-suggested-title">Bəyənə biləcəkləriniz</div>
+          <div class="pd-suggested-list" id="pdSuggestedList">
+            ${[1,2,3,4,5].map(() => `<div class="pd-suggested-skeleton"></div>`).join('')}
+          </div>
+        </div>
+
+        <!-- Orta: Şəkil qalereyası -->
         <div class="pd-gallery" id="pdGallery">
           <div class="pd-img-main-wrap">
             <img id="pdMainImg" src="" alt="" />
@@ -237,9 +245,10 @@ async function openProductDetail(product) {
   pdRenderPrice();
   pdRenderReviewForm();
 
-  /* Async: kampaniya + şərhlər */
+  /* Async: kampaniya + şərhlər + tövsiyələr */
   pdLoadCampaign();
   pdLoadReviews();
+  pdLoadSuggestedProducts();
 }
 
 /* ══════════════════════════════════════
@@ -459,6 +468,98 @@ function pdAddToCart() {
 }
 
 /* ══════════════════════════════════════
+   TÖVSİYƏ OLUNAN MƏHSULLAR
+══════════════════════════════════════ */
+async function pdLoadSuggestedProducts() {
+  const list = document.getElementById('pdSuggestedList');
+  if (!list) return;
+
+  const currentId = String(pdState.product?.id || '');
+  const vendorId  = pdState.product?.userId || null;
+  let suggested   = [];
+
+  try {
+    /* Eyni vendor məhsulları */
+    if (vendorId) {
+      const snap = await fbDb.collection('listings')
+        .where('userId', '==', vendorId)
+        .orderBy('createdAt', 'desc')
+        .limit(10)
+        .get();
+      suggested = snap.docs
+        .map(d => ({ id: d.id, ...d.data(), _fromFirebase: true }))
+        .filter(p => String(p.id) !== currentId);
+    }
+
+    /* Digər Firebase məhsulları */
+    if (suggested.length < 5) {
+      const ids  = new Set([currentId, ...suggested.map(p => String(p.id))]);
+      const snap = await fbDb.collection('listings')
+        .orderBy('createdAt', 'desc')
+        .limit(30)
+        .get();
+      const others = snap.docs
+        .map(d => ({ id: d.id, ...d.data(), _fromFirebase: true }))
+        .filter(p => !ids.has(String(p.id)));
+      /* Shuffle */
+      for (let i = others.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [others[i], others[j]] = [others[j], others[i]];
+      }
+      suggested.push(...others.slice(0, 5 - suggested.length));
+    }
+
+    /* Static PRODUCTS-dan tamamla */
+    if (suggested.length < 5 && typeof PRODUCTS !== 'undefined') {
+      const ids = new Set([currentId, ...suggested.map(p => String(p.id))]);
+      const more = PRODUCTS.filter(p => !ids.has(String(p.id))).slice(0, 5 - suggested.length);
+      suggested.push(...more);
+    }
+  } catch(e) {
+    /* Firebase yoxdursa static PRODUCTS-dan al */
+    if (typeof PRODUCTS !== 'undefined') {
+      suggested = PRODUCTS.filter(p => String(p.id) !== currentId).slice(0, 5);
+    }
+  }
+
+  if (!suggested.length) {
+    document.getElementById('pdSuggestedCol')?.style && (document.getElementById('pdSuggestedCol').style.display = 'none');
+    return;
+  }
+
+  list.innerHTML = suggested.slice(0, 5).map(p => {
+    const img   = (p.imgs && p.imgs[0]) || p.img || p.image || '';
+    const brand = p.brand || p.storeName || '';
+    const price = typeof p.price === 'number' ? p.price.toFixed(2) : (p.price || 0);
+    return `
+      <div class="pd-suggested-card" onclick="pdOpenSuggested('${p.id}')">
+        <img class="pd-suggested-card-img" src="${img}" alt="${p.name || ''}"
+             loading="lazy" onerror="this.style.background='#e8e2da';this.src=''" />
+        <div class="pd-suggested-card-body">
+          ${brand ? `<div class="pd-suggested-card-brand">${brand}</div>` : ''}
+          <div class="pd-suggested-card-name">${p.name || ''}</div>
+          <div class="pd-suggested-card-price">${price} ₼</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function pdOpenSuggested(productId) {
+  /* Öncə static PRODUCTS-dan axtar */
+  if (typeof PRODUCTS !== 'undefined') {
+    const p = PRODUCTS.find(p => String(p.id) === String(productId));
+    if (p) { openProductDetail(p); return; }
+  }
+  /* Firebase-dən yüklə */
+  fbDb.collection('listings').doc(productId).get()
+    .then(doc => {
+      if (doc.exists) openProductDetail({ id: doc.id, ...doc.data(), _fromFirebase: true });
+    })
+    .catch(() => {});
+}
+
+/* ══════════════════════════════════════
    KAMPANİYA — Async yüklə
 ══════════════════════════════════════ */
 async function pdLoadCampaign() {
@@ -661,17 +762,18 @@ function injectProductDetailStyles() {
   /* ── Overlay ── */
   .pd-overlay {
     position: fixed;
-    inset: 0;
-    z-index: 300;
-    background: rgba(15,10,5,.58);
-    backdrop-filter: blur(6px);
+    top: 68px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 200;
+    background: rgba(15,10,5,.52);
+    backdrop-filter: blur(3px);
     opacity: 0;
     pointer-events: none;
     transition: opacity .3s;
     display: flex;
     flex-direction: column;
-    /* Header yüksəkliyini boşluq olaraq burax */
-    padding-top: 72px;
   }
   .pd-overlay.open {
     opacity: 1;
@@ -684,10 +786,10 @@ function injectProductDetailStyles() {
     width: 100%;
     height: 100%;
     overflow-y: auto;
-    transform: translateY(30px);
+    transform: translateY(20px);
     transition: transform .35s cubic-bezier(.22,1,.36,1);
     position: relative;
-    border-radius: 20px 20px 0 0;
+    border-radius: 16px 16px 0 0;
   }
   .pd-overlay.open .pd-panel {
     transform: translateY(0);
@@ -744,12 +846,113 @@ function injectProductDetailStyles() {
   /* ── Ana bölüm ── */
   .pd-main {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 200px 1fr 1fr;
     gap: 0;
-    max-width: 1200px;
+    max-width: 1300px;
     margin: 0 auto;
     padding: 1.5rem var(--page-x, 1.5rem) 2rem;
     min-height: 50vh;
+  }
+
+  /* ── Tövsiyə sütunu ── */
+  .pd-suggested-col {
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+    padding-right: 1.25rem;
+    border-right: 1px solid var(--border, #e5e0d8);
+    margin-right: 1.5rem;
+    overflow: hidden;
+  }
+  .pd-suggested-title {
+    font-size: .68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .09em;
+    color: var(--muted, #7a7a7a);
+    padding-bottom: .25rem;
+    border-bottom: 1px solid var(--border, #e5e0d8);
+  }
+  .pd-suggested-list {
+    display: flex;
+    flex-direction: column;
+    gap: .6rem;
+    overflow-y: auto;
+    max-height: calc(50vh + 60px);
+    scrollbar-width: none;
+  }
+  .pd-suggested-list::-webkit-scrollbar { display: none; }
+  .pd-suggested-skeleton {
+    height: 72px;
+    border-radius: 10px;
+    background: linear-gradient(90deg, #f0ece6 25%, #e8e2da 50%, #f0ece6 75%);
+    background-size: 200% 100%;
+    animation: pdShimmer 1.4s infinite;
+    flex-shrink: 0;
+  }
+  @keyframes pdShimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+  .pd-suggested-card {
+    display: flex;
+    gap: .6rem;
+    background: var(--bg, #f7f4f0);
+    border: 1.5px solid var(--border, #e5e0d8);
+    border-radius: 10px;
+    padding: .55rem;
+    cursor: pointer;
+    transition: border-color .2s, box-shadow .2s, transform .15s;
+    flex-shrink: 0;
+    align-items: center;
+    text-decoration: none;
+    color: inherit;
+  }
+  .pd-suggested-card:hover {
+    border-color: var(--accent, #c9a86c);
+    box-shadow: 0 3px 14px rgba(0,0,0,.08);
+    transform: translateY(-1px);
+  }
+  .pd-suggested-card-img {
+    width: 52px;
+    height: 62px;
+    border-radius: 7px;
+    object-fit: cover;
+    background: #f0ece6;
+    flex-shrink: 0;
+  }
+  .pd-suggested-card-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .pd-suggested-card-brand {
+    font-size: .6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--accent, #c9a86c);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .pd-suggested-card-name {
+    font-size: .76rem;
+    font-weight: 600;
+    color: var(--text, #1a1a1a);
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .pd-suggested-card-price {
+    font-size: .82rem;
+    font-weight: 700;
+    color: var(--text, #1a1a1a);
+    margin-top: 2px;
   }
 
   /* ── Qalereya ── */
@@ -1250,7 +1453,9 @@ function injectProductDetailStyles() {
 
   /* ── Responsive ── */
   @media (max-width: 768px) {
-    .pd-overlay { padding-top: 60px; }
+    .pd-overlay { top: 60px; }
+
+    .pd-suggested-col { display: none; }
 
     .pd-main {
       grid-template-columns: 1fr;
@@ -1272,6 +1477,11 @@ function injectProductDetailStyles() {
     .pd-thumb  { width: 50px; height: 50px; }
 
     .pd-reviews-section { padding: 1rem 1rem 2.5rem; }
+  }
+
+  @media (max-width: 1024px) and (min-width: 769px) {
+    .pd-suggested-col { display: none; }
+    .pd-main { grid-template-columns: 1fr 1fr; }
   }
 
   @media (max-width: 480px) {
