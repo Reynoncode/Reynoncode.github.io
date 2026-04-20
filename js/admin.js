@@ -892,6 +892,9 @@ async function loadPlatformSettings() {
       if (Array.isArray(d.commissions) && d.commissions.length)
         platformCommissions = d.commissions;
 
+      // platformMainCategories-dəki hər kateqoriya üçün komissiya sətri yox olduqda əlavə et
+      syncCommissionsWithMainCategories();
+
       if (d.updatedAt) {
         const ts = d.updatedAt.toDate ? d.updatedAt.toDate() : new Date(d.updatedAt);
         document.getElementById('platformLastSaved').textContent =
@@ -899,8 +902,8 @@ async function loadPlatformSettings() {
       }
     } else {
       platformMainCategories = JSON.parse(JSON.stringify(DEFAULT_MAIN_CATEGORIES));
-      platformCommissions    = JSON.parse(JSON.stringify(DEFAULT_COMMISSIONS));
       platformCategories     = JSON.parse(JSON.stringify(DEFAULT_PLATFORM_CATEGORIES));
+      syncCommissionsWithMainCategories();
     }
   } catch(e) {
     console.warn('Platforma ayarları yüklənmədi:', e.message);
@@ -1128,6 +1131,8 @@ function saveMcat() {
   }
 
   renderMainCategoryList();
+  syncCommissionsWithMainCategories();
+  renderCommissionTable();
   closeMcatModal();
 }
 
@@ -1212,16 +1217,28 @@ function renderCommissionTable() {
 }
 
 function addCommissionRow() {
-  document.getElementById('newCommissionName').value = '';
+  /* Select-i platformMainCategories-dən doldur */
+  const sel = document.getElementById('newCommissionName');
+  const existing = new Set(platformCommissions.map(c => c.category.toLowerCase()));
+  const cats = (platformMainCategories && platformMainCategories.length)
+    ? platformMainCategories
+    : DEFAULT_MAIN_CATEGORIES;
+  const available = cats.filter(c => !existing.has(c.label.toLowerCase()));
+  if (!available.length) {
+    showToast('Bütün kateqoriyalar üçün artıq komissiya var', 'error');
+    return;
+  }
+  sel.innerHTML = available.map(c => `<option value="${c.label}">${c.icon || ''} ${c.label}</option>`).join('');
   document.getElementById('newCommissionRate').value = '10';
   document.getElementById('commissionModal').classList.add('open');
-  setTimeout(() => document.getElementById('newCommissionName').focus(), 100);
+  setTimeout(() => sel.focus(), 100);
 }
 
 function confirmAddCommission() {
-  const name = document.getElementById('newCommissionName').value.trim();
+  const sel  = document.getElementById('newCommissionName');
+  const name = (sel.value || '').trim();
   const rate = parseFloat(document.getElementById('newCommissionRate').value) || 10;
-  if (!name) { showToast('Kateqoriya adı daxil edin', 'error'); return; }
+  if (!name) { showToast('Kateqoriya seçin', 'error'); return; }
   if (platformCommissions.find(c => c.category.toLowerCase() === name.toLowerCase())) {
     showToast('Bu kateqoriya artıq var', 'error'); return;
   }
@@ -1703,4 +1720,33 @@ function applyPlatCustomIcon() {
   if (!val) return;
   const ic = LUCIDE_ICONS && LUCIDE_ICONS[val] ? val : ([...val][0] || val);
   selectPlatCatIcon(ic);
+}
+
+/* ══════════════════════════════════════════════
+   KOMİSSİYA ↔ ANA KATEQORİYA SİNXRONU
+   platformMainCategories-dəki hər label üçün
+   platformCommissions-da sətir yox olduqda əlavə edir.
+   Silinmiş kateqoriyaları silmir (manual saxlanır).
+   ══════════════════════════════════════════════ */
+function syncCommissionsWithMainCategories() {
+  const cats = (platformMainCategories && platformMainCategories.length)
+    ? platformMainCategories
+    : DEFAULT_MAIN_CATEGORIES;
+  const existing = new Set(platformCommissions.map(c => c.category.toLowerCase()));
+  for (const cat of cats) {
+    if (!existing.has(cat.label.toLowerCase())) {
+      platformCommissions.push({ category: cat.label, rate: 10, active: true });
+    }
+  }
+}
+
+/* ══════════════════════════════════════════════
+   ACCORDION TOGGLE — Platforma ayarları kartları
+   ══════════════════════════════════════════════ */
+function toggleSettingAccordion(triggerEl) {
+  const body = triggerEl.nextElementSibling;
+  if (!body) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  triggerEl.classList.toggle('open', !isOpen);
 }
